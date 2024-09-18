@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      /* Basic styling for the form */
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      input, textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .button-group {
+        text-align: right;
+      }
+      button {
+        padding: 10px 20px;
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Configure Script Properties</h2>
+    <form id="config-form">
+      <div class="form-group">
+        <label for="url">URL:</label>
+        <input type="url" id="url" name="url" required />
+      </div>
+      <div class="form-group">
+        <label for="langflowReferenceContentId">Langflow Reference Content ID:</label>
+        <input type="text" id="langflowReferenceContentId" name="langflowReferenceContentId" required />
+      </div>
+      <div class="form-group">
+        <label for="langflowReferenceKeysId">Langflow Reference Keys ID:</label>
+        <input type="text" id="langflowReferenceKeysId" name="langflowReferenceKeysId" required />
+      </div>
+      <div class="form-group">
+        <label for="refSlidesParserUrl">Ref Slides Parser URL:</label>
+        <input type="url" id="refSlidesParserUrl" name="refSlidesParserUrl" required />
+      </div>
+      <div class="form-group">
+        <label for="refSlidesTweakId">Ref Slides Tweak ID:</label>
+        <input type="text" id="refSlidesTweakId" name="refSlidesTweakId" required />
+      </div>
+      <div class="form-group">
+        <label for="warmUpLlmUrl">Warm Up LLM URL:</label>
+        <input type="url" id="warmUpLlmUrl" name="warmUpLlmUrl" required />
+      </div>
+      <div class="form-group">
+        <label for="apiKey">API Key:</label>
+        <input type="password" id="apiKey" name="apiKey" required />
+      </div>
+      <div class="button-group">
+        <button type="button" onclick="google.script.host.close()">Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+
+    <script>
+      // Function to populate the form with existing values
+      function populateForm(data) {
+        document.getElementById('url').value = data.url || '';
+        document.getElementById('langflowReferenceContentId').value = data.langflowReferenceContentId || '';
+        document.getElementById('langflowReferenceKeysId').value = data.langflowReferenceKeysId || '';
+        document.getElementById('refSlidesParserUrl').value = data.refSlidesParserUrl || '';
+        document.getElementById('refSlidesTweakId').value = data.refSlidesTweakId || '';
+        document.getElementById('warmUpLlmUrl').value = data.warmUpLlmUrl || '';
+        document.getElementById('apiKey').value = data.apiKey || '';
+      }
+
+      // Handle form submission
+      document.getElementById('config-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = {
+          url: document.getElementById('url').value,
+          langflowReferenceContentId: document.getElementById('langflowReferenceContentId').value,
+          langflowReferenceKeysId: document.getElementById('langflowReferenceKeysId').value,
+          refSlidesParserUrl: document.getElementById('refSlidesParserUrl').value,
+          refSlidesTweakId: document.getElementById('refSlidesTweakId').value,
+          warmUpLlmUrl: document.getElementById('warmUpLlmUrl').value,
+          apiKey: document.getElementById('apiKey').value
+        };
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .saveConfiguration(formData);
+      });
+
+      // Initialize the form with existing properties
+      google.script.run.withSuccessHandler(populateForm).getConfiguration();
+    </script>
+  </body>
+</html>
