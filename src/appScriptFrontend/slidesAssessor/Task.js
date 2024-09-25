@@ -8,19 +8,19 @@
 class Task {
     /**
      * Constructs a Task instance.
-     * @param {number} taskId - Unique identifier for the task.
+     * @param {string} taskId - Unique identifier for the task.
      * @param {string} taskTitle - Title or description of the task.
      * @param {string} taskType - Type of the task: "Text", "Table", or "Image".
-     * @param {string} slideId - The ID of the slide where the task is located.
+     * @param {string} slideId - The ID of the slide where the task is located in the reference document.
      * @param {string|null} imageCategory - Applicable only for images (e.g., "diagram", "block code"). Null otherwise.
      * @param {string} taskReference - Reference content for assessment (string or image URL).
      * @param {string} taskNotes - Additional notes for LLM assessment.
      */
     constructor(taskId, taskTitle, taskType, slideId, imageCategory, taskReference, taskNotes) {
-        this.taskId = taskId;                 // number
+        this.taskId = taskId;                 // string
         this.taskTitle = taskTitle;           // string
         this.taskType = taskType;             // string: "Text", "Table", or "Image"
-        this.slideId = slideId;               // string: ID of the slide
+        this.slideId = slideId;               // string: Slide ID in the reference document
         this.imageCategory = imageCategory;   // string: e.g., "diagram" (optional)
         this.taskReference = taskReference;   // string or URL
         this.taskNotes = taskNotes;           // string
@@ -72,14 +72,14 @@ class TaskInputs {
     /**
      * Constructs a TaskInputs instance.
      * @param {string} taskType - Type of the task: "Text", "Table", or "Image".
-     * @param {string} slideId - The ID of the slide where the task is located.
+     * @param {string} slideId - The ID of the slide where the task is located in the reference document.
      * @param {string|null} imageCategory - Applicable only for images (e.g., "diagram", "block code"). Null otherwise.
      * @param {string} taskReference - Reference content for assessment (string or image URL).
      * @param {string} taskNotes - Additional notes for LLM assessment.
      */
     constructor(taskType, slideId, imageCategory, taskReference, taskNotes) {
         this.taskType = taskType;             // string: "Text", "Table", or "Image"
-        this.slideId = slideId;               // string: ID of the slide
+        this.slideId = slideId;               // string: Slide ID in the reference document
         this.imageCategory = imageCategory;   // string: e.g., "diagram" (optional)
         this.taskReference = taskReference;   // string or URL
         this.taskNotes = taskNotes;           // string

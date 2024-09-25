@@ -22,7 +22,7 @@ class SlideExtractor {
     extractTasksFromSlides(slideId) {
         const presentation = SlidesApp.openById(slideId);
         const slides = presentation.getSlides();
-        let index = 0
+        let index = 0;
 
         const tasks = [];
 
@@ -35,7 +35,7 @@ class SlideExtractor {
 
                 // Identify task elements by description starting with '#'
                 if (description.startsWith('#')) {
-                    index++
+                    index++;
                     const key = description.substring(1).trim(); // Remove '#' and trim
 
                     // Extract content from the page element
@@ -45,10 +45,15 @@ class SlideExtractor {
 
                     if (type === SlidesApp.PageElementType.SHAPE) {
                         content = this.extractTextFromShape(pageElement.asShape());
-                        taskType = "text";
+                        taskType = "Text"; // Capitalize to match expected values
                     } else if (type === SlidesApp.PageElementType.TABLE) {
                         content = this.extractTextFromTable(pageElement.asTable());
-                        taskType = "table";
+                        taskType = "Table";
+                    } else if (type === SlidesApp.PageElementType.IMAGE) {
+                        // If images are part of tasks, handle accordingly
+                        // For example:
+                        content = this.extractImageDescription(pageElement.asImage());
+                        taskType = "Image";
                     } else {
                         console.log(`Unsupported PageElementType: ${type}`);
                         return; // Skip unsupported types
@@ -72,50 +77,46 @@ class SlideExtractor {
      * @param {string} key - The task key extracted from the slide.
      * @param {string} content - The raw content of the task.
      * @param {string} slideId - The ID of the slide where the task is located.
-     * @param {string|null} studentId - The ID of the student who completed the task. Pass null if it's the reference slide 
+     * @param {string} taskType - The type of the task: "Text", "Table", or "Image".
+     * @param {number} index - The incremental index for generating taskId.
      * @return {Task|null} - The created Task instance or null if parsing fails.
      */
     parseTask(key, content, slideId, taskType, index) {
         // Define a delimiter or format to parse task details from content
         // For example, assume content is in the following format:
-        // Title: Task Title
-        // Type: Text/Table/Image
         // Reference: Reference content or URL
         // Notes: Additional notes
 
         const taskData = {
-
             "title": key,
-            "type": taskType,
-            "reference": content,
-            "slideId": slideId
-        };
+            "reference": content
+        }
 
         // Validate required fields
-        if (!taskData.title || !taskData.type || !taskData.reference || !taskData.slideId) {
-            console.log(`Incomplete task data for key ${key}. Required fields: Title, Type, Reference.`);
+        if (!taskData.reference) {
+            console.log(`Incomplete task data for key ${key}. Required field: Reference.`);
             return null;
         }
 
         // Determine imageCategory if taskType is Image
         let imageCategory = null;
-        if (taskData.type.toLowerCase() === 'image') {
-            // Assume the image category is specified in the notes or another field
+        if (taskType.toLowerCase() === 'image') {
+            // Assume the image category is specified in the category field or derive based on reference URL
             imageCategory = taskData.category || null; // Adjust based on your actual data structure
         }
 
-        //Create a taskId - which an incrementing integer
-        const taskId = index
+        // Create a unique taskId - using an incremental integer
+        const taskId = index.toString(); // Convert to string for consistency
 
         // Create and return the Task instance
         const task = new Task(
             taskId,
-            taskData.title,
-            taskData.type,
-            taskData.slideId, // Pass the slideId to the Task instance
-            imageCategory,
-            taskData.reference,
-            taskData.notes || ''
+            key,               // Using key as the title
+            taskType,          // "Text", "Table", or "Image"
+            slideId,           // Slide ID where the task is located
+            imageCategory,     // Image category if applicable
+            taskData.reference,// Reference content or URL
+            taskData.notes || '' // Additional notes
         );
 
         return task;
@@ -200,5 +201,17 @@ class SlideExtractor {
      */
     extractTextFromTable(table) {
         return this.convertTableToMarkdown(table);
+    }
+
+    /**
+     * Extracts image description or relevant metadata from an image element.
+     * @param {GoogleAppsScript.Slides.Image} image - The image element to extract data from.
+     * @return {string} - The extracted description or metadata.
+     */
+    extractImageDescription(image) {
+        // Assuming that the image has alt text or description that specifies the category
+        // e.g., "Diagram of the system architecture"
+        const description = image.getDescription();
+        return description || '';
     }
 }

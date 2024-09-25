@@ -25,7 +25,7 @@ class Utils {
     /**
      * Converts a column index to its corresponding letter.
      * @param {number} columnIndex - The column index to convert (0-based).
-     * @returns {string} - The corresponding column letter.
+     * @return {string} - The corresponding column letter.
      */
     static getColumnLetter(columnIndex) {
         let temp;
