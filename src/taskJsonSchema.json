@@ -1,0 +1,115 @@
+{
+    "assignment": {
+        "assignmentId": "string", // ID of the Google Classroom assignment
+        "documentType": "Google Slide", // Type of the submitted document
+        "documentId": "string", // Unique identifier of the reference document
+        "tasks": [
+            {
+                "taskId": 1, // Unique identifier for the task
+                "taskTitle": "Task Title", // Title or description of the task
+                "inputs": {
+                    "taskType": "Text", // Type of the task: Text, Table, or Image
+                    "position": "slideId1", // Position identifier within the reference document
+                    "imageCategory": "diagram", // Applicable only for images, e.g., diagram, block code
+                    "taskReference": "string or image URL", // Reference content for assessment
+                    "taskNotes": "Additional notes for LLM assessment" // Extra information for the LLM
+                }
+            }
+            // Additional tasks can be added here
+        ]
+    },
+    "students": [
+        {
+            "studentId": "student1@example.com", // Student's unique identifier (email or internal ID)
+            "documentId": "studentSlideId12345", // Unique identifier of the student's submitted document
+            "tasks": [
+                {
+                    "taskId": 1, // Corresponds to the taskId in the assignment.tasks array
+                    "taskHash": "alskdjaslkjd" //A hash of the student Id and taskId. This is to enable asynchronous processing of
+                    "position": "slideId1", // Position identifier within the student's document
+                    "studentResponse": "http://example.com/student1-slide1-response.jpg", // Student's response (text or image URL)
+                    "outputs": {
+                        "completeness": {
+                            "score": 4, // Integer between 0 and 5
+                            "reasoning": "Comprehensively covers the main points with minor omissions." // Explanation for the score
+                        },
+                        "accuracy": {
+                            "score": 3, // Integer between 0 and 5
+                            "reasoning": "Contains several inaccuracies in the explanation." // Explanation for the score
+                        },
+                        "spag": { 
+                            "score": 5, // Integer between 0 and 5
+                            "reasoning": "Excellent spelling, punctuation, and grammar." // Explanation for the score
+                        }
+                    }
+                },
+                {
+                    "taskId": 2,
+                    "position": "slideId2",
+                    "studentResponse": "http://example.com/student1-slide2-response.jpg",
+                    "outputs": {
+                        "completeness": {
+                            "score": 5,
+                            "reasoning": "All required elements are present and well-explained."
+                        },
+                        "accuracy": {
+                            "score": 4,
+                            "reasoning": "Accurate with minor errors in labeling."
+                        },
+                        "spag": { 
+                            "score": 5,
+                            "reasoning": "No spelling or grammatical errors."
+                        }
+                    }
+                }
+                // Additional task assessments for the student
+            ]
+        },
+        {
+            "studentId": "student2@example.com",
+            "documentId": "studentSlideId67890",
+            "tasks": [
+                {
+                    "taskId": 1,
+                    "position": "slideId1",
+                    "studentResponse": "http://example.com/student2-slide1-response.jpg",
+                    "outputs": {
+                        "completeness": {
+                            "score": 3,
+                            "reasoning": "Missing some key points required for a full explanation."
+                        },
+                        "accuracy": {
+                            "score": 3,
+                            "reasoning": "Contains several inaccuracies that need correction."
+                        },
+                        "spag": { 
+                            "score": 4,
+                            "reasoning": "Minor spelling errors present."
+                        }
+                    }
+                },
+                {
+                    "taskId": 2,
+                    "position": "slideId2",
+                    "studentResponse": "http://example.com/student2-slide2-response.jpg",
+                    "outputs": {
+                        "completeness": {
+                            "score": 5,
+                            "reasoning": "All required elements are present and well-explained."
+                        },
+                        "accuracy": {
+                            "score": 4,
+                            "reasoning": "Accurate with minor errors in labeling."
+                        },
+                        "spag": { 
+                            "score": 5,
+                            "reasoning": "No spelling or grammatical errors."
+                        }
+                    }
+                }
+                // Additional task assessments for the student
+            ]
+        }
+        // Additional student assessments
+    ]
+}
