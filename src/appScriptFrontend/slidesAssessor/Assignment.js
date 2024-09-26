@@ -1,4 +1,4 @@
-// Assignment.js
+// Assignment.gs
 
 /**
  * Assignment Class: Superclass
@@ -8,19 +8,21 @@
 class Assignment {
     /**
      * Constructs an Assignment instance.
-     * @param {string} assignmentId - ID of the Google Classroom assignment (courseWorkId).
-     * @param {string} courseId - ID of the Google Classroom course.
+     * @param {string} assignmentId - The ID of the assignment.
+     * @param {string} courseId - The ID of the Google Classroom course.
      * @param {string} documentType - Type of the submitted document (e.g., "Google Slide").
      * @param {string} documentId - Unique identifier of the reference document.
+     * @param {string} emptyDocumentId - Unique identifier of the empty template document.
      */
-    constructor(assignmentId, courseId, documentType, documentId) {
-        this.assignmentId = assignmentId; // string: courseWorkId
-        this.courseId = courseId;         // string: courseId
-        this.documentType = documentType; // string
-        this.documentId = documentId;     // string
-        this.tasks = [];                  // Array of Task instances
-        this.students = [];               // Array of Student instances
-        this.studentTasks = [];           // Array of StudentTask instances
+    constructor(assignmentId, courseId, documentType, documentId, emptyDocumentId) {
+        this.assignmentId = assignmentId;       // string: courseWorkId
+        this.courseId = courseId;               // string: courseId
+        this.documentType = documentType;       // string
+        this.documentId = documentId;           // string
+        this.emptyDocumentId = emptyDocumentId; // string
+        this.tasks = [];                        // Array of Task instances
+        this.students = [];                     // Array of Student instances
+        this.studentTasks = [];                 // Array of StudentTask instances
         this.slideExtractor = new SlideExtractor(); // Instance of SlideExtractor
     }
 
@@ -61,12 +63,30 @@ class Assignment {
     }
 
     /**
-     * Extracts and adds tasks from the reference slides to the assignment.
+     * Populates tasks from both reference and empty slides.
      */
-    populateTasksFromReferenceSlides() {
-        const tasks = this.slideExtractor.extractTasksFromSlides(this.documentId);
-        tasks.forEach(task => this.addTask(task));
-        console.log(`${tasks.length} tasks added to the assignment.`);
+    populateTasksFromSlides() {
+        // Extract reference tasks
+        const referenceTasks = this.slideExtractor.extractTasksFromSlides(this.documentId, "reference");
+
+        // Extract empty tasks
+        const emptyTasks = this.slideExtractor.extractTasksFromSlides(this.emptyDocumentId, "empty");
+
+        // Combine tasks by matching task titles
+        const combinedTasks = referenceTasks.map(refTask => {
+            const emptyTask = emptyTasks.find(et => et.taskTitle === refTask.taskTitle);
+            if (emptyTask) {
+                refTask.emptyContent = emptyTask.emptyContent;
+            } else {
+                refTask.emptyContent = ''; // Or handle missing empty content appropriately
+            }
+            return refTask;
+        });
+
+        // Add combined tasks to the assignment
+        combinedTasks.forEach(task => this.addTask(task));
+
+        Logger.log(`${combinedTasks.length} tasks added to the assignment.`);
     }
 
     /**
@@ -139,7 +159,6 @@ class Assignment {
             return;
         }
 
-        const uid = StudentTask.generateUID(student.id);
         const studentTask = new StudentTask(student, this.assignmentId, student.documentId);
         studentTask.extractAndAssignResponses(this.slideExtractor, this.tasks);
         this.addStudentTask(studentTask);
@@ -169,6 +188,7 @@ class Assignment {
             courseId: this.courseId,
             documentType: this.documentType,
             documentId: this.documentId,
+            emptyDocumentId: this.emptyDocumentId,
             tasks: this.tasks.map(task => task.toJSON()),
             students: this.students.map(student => student.toJSON()),
             studentTasks: this.studentTasks.map(studentTask => studentTask.toJSON())
@@ -181,8 +201,8 @@ class Assignment {
      * @return {Assignment} - The Assignment instance.
      */
     static fromJSON(json) {
-        const { assignmentId, courseId, documentType, documentId, tasks, students, studentTasks } = json;
-        const assignment = new Assignment(assignmentId, courseId, documentType, documentId);
+        const { assignmentId, courseId, documentType, documentId, emptyDocumentId, tasks, students, studentTasks } = json;
+        const assignment = new Assignment(assignmentId, courseId, documentType, documentId, emptyDocumentId);
 
         // Deserialize Tasks
         tasks.forEach(taskJson => {

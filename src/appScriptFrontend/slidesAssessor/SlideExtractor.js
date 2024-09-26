@@ -1,4 +1,4 @@
-// SlideExtractor.js
+// SlideExtractor.gs
 
 /**
  * SlideExtractor Class
@@ -15,16 +15,16 @@ class SlideExtractor {
 
     /**
      * Extracts Task instances from a Google Slides presentation.
-     * Tasks are identified by page elements with descriptions starting with '#'.
+     * Differentiates between reference and empty content based on slide IDs.
+     * If contentType is null or undefined, defaults to parsing as reference content.
      * @param {string} slideId - The ID of the Google Slides presentation.
+     * @param {string|null} contentType - Type of content to extract: "reference", "empty", or null for default.
      * @return {Task[]} - An array of Task instances extracted from the slides.
      */
-    extractTasksFromSlides(slideId) {
+    extractTasksFromSlides(slideId, contentType = "reference") { // Default to "reference"
         const presentation = SlidesApp.openById(slideId);
         const slides = presentation.getSlides();
-        let index = 0;
-
-        const tasks = [];
+        let tasks = [];
 
         slides.forEach((slide) => {
             const pageElements = slide.getPageElements();
@@ -35,7 +35,6 @@ class SlideExtractor {
 
                 // Identify task elements by description starting with '#'
                 if (description.startsWith('#')) {
-                    index++;
                     const key = description.substring(1).trim(); // Remove '#' and trim
 
                     // Extract content from the page element
@@ -60,7 +59,7 @@ class SlideExtractor {
                     }
 
                     // Parse the content to create a Task instance
-                    const task = this.parseTask(key, content, currentSlideId, taskType, index);
+                    const task = this.parseTask(key, content, currentSlideId, taskType, contentType);
                     if (task) {
                         tasks.push(task);
                     }
@@ -73,53 +72,50 @@ class SlideExtractor {
 
     /**
      * Parses raw task content to create a Task instance.
-     * The content should follow a specific format to extract necessary fields.
+     * Differentiates between reference, empty, and default content types.
      * @param {string} key - The task key extracted from the slide.
      * @param {string} content - The raw content of the task.
      * @param {string} slideId - The ID of the slide where the task is located.
      * @param {string} taskType - The type of the task: "Text", "Table", or "Image".
-     * @param {number} index - The incremental index for generating taskId.
-     * @return {Task|null} - The created Task instance or null if parsing fails.
+     * @param {string|null} contentType - Type of content: "reference", "empty", or null for default.
+     * @return {Task|null} - The Task instance or null if parsing fails.
      */
-    parseTask(key, content, slideId, taskType, index) {
-        // Define a delimiter or format to parse task details from content
-        // For example, assume content is in the following format:
-        // Reference: Reference content or URL
-        // Notes: Additional notes
-
-        const taskData = {
-            "title": key,
-            "reference": content
+    parseTask(key, content, slideId, taskType, contentType) {
+        if (contentType === "reference") {
+            // For reference content, populate taskReference and leave emptyContent blank
+            return new Task(
+                key,
+                taskType,
+                slideId,
+                null, // imageCategory can be set as needed
+                content, // taskReference
+                '',      // taskNotes can be set as needed
+                ''       // emptyContent will be populated separately
+            );
+        } else if (contentType === "empty") {
+            // For empty content, populate emptyContent and leave taskReference blank
+            return new Task(
+                key,
+                taskType,
+                slideId,
+                null, // imageCategory can be set as needed
+                '',    // taskReference is blank
+                '',    // taskNotes can be set as needed
+                content // emptyContent
+            );
+        } else {
+            // Default behavior when contentType is null or undefined
+            // Parse as reference content
+            return new Task(
+                key,
+                taskType,
+                slideId,
+                null, // imageCategory can be set as needed
+                content, // taskReference
+                '',      // taskNotes can be set as needed
+                ''       // emptyContent will be populated separately
+            );
         }
-
-        // Validate required fields
-        if (!taskData.reference) {
-            console.log(`Incomplete task data for key ${key}. Required field: Reference.`);
-            return null;
-        }
-
-        // Determine imageCategory if taskType is Image
-        let imageCategory = null;
-        if (taskType.toLowerCase() === 'image') {
-            // Assume the image category is specified in the category field or derive based on reference URL
-            imageCategory = taskData.category || null; // Adjust based on your actual data structure
-        }
-
-        // Create a unique taskId - using an incremental integer
-        const taskId = index.toString(); // Convert to string for consistency
-
-        // Create and return the Task instance
-        const task = new Task(
-            taskId,
-            key,               // Using key as the title
-            taskType,          // "Text", "Table", or "Image"
-            slideId,           // Slide ID where the task is located
-            imageCategory,     // Image category if applicable
-            taskData.reference,// Reference content or URL
-            taskData.notes || '' // Additional notes
-        );
-
-        return task;
     }
 
     /**

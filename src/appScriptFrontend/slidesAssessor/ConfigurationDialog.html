@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      /* Basic styling for the form */
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input, textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .button-group {
+        text-align: right;
+      }
+      button {
+        padding: 10px 20px;
+        margin-left: 10px;
+        font-size: 14px;
+      }
+      h2 {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Configure Script Properties</h2>
+    <form id="config-form">
+      <div class="form-group">
+        <label for="batchSize">Batch Size:</label>
+        <input type="number" id="batchSize" name="batchSize" min="1" required />
+      </div>
+      <div class="form-group">
+        <label for="langflowApiKey">Langflow API Key:</label>
+        <input type="text" id="langflowApiKey" name="langflowApiKey" required />
+      </div>
+      <div class="form-group">
+        <label for="langflowUrl">Langflow URL:</label>
+        <input type="url" id="langflowUrl" name="langflowUrl" required />
+      </div>
+      <div class="form-group">
+        <label for="warmUpUrl">Warm-Up URL:</label>
+        <input type="url" id="warmUpUrl" name="warmUpUrl" required />
+      </div>
+      <div class="form-group">
+        <label for="referenceSlideId">Reference Slide ID:</label>
+        <input type="text" id="referenceSlideId" name="referenceSlideId" required />
+      </div>
+      <div class="form-group">
+        <label for="emptySlideId">Empty Slide ID:</label>
+        <input type="text" id="emptySlideId" name="emptySlideId" required />
+      </div>
+      <div class="button-group">
+        <button type="button" onclick="google.script.host.close()">Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+
+    <script>
+      // Function to populate the form with existing values
+      function populateForm(data) {
+        document.getElementById('batchSize').value = data.batchSize || 5; // Default to 5 if not set
+        document.getElementById('langflowApiKey').value = data.langflowApiKey || '';
+        document.getElementById('langflowUrl').value = data.langflowUrl || '';
+        document.getElementById('warmUpUrl').value = data.warmUpUrl || '';
+        document.getElementById('referenceSlideId').value = data.referenceSlideId || '';
+        document.getElementById('emptySlideId').value = data.emptySlideId || '';
+      }
+
+      // Handle form submission
+      document.getElementById('config-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const formData = {
+          batchSize: parseInt(document.getElementById('batchSize').value, 10),
+          langflowApiKey: document.getElementById('langflowApiKey').value.trim(),
+          langflowUrl: document.getElementById('langflowUrl').value.trim(),
+          warmUpUrl: document.getElementById('warmUpUrl').value.trim(),
+          referenceSlideId: document.getElementById('referenceSlideId').value.trim(),
+          emptySlideId: document.getElementById('emptySlideId').value.trim()
+        };
+        
+        // Basic client-side validation
+        if (isNaN(formData.batchSize) || formData.batchSize < 1) {
+          alert("Batch Size must be a positive integer.");
+          return;
+        }
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .withFailureHandler(function(error) {
+            alert("Error saving configuration: " + error.message);
+          })
+          .saveConfiguration(formData);
+      });
+
+      // Initialize the form with existing properties
+      google.script.run
+        .withSuccessHandler(populateForm)
+        .withFailureHandler(function(error) {
+          alert("Error loading configuration: " + error.message);
+        })
+        .getConfiguration();
+    </script>
+  </body>
+</html>

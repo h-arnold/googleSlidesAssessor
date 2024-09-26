@@ -27,8 +27,8 @@ class StudentTask {
      * @param {string} slideId - The ID of the slide where the task is located.
      * @param {string|null} response - The student's response to the task.
      */
-    addResponse(uid, taskId, slideId, response) {
-        this.responses[taskId] = {
+    addResponse(index, uid, slideId, response) {
+        this.responses[index] = {
             uid: uid,
             slideId: slideId,
             response: response
@@ -96,20 +96,19 @@ class StudentTask {
         const submissionMap = {};
         studentTasks.forEach(task => {
             submissionMap[task.taskTitle] = {
-                taskId: task.taskId,
                 slideId: task.slideId,         // Slide ID within the student's submission document
                 response: task.taskReference   // Assuming taskReference holds the response
             };
         });
 
         // Assign responses ensuring consistency with Assignment's tasks
-        tasks.forEach(task => {
+        tasks.forEach((task, index) => {
             if (submissionMap.hasOwnProperty(task.taskTitle)) {
                 const { slideId, response } = submissionMap[task.taskTitle];
-                this.addResponse(StudentTask.generateUID(slideId), task.taskId, slideId, response);
+                this.addResponse(index, StudentTask.generateUID(slideId), slideId, response);
             } else {
                 // Handle missing tasks (e.g., assign null or a default value)
-                this.addResponse(null, task.taskId, null, null);
+                this.addResponse(null, null, null);
             }
         });
     }
