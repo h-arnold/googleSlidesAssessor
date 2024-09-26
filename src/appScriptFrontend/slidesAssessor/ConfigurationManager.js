@@ -3,17 +3,9 @@
 /**
  * ConfigurationManager Class
  * 
- * Manages all configuration-related operations, including storing, retrieving,
- * and updating script properties.
- * 
- * Implements the Singleton pattern to ensure a single instance manages configurations.
+ * Manages script properties with getter and setter methods.
  */
 class ConfigurationManager {
-    /**
-     * Configuration Keys
-     * 
-     * Defines all the keys used for storing configuration properties.
-     */
     static get CONFIG_KEYS() {
         return {
             BATCH_SIZE: 'batchSize',
@@ -21,16 +13,16 @@ class ConfigurationManager {
             LANGFLOW_URL: 'langflowUrl',
             WARM_UP_URL: 'warmUpUrl',
             REFERENCE_SLIDE_ID: 'referenceSlideId',
-            EMPTY_SLIDE_ID: 'emptySlideId'
+            EMPTY_SLIDE_ID: 'emptySlideId',
+            TEXT_ASSESSMENT_URL: 'textAssessmentUrl',
+            TEXT_ASSESSMENT_TWEAKS: 'textAssessmentTweaks',
+            TABLE_ASSESSMENT_URL: 'tableAssessmentUrl',
+            TABLE_ASSESSMENT_TWEAKS: 'tableAssessmentTweaks',
+            IMAGE_ASSESSMENT_URL: 'imageAssessmentUrl',
+            IMAGE_ASSESSMENT_TWEAKS: 'imageAssessmentTweaks'
         };
     }
 
-    /**
-     * Constructs a ConfigurationManager instance.
-     * 
-     * Initializes the script properties and caches them for quick access.
-     * Implements the Singleton pattern to ensure only one instance exists.
-     */
     constructor() {
         if (ConfigurationManager.instance) {
             return ConfigurationManager.instance;
@@ -45,7 +37,6 @@ class ConfigurationManager {
 
     /**
      * Retrieves all configuration properties.
-     * 
      * @return {Object} - An object containing all configuration properties.
      */
     getAllConfigurations() {
@@ -56,10 +47,9 @@ class ConfigurationManager {
     }
 
     /**
-     * Retrieves a specific configuration property by key.
-     * 
+     * Retrieves a single configuration property.
      * @param {string} key - The configuration key.
-     * @return {string} - The value of the configuration property, or an empty string if not set.
+     * @return {string} - The value of the configuration property.
      */
     getProperty(key) {
         if (!this.configCache) {
@@ -69,17 +59,36 @@ class ConfigurationManager {
     }
 
     /**
-     * Sets a specific configuration property by key.
-     * 
+     * Sets a single configuration property.
      * @param {string} key - The configuration key.
-     * @param {string|number} value - The value to set for the configuration property.
+     * @param {string} value - The value to set.
      */
     setProperty(key, value) {
-        // Optional: Add validation based on key
-        if (key === ConfigurationManager.CONFIG_KEYS.BATCH_SIZE) {
-            if (!Number.isInteger(value) || value <= 0) {
-                throw new Error("Batch Size must be a positive integer.");
-            }
+        // Add validation based on key
+        switch (key) {
+            case ConfigurationManager.CONFIG_KEYS.BATCH_SIZE:
+                if (!Number.isInteger(value) || value <= 0) {
+                    throw new Error("Batch Size must be a positive integer.");
+                }
+                break;
+            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL:
+            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL:
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL:
+                if (typeof value !== 'string' || !this.isValidUrl(value)) {
+                    throw new Error(`${key} must be a valid URL string.`);
+                }
+                break;
+            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS:
+            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS:
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS:
+                if (typeof value !== 'string' || !this.isValidJson(value)) {
+                    throw new Error(`${key} must be a valid JSON string.`);
+                }
+                break;
+            // Add more validations as needed
+            default:
+                // No specific validation
+                break;
         }
 
         this.scriptProperties.setProperty(key, value.toString());
@@ -87,144 +96,182 @@ class ConfigurationManager {
     }
 
     /**
-     * Sets multiple configuration properties at once.
-     * 
+     * Sets multiple configuration properties.
      * @param {Object} config - An object containing key-value pairs of configurations.
      */
     setProperties(config) {
-        // Optional: Add validation for each property
         Object.entries(config).forEach(([key, value]) => {
-            if (key === ConfigurationManager.CONFIG_KEYS.BATCH_SIZE) {
-                if (!Number.isInteger(value) || value <= 0) {
-                    throw new Error("Batch Size must be a positive integer.");
+            // Handle JSON objects by stringifying them
+            if (key === ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS ||
+                key === ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS ||
+                key === ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS) {
+                if (typeof value !== 'object') {
+                    throw new Error(`${key} must be a JSON object.`);
                 }
+                value = JSON.stringify(value);
             }
-            // Add more validations as needed
+            this.setProperty(key, value);
         });
 
-        this.scriptProperties.setProperties(config);
         this.configCache = null; // Invalidate cache
     }
 
-    // -------------------
-    // Getter Methods
-    // -------------------
-
-
+    /**
+     * Validates if a string is a well-formed URL.
+     * @param {string} url - The URL string to validate.
+     * @return {boolean} - True if valid, false otherwise.
+     */
+    isValidUrl(url) {
+        const urlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+            '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
+            '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
+            '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
+            '(\\:[0-9]+)?' + // port
+            '(\\/[-a-zA-Z0-9%_.~+]*)*' + // path
+            '(\\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
+            '(\\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
+        return urlPattern.test(url);
+    }
 
     /**
-     * Retrieves the Batch Size configuration.
-     * 
-     * @return {number} - The batch size, or a default value (e.g., 5) if not set.
+     * Validates if a string is a valid JSON.
+     * @param {string} jsonString - The JSON string to validate.
+     * @return {boolean} - True if valid, false otherwise.
      */
+    isValidJson(jsonString) {
+        try {
+            JSON.parse(jsonString);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Getter Methods
     getBatchSize() {
         const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE), 10);
         return isNaN(value) ? 5 : value; // Default batch size is 5
     }
 
-    /**
-     * Retrieves the Langflow API Key configuration.
-     * 
-     * @return {string} - The Langflow API Key.
-     */
     getLangflowApiKey() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY);
     }
 
-    /**
-     * Retrieves the Langflow URL configuration.
-     * 
-     * @return {string} - The Langflow URL.
-     */
     getLangflowUrl() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL);
     }
 
-    /**
-     * Retrieves the Warm-Up URL configuration.
-     * 
-     * @return {string} - The Warm-Up URL.
-     */
     getWarmUpUrl() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.WARM_UP_URL);
     }
 
-    /**
-     * Retrieves the Reference Slide ID configuration.
-     * 
-     * @return {string} - The Reference Slide ID.
-     */
     getReferenceSlideId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.REFERENCE_SLIDE_ID);
     }
 
-    /**
-     * Retrieves the Empty Slide ID configuration.
-     * 
-     * @return {string} - The Empty Slide ID.
-     */
     getEmptySlideId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.EMPTY_SLIDE_ID);
     }
 
-    // -------------------
-    // Setter Methods
-    // -------------------
+    getTextAssessmentUrl() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL);
+    }
 
-    /**
-     * Sets the Batch Size configuration.
-     * 
-     * @param {number} batchSize - The batch size to set.
-     */
+    getTextAssessmentTweaks() {
+        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS);
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.warn("Invalid JSON for textAssessmentTweaks. Returning empty object.");
+            return {};
+        }
+    }
+
+    getTableAssessmentUrl() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL);
+    }
+
+    getTableAssessmentTweaks() {
+        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS);
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.warn("Invalid JSON for tableAssessmentTweaks. Returning empty object.");
+            return {};
+        }
+    }
+
+    getImageAssessmentUrl() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL);
+    }
+
+    getImageAssessmentTweaks() {
+        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS);
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.warn("Invalid JSON for imageAssessmentTweaks. Returning empty object.");
+            return {};
+        }
+    }
+
+    // Setter Methods
     setBatchSize(batchSize) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE, batchSize);
     }
 
-    /**
-     * Sets the Langflow API Key configuration.
-     * 
-     * @param {string} apiKey - The Langflow API Key to set.
-     */
     setLangflowApiKey(apiKey) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY, apiKey);
     }
 
-    /**
-     * Sets the Langflow URL configuration.
-     * 
-     * @param {string} url - The Langflow URL to set.
-     */
     setLangflowUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL, url);
     }
 
-    /**
-     * Sets the Warm-Up URL configuration.
-     * 
-     * @param {string} url - The Warm-Up URL to set.
-     */
     setWarmUpUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.WARM_UP_URL, url);
     }
 
-    /**
-     * Sets the Reference Slide ID configuration.
-     * 
-     * @param {string} slideId - The Reference Slide ID to set.
-     */
     setReferenceSlideId(slideId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.REFERENCE_SLIDE_ID, slideId);
     }
 
-    /**
-     * Sets the Empty Slide ID configuration.
-     * 
-     * @param {string} slideId - The Empty Slide ID to set.
-     */
     setEmptySlideId(slideId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.EMPTY_SLIDE_ID, slideId);
     }
 
+    setTextAssessmentUrl(url) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL, url);
+    }
+
+    setTextAssessmentTweaks(tweaks) {
+        if (typeof tweaks !== 'object') {
+            throw new Error("textAssessmentTweaks must be a JSON object.");
+        }
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    }
+
+    setTableAssessmentUrl(url) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL, url);
+    }
+
+    setTableAssessmentTweaks(tweaks) {
+        if (typeof tweaks !== 'object') {
+            throw new Error("tableAssessmentTweaks must be a JSON object.");
+        }
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    }
+
+    setImageAssessmentUrl(url) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL, url);
+    }
+
+    setImageAssessmentTweaks(tweaks) {
+        if (typeof tweaks !== 'object') {
+            throw new Error("imageAssessmentTweaks must be a JSON object.");
+        }
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    }
 }
 
 // Ensure singleton instance
@@ -245,7 +292,7 @@ function getConfiguration() {
  */
 function saveConfiguration(config) {
     try {
-        // Validate and set each property using ConfigurationManager's setter methods
+        // Map the incoming config to the ConfigurationManager setters
         if (config.batchSize !== undefined) {
             configurationManager.setBatchSize(config.batchSize);
         }
@@ -264,9 +311,81 @@ function saveConfiguration(config) {
         if (config.emptySlideId !== undefined) {
             configurationManager.setEmptySlideId(config.emptySlideId);
         }
-        toastMessage("Configuration saved successfully.");
+        if (config.textAssessmentUrl !== undefined) {
+            configurationManager.setTextAssessmentUrl(config.textAssessmentUrl);
+        }
+        if (config.textAssessmentTweaks !== undefined) {
+            configurationManager.setTextAssessmentTweaks(config.textAssessmentTweaks);
+        }
+        if (config.tableAssessmentUrl !== undefined) {
+            configurationManager.setTableAssessmentUrl(config.tableAssessmentUrl);
+        }
+        if (config.tableAssessmentTweaks !== undefined) {
+            configurationManager.setTableAssessmentTweaks(config.tableAssessmentTweaks);
+        }
+        if (config.imageAssessmentUrl !== undefined) {
+            configurationManager.setImageAssessmentUrl(config.imageAssessmentUrl);
+        }
+        if (config.imageAssessmentTweaks !== undefined) {
+            configurationManager.setImageAssessmentTweaks(config.imageAssessmentTweaks);
+        }
+
+        Utils.toastMessage("Configuration saved successfully.", "Success", 5);
     } catch (error) {
         console.error("Error saving configuration:", error);
+        Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
+        throw new Error("Failed to save configuration. Please check the inputs.");
+    }
+}
+
+/**
+ * Saves the provided configuration properties.
+ * @param {Object} config - An object containing key-value pairs of configurations.
+ */
+function saveConfiguration(config) {
+    try {
+        // Map the incoming config to the ConfigurationManager setters
+        if (config.batchSize !== undefined) {
+            configurationManager.setBatchSize(config.batchSize);
+        }
+        if (config.langflowApiKey !== undefined) {
+            configurationManager.setLangflowApiKey(config.langflowApiKey);
+        }
+        if (config.langflowUrl !== undefined) {
+            configurationManager.setLangflowUrl(config.langflowUrl);
+        }
+        if (config.warmUpUrl !== undefined) {
+            configurationManager.setWarmUpUrl(config.warmUpUrl);
+        }
+        if (config.referenceSlideId !== undefined) {
+            configurationManager.setReferenceSlideId(config.referenceSlideId);
+        }
+        if (config.emptySlideId !== undefined) {
+            configurationManager.setEmptySlideId(config.emptySlideId);
+        }
+        if (config.textAssessmentUrl !== undefined) {
+            configurationManager.setTextAssessmentUrl(config.textAssessmentUrl);
+        }
+        if (config.textAssessmentTweaks !== undefined) {
+            configurationManager.setTextAssessmentTweaks(config.textAssessmentTweaks);
+        }
+        if (config.tableAssessmentUrl !== undefined) {
+            configurationManager.setTableAssessmentUrl(config.tableAssessmentUrl);
+        }
+        if (config.tableAssessmentTweaks !== undefined) {
+            configurationManager.setTableAssessmentTweaks(config.tableAssessmentTweaks);
+        }
+        if (config.imageAssessmentUrl !== undefined) {
+            configurationManager.setImageAssessmentUrl(config.imageAssessmentUrl);
+        }
+        if (config.imageAssessmentTweaks !== undefined) {
+            configurationManager.setImageAssessmentTweaks(config.imageAssessmentTweaks);
+        }
+
+        Utils.toastMessage("Configuration saved successfully.", "Success", 5);
+    } catch (error) {
+        console.error("Error saving configuration:", error);
+        Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
         throw new Error("Failed to save configuration. Please check the inputs.");
     }
 }

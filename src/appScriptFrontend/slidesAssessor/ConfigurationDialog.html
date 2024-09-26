@@ -1,119 +1,246 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <base target="_top">
     <style>
-      /* Basic styling for the form */
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-      }
-      input, textarea {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-      }
-      .button-group {
-        text-align: right;
-      }
-      button {
-        padding: 10px 20px;
-        margin-left: 10px;
-        font-size: 14px;
-      }
-      h2 {
-        margin-bottom: 20px;
-      }
+        /* Basic styling for the form */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            overflow: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .button-group {
+            text-align: right;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .json-warning {
+            color: red;
+            font-size: 12px;
+        }
     </style>
-  </head>
-  <body>
+</head>
+
+<body>
     <h2>Configure Script Properties</h2>
     <form id="config-form">
-      <div class="form-group">
-        <label for="batchSize">Batch Size:</label>
-        <input type="number" id="batchSize" name="batchSize" min="1" required />
-      </div>
-      <div class="form-group">
-        <label for="langflowApiKey">Langflow API Key:</label>
-        <input type="text" id="langflowApiKey" name="langflowApiKey" required />
-      </div>
-      <div class="form-group">
-        <label for="langflowUrl">Langflow URL:</label>
-        <input type="url" id="langflowUrl" name="langflowUrl" required />
-      </div>
-      <div class="form-group">
-        <label for="warmUpUrl">Warm-Up URL:</label>
-        <input type="url" id="warmUpUrl" name="warmUpUrl" required />
-      </div>
-      <div class="form-group">
-        <label for="referenceSlideId">Reference Slide ID:</label>
-        <input type="text" id="referenceSlideId" name="referenceSlideId" required />
-      </div>
-      <div class="form-group">
-        <label for="emptySlideId">Empty Slide ID:</label>
-        <input type="text" id="emptySlideId" name="emptySlideId" required />
-      </div>
-      <div class="button-group">
-        <button type="button" onclick="google.script.host.close()">Cancel</button>
-        <button type="submit">Save</button>
-      </div>
+        <!-- Existing Configuration Fields -->
+        <div class="form-group">
+            <label for="batchSize">Batch Size:</label>
+            <input type="number" id="batchSize" name="batchSize" min="1" required />
+        </div>
+        <div class="form-group">
+            <label for="langflowApiKey">Langflow API Key:</label>
+            <input type="text" id="langflowApiKey" name="langflowApiKey" required />
+        </div>
+        <div class="form-group">
+            <label for="langflowUrl">Langflow URL:</label>
+            <input type="url" id="langflowUrl" name="langflowUrl" required />
+        </div>
+        <div class="form-group">
+            <label for="warmUpUrl">Warm-Up URL:</label>
+            <input type="url" id="warmUpUrl" name="warmUpUrl" required />
+        </div>
+        <div class="form-group">
+            <label for="referenceSlideId">Reference Slide ID:</label>
+            <input type="text" id="referenceSlideId" name="referenceSlideId" required />
+        </div>
+        <div class="form-group">
+            <label for="emptySlideId">Empty Slide ID:</label>
+            <input type="text" id="emptySlideId" name="emptySlideId" required />
+        </div>
+
+        <!-- New Configuration Fields -->
+        <hr />
+        <h3>Assessment Configurations</h3>
+
+        <div class="form-group">
+            <label for="textAssessmentUrl">Text Assessment URL:</label>
+            <input type="url" id="textAssessmentUrl" name="textAssessmentUrl" required />
+        </div>
+        <div class="form-group">
+            <label for="textAssessmentTweaks">Text Assessment Tweaks (JSON):</label>
+            <textarea id="textAssessmentTweaks" name="textAssessmentTweaks" rows="5"
+                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
+            <div id="textTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="tableAssessmentUrl">Table Assessment URL:</label>
+            <input type="url" id="tableAssessmentUrl" name="tableAssessmentUrl" required />
+        </div>
+        <div class="form-group">
+            <label for="tableAssessmentTweaks">Table Assessment Tweaks (JSON):</label>
+            <textarea id="tableAssessmentTweaks" name="tableAssessmentTweaks" rows="5"
+                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
+            <div id="tableTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="imageAssessmentUrl">Image Assessment URL:</label>
+            <input type="url" id="imageAssessmentUrl" name="imageAssessmentUrl" required />
+        </div>
+        <div class="form-group">
+            <label for="imageAssessmentTweaks">Image Assessment Tweaks (JSON):</label>
+            <textarea id="imageAssessmentTweaks" name="imageAssessmentTweaks" rows="5"
+                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
+            <div id="imageTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+        </div>
+
+        <!-- Form Buttons -->
+        <div class="button-group">
+            <button type="button" onclick="google.script.host.close()">Cancel</button>
+            <button type="submit">Save</button>
+        </div>
     </form>
 
     <script>
-      // Function to populate the form with existing values
-      function populateForm(data) {
-        document.getElementById('batchSize').value = data.batchSize || 5; // Default to 5 if not set
-        document.getElementById('langflowApiKey').value = data.langflowApiKey || '';
-        document.getElementById('langflowUrl').value = data.langflowUrl || '';
-        document.getElementById('warmUpUrl').value = data.warmUpUrl || '';
-        document.getElementById('referenceSlideId').value = data.referenceSlideId || '';
-        document.getElementById('emptySlideId').value = data.emptySlideId || '';
-      }
-
-      // Handle form submission
-      document.getElementById('config-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        
-        const formData = {
-          batchSize: parseInt(document.getElementById('batchSize').value, 10),
-          langflowApiKey: document.getElementById('langflowApiKey').value.trim(),
-          langflowUrl: document.getElementById('langflowUrl').value.trim(),
-          warmUpUrl: document.getElementById('warmUpUrl').value.trim(),
-          referenceSlideId: document.getElementById('referenceSlideId').value.trim(),
-          emptySlideId: document.getElementById('emptySlideId').value.trim()
-        };
-        
-        // Basic client-side validation
-        if (isNaN(formData.batchSize) || formData.batchSize < 1) {
-          alert("Batch Size must be a positive integer.");
-          return;
+        /**
+         * Validates if a string is a valid JSON.
+         * @param {string} str - The string to validate.
+         * @return {boolean} - True if valid JSON, false otherwise.
+         */
+        function isValidJson(str) {
+            try {
+                JSON.parse(str);
+                return true;
+            } catch (e) {
+                return false;
+            }
         }
-        
-        google.script.run
-          .withSuccessHandler(function() {
-            google.script.host.close();
-          })
-          .withFailureHandler(function(error) {
-            alert("Error saving configuration: " + error.message);
-          })
-          .saveConfiguration(formData);
-      });
 
-      // Initialize the form with existing properties
-      google.script.run
-        .withSuccessHandler(populateForm)
-        .withFailureHandler(function(error) {
-          alert("Error loading configuration: " + error.message);
-        })
-        .getConfiguration();
+        // Function to populate the form with existing values
+        function populateForm(data) {
+            document.getElementById('batchSize').value = data.batchSize || 5; // Default to 5 if not set
+            document.getElementById('langflowApiKey').value = data.langflowApiKey || '';
+            document.getElementById('langflowUrl').value = data.langflowUrl || '';
+            document.getElementById('warmUpUrl').value = data.warmUpUrl || '';
+            document.getElementById('referenceSlideId').value = data.referenceSlideId || '';
+            document.getElementById('emptySlideId').value = data.emptySlideId || '';
+            document.getElementById('textAssessmentUrl').value = data.textAssessmentUrl || '';
+            document.getElementById('textAssessmentTweaks').value = data.textAssessmentTweaks || '{}';
+            document.getElementById('tableAssessmentUrl').value = data.tableAssessmentUrl || '';
+            document.getElementById('tableAssessmentTweaks').value = data.tableAssessmentTweaks || '{}';
+            document.getElementById('imageAssessmentUrl').value = data.imageAssessmentUrl || '';
+            document.getElementById('imageAssessmentTweaks').value = data.imageAssessmentTweaks || '{}';
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Retrieve form values
+            const formData = {
+                batchSize: parseInt(document.getElementById('batchSize').value, 10),
+                langflowApiKey: document.getElementById('langflowApiKey').value.trim(),
+                langflowUrl: document.getElementById('langflowUrl').value.trim(),
+                warmUpUrl: document.getElementById('warmUpUrl').value.trim(),
+                referenceSlideId: document.getElementById('referenceSlideId').value.trim(),
+                emptySlideId: document.getElementById('emptySlideId').value.trim(),
+                textAssessmentUrl: document.getElementById('textAssessmentUrl').value.trim(),
+                textAssessmentTweaks: document.getElementById('textAssessmentTweaks').value.trim(),
+                tableAssessmentUrl: document.getElementById('tableAssessmentUrl').value.trim(),
+                tableAssessmentTweaks: document.getElementById('tableAssessmentTweaks').value.trim(),
+                imageAssessmentUrl: document.getElementById('imageAssessmentUrl').value.trim(),
+                imageAssessmentTweaks: document.getElementById('imageAssessmentTweaks').value.trim()
+            };
+
+            let isValid = true;
+
+            // Basic client-side validation for batchSize
+            if (isNaN(formData.batchSize) || formData.batchSize < 1) {
+                alert("Batch Size must be a positive integer.");
+                return;
+            }
+
+            // Validate JSON fields
+            // Text Assessment Tweaks
+            if (!isValidJson(formData.textAssessmentTweaks)) {
+                document.getElementById('textTweaksWarning').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('textTweaksWarning').style.display = 'none';
+            }
+
+            // Table Assessment Tweaks
+            if (!isValidJson(formData.tableAssessmentTweaks)) {
+                document.getElementById('tableTweaksWarning').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('tableTweaksWarning').style.display = 'none';
+            }
+
+            // Image Assessment Tweaks
+            if (!isValidJson(formData.imageAssessmentTweaks)) {
+                document.getElementById('imageTweaksWarning').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('imageTweaksWarning').style.display = 'none';
+            }
+
+            if (!isValid) {
+                alert("Please correct the JSON formatting errors highlighted.");
+                return;
+            }
+
+            // Parse JSON fields before sending
+            try {
+                formData.textAssessmentTweaks = JSON.parse(formData.textAssessmentTweaks);
+                formData.tableAssessmentTweaks = JSON.parse(formData.tableAssessmentTweaks);
+                formData.imageAssessmentTweaks = JSON.parse(formData.imageAssessmentTweaks);
+            } catch (e) {
+                alert("Error parsing JSON fields. Please ensure all tweaks are valid JSON.");
+                return;
+            }
+
+            // Send data to server-side
+            google.script.run
+                .withSuccessHandler(function () {
+                    google.script.host.close();
+                })
+                .withFailureHandler(function (error) {
+                    alert("Error saving configuration: " + error.message);
+                })
+                .saveConfiguration(formData);
+        });
+
+        // Initialize the form with existing properties
+        google.script.run
+            .withSuccessHandler(populateForm)
+            .withFailureHandler(function (error) {
+                alert("Error loading configuration: " + error.message);
+            })
+            .getConfiguration();
     </script>
-  </body>
+</body>
+
 </html>
