@@ -15,11 +15,11 @@ class ConfigurationManager {
             REFERENCE_SLIDE_ID: 'referenceSlideId',
             EMPTY_SLIDE_ID: 'emptySlideId',
             TEXT_ASSESSMENT_URL: 'textAssessmentUrl',
-            TEXT_ASSESSMENT_TWEAKS: 'textAssessmentTweaks',
+            TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
             TABLE_ASSESSMENT_URL: 'tableAssessmentUrl',
-            TABLE_ASSESSMENT_TWEAKS: 'tableAssessmentTweaks',
+            TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
             IMAGE_ASSESSMENT_URL: 'imageAssessmentUrl',
-            IMAGE_ASSESSMENT_TWEAKS: 'imageAssessmentTweaks'
+            IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId'
         };
     }
 
@@ -78,11 +78,11 @@ class ConfigurationManager {
                     throw new Error(`${key} must be a valid URL string.`);
                 }
                 break;
-            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS:
-            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS:
-            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS:
-                if (typeof value !== 'string' || !this.isValidJson(value)) {
-                    throw new Error(`${key} must be a valid JSON string.`);
+            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
+            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID:
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID:
+                if (typeof value !== 'string' || value.trim() === '') {
+                    throw new Error(`${key} must be a non-empty string.`);
                 }
                 break;
             // Add more validations as needed
@@ -101,15 +101,7 @@ class ConfigurationManager {
      */
     setProperties(config) {
         Object.entries(config).forEach(([key, value]) => {
-            // Handle JSON objects by stringifying them
-            if (key === ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS ||
-                key === ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS ||
-                key === ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS) {
-                if (typeof value !== 'object') {
-                    throw new Error(`${key} must be a JSON object.`);
-                }
-                value = JSON.stringify(value);
-            }
+            // No longer handling JSON tweaks; only Tweak IDs
             this.setProperty(key, value);
         });
 
@@ -134,20 +126,8 @@ class ConfigurationManager {
     }
 
     /**
-     * Validates if a string is a valid JSON.
-     * @param {string} jsonString - The JSON string to validate.
-     * @return {boolean} - True if valid, false otherwise.
+     * Getter Methods
      */
-    isValidJson(jsonString) {
-        try {
-            JSON.parse(jsonString);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    // Getter Methods
     getBatchSize() {
         const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE), 10);
         return isNaN(value) ? 5 : value; // Default batch size is 5
@@ -177,45 +157,29 @@ class ConfigurationManager {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL);
     }
 
-    getTextAssessmentTweaks() {
-        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS);
-        try {
-            return JSON.parse(jsonString);
-        } catch (e) {
-            console.warn("Invalid JSON for textAssessmentTweaks. Returning empty object.");
-            return {};
-        }
+    getTextAssessmentTweakId() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID);
     }
 
     getTableAssessmentUrl() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL);
     }
 
-    getTableAssessmentTweaks() {
-        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS);
-        try {
-            return JSON.parse(jsonString);
-        } catch (e) {
-            console.warn("Invalid JSON for tableAssessmentTweaks. Returning empty object.");
-            return {};
-        }
+    getTableAssessmentTweakId() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID);
     }
 
     getImageAssessmentUrl() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL);
     }
 
-    getImageAssessmentTweaks() {
-        const jsonString = this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS);
-        try {
-            return JSON.parse(jsonString);
-        } catch (e) {
-            console.warn("Invalid JSON for imageAssessmentTweaks. Returning empty object.");
-            return {};
-        }
+    getImageAssessmentTweakId() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID);
     }
 
-    // Setter Methods
+    /**
+     * Setter Methods
+     */
     setBatchSize(batchSize) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE, batchSize);
     }
@@ -244,39 +208,30 @@ class ConfigurationManager {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL, url);
     }
 
-    setTextAssessmentTweaks(tweaks) {
-        if (typeof tweaks !== 'object') {
-            throw new Error("textAssessmentTweaks must be a JSON object.");
-        }
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    setTextAssessmentTweakId(tweakId) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID, tweakId);
     }
 
     setTableAssessmentUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL, url);
     }
 
-    setTableAssessmentTweaks(tweaks) {
-        if (typeof tweaks !== 'object') {
-            throw new Error("tableAssessmentTweaks must be a JSON object.");
-        }
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    setTableAssessmentTweakId(tweakId) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID, tweakId);
     }
 
     setImageAssessmentUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL, url);
     }
 
-    setImageAssessmentTweaks(tweaks) {
-        if (typeof tweaks !== 'object') {
-            throw new Error("imageAssessmentTweaks must be a JSON object.");
-        }
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAKS, JSON.stringify(tweaks));
+    setImageAssessmentTweakId(tweakId) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID, tweakId);
     }
 }
 
 // Ensure singleton instance
 const configurationManager = new ConfigurationManager();
-Object.freeze(configurationManager);
+// Object.freeze(configurationManager); // Removed to allow modifications
 
 /**
  * Retrieves all configuration properties.
@@ -314,72 +269,20 @@ function saveConfiguration(config) {
         if (config.textAssessmentUrl !== undefined) {
             configurationManager.setTextAssessmentUrl(config.textAssessmentUrl);
         }
-        if (config.textAssessmentTweaks !== undefined) {
-            configurationManager.setTextAssessmentTweaks(config.textAssessmentTweaks);
+        if (config.textAssessmentTweakId !== undefined) {
+            configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
         }
         if (config.tableAssessmentUrl !== undefined) {
             configurationManager.setTableAssessmentUrl(config.tableAssessmentUrl);
         }
-        if (config.tableAssessmentTweaks !== undefined) {
-            configurationManager.setTableAssessmentTweaks(config.tableAssessmentTweaks);
+        if (config.tableAssessmentTweakId !== undefined) {
+            configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
         }
         if (config.imageAssessmentUrl !== undefined) {
             configurationManager.setImageAssessmentUrl(config.imageAssessmentUrl);
         }
-        if (config.imageAssessmentTweaks !== undefined) {
-            configurationManager.setImageAssessmentTweaks(config.imageAssessmentTweaks);
-        }
-
-        Utils.toastMessage("Configuration saved successfully.", "Success", 5);
-    } catch (error) {
-        console.error("Error saving configuration:", error);
-        Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
-        throw new Error("Failed to save configuration. Please check the inputs.");
-    }
-}
-
-/**
- * Saves the provided configuration properties.
- * @param {Object} config - An object containing key-value pairs of configurations.
- */
-function saveConfiguration(config) {
-    try {
-        // Map the incoming config to the ConfigurationManager setters
-        if (config.batchSize !== undefined) {
-            configurationManager.setBatchSize(config.batchSize);
-        }
-        if (config.langflowApiKey !== undefined) {
-            configurationManager.setLangflowApiKey(config.langflowApiKey);
-        }
-        if (config.langflowUrl !== undefined) {
-            configurationManager.setLangflowUrl(config.langflowUrl);
-        }
-        if (config.warmUpUrl !== undefined) {
-            configurationManager.setWarmUpUrl(config.warmUpUrl);
-        }
-        if (config.referenceSlideId !== undefined) {
-            configurationManager.setReferenceSlideId(config.referenceSlideId);
-        }
-        if (config.emptySlideId !== undefined) {
-            configurationManager.setEmptySlideId(config.emptySlideId);
-        }
-        if (config.textAssessmentUrl !== undefined) {
-            configurationManager.setTextAssessmentUrl(config.textAssessmentUrl);
-        }
-        if (config.textAssessmentTweaks !== undefined) {
-            configurationManager.setTextAssessmentTweaks(config.textAssessmentTweaks);
-        }
-        if (config.tableAssessmentUrl !== undefined) {
-            configurationManager.setTableAssessmentUrl(config.tableAssessmentUrl);
-        }
-        if (config.tableAssessmentTweaks !== undefined) {
-            configurationManager.setTableAssessmentTweaks(config.tableAssessmentTweaks);
-        }
-        if (config.imageAssessmentUrl !== undefined) {
-            configurationManager.setImageAssessmentUrl(config.imageAssessmentUrl);
-        }
-        if (config.imageAssessmentTweaks !== undefined) {
-            configurationManager.setImageAssessmentTweaks(config.imageAssessmentTweaks);
+        if (config.imageAssessmentTweakId !== undefined) {
+            configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
         }
 
         Utils.toastMessage("Configuration saved successfully.", "Success", 5);

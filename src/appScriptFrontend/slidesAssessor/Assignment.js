@@ -1,92 +1,69 @@
-// Assignment.gs
-
 /**
- * Assignment Class: Superclass
+ * Assignment Class
  * 
- * Represents the entire assignment, including tasks and student submissions.
+ * Represents a specific assignment within a course, managing tasks and student submissions.
  */
 class Assignment {
     /**
      * Constructs an Assignment instance.
-     * @param {string} assignmentId - The ID of the assignment.
-     * @param {string} courseId - The ID of the Google Classroom course.
-     * @param {string} documentType - Type of the submitted document (e.g., "Google Slide").
-     * @param {string} documentId - Unique identifier of the reference document.
-     * @param {string} emptyDocumentId - Unique identifier of the empty template document.
+     * @param {string} assignmentId - The unique identifier for the assignment (courseWorkId in Google Classroom).
+     * @param {string} courseId - The unique identifier for the course in Google Classroom.
+     * @param {string} documentType - The type of reference document (e.g., "Google Slide").
+     * @param {string} referenceDocumentId - The ID of the reference Google Slides document.
+     * @param {string} emptyDocumentId - The ID of the empty Google Slides template document.
      */
-    constructor(assignmentId, courseId, documentType, documentId, emptyDocumentId) {
-        this.assignmentId = assignmentId;       // string: courseWorkId
-        this.courseId = courseId;               // string: courseId
-        this.documentType = documentType;       // string
-        this.documentId = documentId;           // string
-        this.emptyDocumentId = emptyDocumentId; // string
-        this.tasks = [];                        // Array of Task instances
-        this.students = [];                     // Array of Student instances
-        this.studentTasks = [];                 // Array of StudentTask instances
-        this.slideExtractor = new SlideExtractor(); // Instance of SlideExtractor
+    constructor(assignmentId, courseId, documentType, referenceDocumentId, emptyDocumentId) {
+        this.assignmentId = assignmentId;
+        this.courseId = courseId;
+        this.documentType = documentType;
+        this.referenceDocumentId = referenceDocumentId;
+        this.emptyDocumentId = emptyDocumentId;
+        this.tasks = {}; // Object: Mapping of taskKey to Task instances
+        this.studentTasks = []; // Array of StudentTask instances
     }
 
     /**
-     * Adds a Task to the assignment.
-     * @param {Task} task - The Task instance to add.
+     * Populates tasks from the reference and empty slides.
+     * Combines reference and empty content based on task keys.
      */
-    addTask(task) {
-        if (task instanceof Task) {
-            this.tasks.push(task);
-        } else {
-            throw new Error("addTask expects a Task instance");
-        }
+    populateTasksFromSlides() {
+        const slideExtractor = new SlideExtractor();
+
+        // Extract reference tasks
+        const referenceTasks = slideExtractor.extractTasksFromSlides(this.referenceDocumentId, "reference");
+        // Extract empty tasks
+        const emptyTasks = slideExtractor.extractTasksFromSlides(this.emptyDocumentId, "empty");
+
+        // Combine reference and empty tasks based on task keys
+        referenceTasks.forEach(refTask => {
+            const key = refTask.taskTitle;
+            if (!this.tasks[key]) {
+                this.tasks[key] = refTask; // Already a Task instance
+            } else {
+                this.tasks[key].taskReference = refTask.taskReference;
+                this.tasks[key].taskNotes = refTask.taskNotes;
+            }
+        });
+
+        emptyTasks.forEach(emptyTask => {
+            const key = emptyTask.taskTitle;
+            if (!this.tasks[key]) {
+                this.tasks[key] = emptyTask; // Already a Task instance
+            } else {
+                this.tasks[key].emptyContent = emptyTask.emptyContent;
+            }
+        });
+
+        Logger.log(`Populated ${Object.keys(this.tasks).length} tasks from slides.`);
     }
 
     /**
-     * Adds a Student to the assignment.
+     * Adds a student to the assignment.
      * @param {Student} student - The Student instance to add.
      */
     addStudent(student) {
-        if (student instanceof Student) {
-            this.students.push(student);
-        } else {
-            throw new Error("addStudent expects a Student instance");
-        }
-    }
-
-    /**
-     * Adds a StudentTask to the assignment.
-     * @param {StudentTask} studentTask - The StudentTask instance to add.
-     */
-    addStudentTask(studentTask) {
-        if (studentTask instanceof StudentTask) {
-            this.studentTasks.push(studentTask);
-        } else {
-            throw new Error("addStudentTask expects a StudentTask instance");
-        }
-    }
-
-    /**
-     * Populates tasks from both reference and empty slides.
-     */
-    populateTasksFromSlides() {
-        // Extract reference tasks
-        const referenceTasks = this.slideExtractor.extractTasksFromSlides(this.documentId, "reference");
-
-        // Extract empty tasks
-        const emptyTasks = this.slideExtractor.extractTasksFromSlides(this.emptyDocumentId, "empty");
-
-        // Combine tasks by matching task titles
-        const combinedTasks = referenceTasks.map(refTask => {
-            const emptyTask = emptyTasks.find(et => et.taskTitle === refTask.taskTitle);
-            if (emptyTask) {
-                refTask.emptyContent = emptyTask.emptyContent;
-            } else {
-                refTask.emptyContent = ''; // Or handle missing empty content appropriately
-            }
-            return refTask;
-        });
-
-        // Add combined tasks to the assignment
-        combinedTasks.forEach(task => this.addTask(task));
-
-        Logger.log(`${combinedTasks.length} tasks added to the assignment.`);
+        const studentTask = new StudentTask(student, this.assignmentId, null);
+        this.studentTasks.push(studentTask);
     }
 
     /**
@@ -122,11 +99,11 @@ class Assignment {
                                 if (mimeType === MimeType.GOOGLE_SLIDES) {
                                     const documentId = driveFileId;
 
-                                    // Find the corresponding Student instance
-                                    const student = this.students.find(s => s.id === studentId);
-                                    if (student) {
-                                        student.documentId = documentId;
-                                        console.log(`Assigned Document ID ${documentId} to student ${student.name} (${student.email})`);
+                                    // Find the corresponding StudentTask instance
+                                    const studentTask = this.studentTasks.find(st => st.student.id === studentId);
+                                    if (studentTask) {
+                                        studentTask.documentId = documentId;
+                                        console.log(`Assigned Document ID ${documentId} to student ${studentTask.student.name} (${studentTask.student.email})`);
                                     } else {
                                         console.log(`No matching student found for student ID: ${studentId}`);
                                     }
@@ -150,78 +127,51 @@ class Assignment {
     }
 
     /**
-     * Processes a student's submission by extracting responses and creating a StudentTask instance.
-     * @param {Student} student - The Student instance whose submission is to be processed.
+     * Processes all student submissions by extracting responses.
      */
-    processStudentSubmission(student) {
-        if (!student.documentId) {
-            console.log(`No document submitted for student: ${student.name} (${student.email})`);
+    processAllSubmissions() {
+        const slideExtractor = new SlideExtractor();
+
+        this.studentTasks.forEach(studentTask => {
+            if (studentTask.documentId) {
+                studentTask.extractAndAssignResponses(slideExtractor, this.tasks);
+            } else {
+                Logger.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
+            }
+        });
+    }
+
+    /**
+     * Generates an array of request objects ready to be sent to the LLM.
+     * @return {Object[]} - An array of request objects.
+     */
+    generateLLMRequests() {
+        const llmRequestManager = new LLMRequestManager();
+        const requests = llmRequestManager.generateRequestObjects(this);
+        return requests;
+    }
+
+    assessResponses() {
+        const llmRequestManager = new LLMRequestManager();
+
+        // Warm up LLM
+        llmRequestManager.warmUpLLM();
+
+        // Generate LLM Requests
+        const requests = llmRequestManager.generateRequestObjects(this);
+        if (requests.length === 0) {
+            Utils.toastMessage("No LLM requests to send.", "Info", 3);
             return;
         }
 
-        const studentTask = new StudentTask(student, this.assignmentId, student.documentId);
-        studentTask.extractAndAssignResponses(this.slideExtractor, this.tasks);
-        this.addStudentTask(studentTask);
-        console.log(`Processed submission for student: ${student.name}`);
+        // Send Requests in Batches
+        const responses = llmRequestManager.sendRequestsInBatches(requests, this);
+
+        return responses;
+
     }
 
     /**
-     * Processes all student submissions in the assignment.
+     * (Optional) Additional methods related to the Assignment can be added here.
      */
-    processAllSubmissions() {
-        this.fetchSubmittedSlides();
-
-        this.students.forEach(student => {
-            this.processStudentSubmission(student);
-        });
-
-        console.log(`Processed submissions for ${this.studentTasks.length} students.`);
-    }
-
-    /**
-     * Serializes the Assignment instance to a JSON object.
-     * @return {Object} - The JSON representation of the Assignment.
-     */
-    toJSON() {
-        return {
-            assignmentId: this.assignmentId,
-            courseId: this.courseId,
-            documentType: this.documentType,
-            documentId: this.documentId,
-            emptyDocumentId: this.emptyDocumentId,
-            tasks: this.tasks.map(task => task.toJSON()),
-            students: this.students.map(student => student.toJSON()),
-            studentTasks: this.studentTasks.map(studentTask => studentTask.toJSON())
-        };
-    }
-
-    /**
-     * Deserializes a JSON object to an Assignment instance.
-     * @param {Object} json - The JSON object representing an Assignment.
-     * @return {Assignment} - The Assignment instance.
-     */
-    static fromJSON(json) {
-        const { assignmentId, courseId, documentType, documentId, emptyDocumentId, tasks, students, studentTasks } = json;
-        const assignment = new Assignment(assignmentId, courseId, documentType, documentId, emptyDocumentId);
-
-        // Deserialize Tasks
-        tasks.forEach(taskJson => {
-            const task = Task.fromJSON(taskJson);
-            assignment.addTask(task);
-        });
-
-        // Deserialize Students
-        students.forEach(studentJson => {
-            const student = Student.fromJSON(studentJson);
-            assignment.addStudent(student);
-        });
-
-        // Deserialize StudentTasks
-        studentTasks.forEach(studentTaskJson => {
-            const studentTask = StudentTask.fromJSON(studentTaskJson);
-            assignment.addStudentTask(studentTask);
-        });
-
-        return assignment;
-    }
 }

@@ -1,4 +1,4 @@
-// Utils.js
+// Utils.gs
 
 /**
  * Utils Class
@@ -52,5 +52,33 @@ class Utils {
         return true;
     }
 
+    // -------------------
+    // UI Methods
+    // -------------------
+
+    /**
+     * Displays a toast message to the user in Google Sheets.
+     * @param {string} message - The message to display.
+     * @param {string} [title=''] - Optional title for the toast.
+     * @param {number} [timeoutSeconds=3] - Duration for which the toast is visible.
+     */
+    static toastMessage(message, title = '', timeoutSeconds = 3) {
+        try {
+            const activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+            if (activeSpreadsheet) {
+                activeSpreadsheet.toast(message, title, timeoutSeconds);
+            } else {
+                throw new Error("No active spreadsheet found.");
+            }
+        } catch (error) {
+            console.error("Error displaying toast message:", error);
+            // Optionally, handle the error or provide alternative feedback
+        }
+    }
+
     // Add other utility methods as needed
 }
+
+// Ensure singleton instance (if needed)
+const utils = new Utils();
+Object.freeze(utils);

@@ -43,9 +43,10 @@
             margin-bottom: 20px;
         }
 
-        .json-warning {
+        .error-message {
             color: red;
             font-size: 12px;
+            display: none;
         }
     </style>
 </head>
@@ -88,10 +89,10 @@
             <input type="url" id="textAssessmentUrl" name="textAssessmentUrl" required />
         </div>
         <div class="form-group">
-            <label for="textAssessmentTweaks">Text Assessment Tweaks (JSON):</label>
-            <textarea id="textAssessmentTweaks" name="textAssessmentTweaks" rows="5"
-                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
-            <div id="textTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+            <label for="textAssessmentTweakId">Text Assessment Tweak ID:</label>
+            <input type="text" id="textAssessmentTweakId" name="textAssessmentTweakId" placeholder="e.g., Prompt-abc"
+                required />
+            <div id="textTweakIdError" class="error-message">Tweak ID cannot be empty.</div>
         </div>
 
         <div class="form-group">
@@ -99,10 +100,10 @@
             <input type="url" id="tableAssessmentUrl" name="tableAssessmentUrl" required />
         </div>
         <div class="form-group">
-            <label for="tableAssessmentTweaks">Table Assessment Tweaks (JSON):</label>
-            <textarea id="tableAssessmentTweaks" name="tableAssessmentTweaks" rows="5"
-                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
-            <div id="tableTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+            <label for="tableAssessmentTweakId">Table Assessment Tweak ID:</label>
+            <input type="text" id="tableAssessmentTweakId" name="tableAssessmentTweakId" placeholder="e.g., Prompt-xyz"
+                required />
+            <div id="tableTweakIdError" class="error-message">Tweak ID cannot be empty.</div>
         </div>
 
         <div class="form-group">
@@ -110,10 +111,10 @@
             <input type="url" id="imageAssessmentUrl" name="imageAssessmentUrl" required />
         </div>
         <div class="form-group">
-            <label for="imageAssessmentTweaks">Image Assessment Tweaks (JSON):</label>
-            <textarea id="imageAssessmentTweaks" name="imageAssessmentTweaks" rows="5"
-                placeholder='e.g., {"param1": "value1", "param2": "value2"}' required></textarea>
-            <div id="imageTweaksWarning" class="json-warning" style="display: none;">Invalid JSON format.</div>
+            <label for="imageAssessmentTweakId">Image Assessment Tweak ID:</label>
+            <input type="text" id="imageAssessmentTweakId" name="imageAssessmentTweakId" placeholder="e.g., Prompt-123"
+                required />
+            <div id="imageTweakIdError" class="error-message">Tweak ID cannot be empty.</div>
         </div>
 
         <!-- Form Buttons -->
@@ -125,16 +126,31 @@
 
     <script>
         /**
-         * Validates if a string is a valid JSON.
-         * @param {string} str - The string to validate.
-         * @return {boolean} - True if valid JSON, false otherwise.
+         * Validates if a string is a well-formed URL.
+         * @param {string} url - The URL string to validate.
+         * @return {boolean} - True if valid, false otherwise.
          */
-        function isValidJson(str) {
-            try {
-                JSON.parse(str);
-                return true;
-            } catch (e) {
-                return false;
+        function isValidUrl(url) {
+            const urlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+                '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
+                '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
+                '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
+                '(\\:[0-9]+)?' + // port
+                '(\\/[-a-zA-Z0-9%_.~+]*)*' + // path
+                '(\\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
+                '(\\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
+            return urlPattern.test(url);
+        }
+
+        /**
+         * Function to display error messages.
+         * @param {string} field - The field name to display error for.
+         * @param {boolean} show - Whether to show or hide the error.
+         */
+        function toggleError(field, show) {
+            const errorDiv = document.getElementById(`${field}TweakIdError`);
+            if (errorDiv) {
+                errorDiv.style.display = show ? 'block' : 'none';
             }
         }
 
@@ -147,11 +163,11 @@
             document.getElementById('referenceSlideId').value = data.referenceSlideId || '';
             document.getElementById('emptySlideId').value = data.emptySlideId || '';
             document.getElementById('textAssessmentUrl').value = data.textAssessmentUrl || '';
-            document.getElementById('textAssessmentTweaks').value = data.textAssessmentTweaks || '{}';
+            document.getElementById('textAssessmentTweakId').value = data.textAssessmentTweakId || '';
             document.getElementById('tableAssessmentUrl').value = data.tableAssessmentUrl || '';
-            document.getElementById('tableAssessmentTweaks').value = data.tableAssessmentTweaks || '{}';
+            document.getElementById('tableAssessmentTweakId').value = data.tableAssessmentTweakId || '';
             document.getElementById('imageAssessmentUrl').value = data.imageAssessmentUrl || '';
-            document.getElementById('imageAssessmentTweaks').value = data.imageAssessmentTweaks || '{}';
+            document.getElementById('imageAssessmentTweakId').value = data.imageAssessmentTweakId || '';
         }
 
         // Handle form submission
@@ -167,11 +183,11 @@
                 referenceSlideId: document.getElementById('referenceSlideId').value.trim(),
                 emptySlideId: document.getElementById('emptySlideId').value.trim(),
                 textAssessmentUrl: document.getElementById('textAssessmentUrl').value.trim(),
-                textAssessmentTweaks: document.getElementById('textAssessmentTweaks').value.trim(),
+                textAssessmentTweakId: document.getElementById('textAssessmentTweakId').value.trim(),
                 tableAssessmentUrl: document.getElementById('tableAssessmentUrl').value.trim(),
-                tableAssessmentTweaks: document.getElementById('tableAssessmentTweaks').value.trim(),
+                tableAssessmentTweakId: document.getElementById('tableAssessmentTweakId').value.trim(),
                 imageAssessmentUrl: document.getElementById('imageAssessmentUrl').value.trim(),
-                imageAssessmentTweaks: document.getElementById('imageAssessmentTweaks').value.trim()
+                imageAssessmentTweakId: document.getElementById('imageAssessmentTweakId').value.trim()
             };
 
             let isValid = true;
@@ -182,43 +198,26 @@
                 return;
             }
 
-            // Validate JSON fields
-            // Text Assessment Tweaks
-            if (!isValidJson(formData.textAssessmentTweaks)) {
-                document.getElementById('textTweaksWarning').style.display = 'block';
-                isValid = false;
-            } else {
-                document.getElementById('textTweaksWarning').style.display = 'none';
-            }
+            // Validate URL fields
+            ['langflowUrl', 'warmUpUrl', 'textAssessmentUrl', 'tableAssessmentUrl', 'imageAssessmentUrl'].forEach(urlField => {
+                if (!isValidUrl(formData[urlField])) {
+                    alert(`Please enter a valid URL for ${urlField}.`);
+                    isValid = false;
+                }
+            });
 
-            // Table Assessment Tweaks
-            if (!isValidJson(formData.tableAssessmentTweaks)) {
-                document.getElementById('tableTweaksWarning').style.display = 'block';
-                isValid = false;
-            } else {
-                document.getElementById('tableTweaksWarning').style.display = 'none';
-            }
-
-            // Image Assessment Tweaks
-            if (!isValidJson(formData.imageAssessmentTweaks)) {
-                document.getElementById('imageTweaksWarning').style.display = 'block';
-                isValid = false;
-            } else {
-                document.getElementById('imageTweaksWarning').style.display = 'none';
-            }
+            // Validate Tweak ID fields (ensure they are non-empty)
+            ['textAssessmentTweakId', 'tableAssessmentTweakId', 'imageAssessmentTweakId'].forEach(tweakField => {
+                if (formData[tweakField] === '') {
+                    toggleError(tweakField.replace('TweakId', ''), true);
+                    isValid = false;
+                } else {
+                    toggleError(tweakField.replace('TweakId', ''), false);
+                }
+            });
 
             if (!isValid) {
-                alert("Please correct the JSON formatting errors highlighted.");
-                return;
-            }
-
-            // Parse JSON fields before sending
-            try {
-                formData.textAssessmentTweaks = JSON.parse(formData.textAssessmentTweaks);
-                formData.tableAssessmentTweaks = JSON.parse(formData.tableAssessmentTweaks);
-                formData.imageAssessmentTweaks = JSON.parse(formData.imageAssessmentTweaks);
-            } catch (e) {
-                alert("Error parsing JSON fields. Please ensure all tweaks are valid JSON.");
+                alert("Please correct the highlighted errors.");
                 return;
             }
 
