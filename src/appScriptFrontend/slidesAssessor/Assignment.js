@@ -1,3 +1,5 @@
+// Assignment.gs
+
 /**
  * Assignment Class
  * 
@@ -12,14 +14,31 @@ class Assignment {
      * @param {string} referenceDocumentId - The ID of the reference Google Slides document.
      * @param {string} emptyDocumentId - The ID of the empty Google Slides template document.
      */
-    constructor(assignmentId, courseId, documentType, referenceDocumentId, emptyDocumentId) {
+    constructor(courseId, assignmentId, documentType, referenceDocumentId, emptyDocumentId) {
         this.assignmentId = assignmentId;
         this.courseId = courseId;
+        this.assignmentName = this.fetchAssignmentName(courseId, assignmentId);
         this.documentType = documentType;
         this.referenceDocumentId = referenceDocumentId;
         this.emptyDocumentId = emptyDocumentId;
         this.tasks = {}; // Object: Mapping of taskKey to Task instances
         this.studentTasks = []; // Array of StudentTask instances
+    }
+
+    /**
+     * Fetches the assignment name from Google Classroom.
+     * @param {string} courseId - The ID of the course.
+     * @param {string} assignmentId - The ID of the assignment.
+     * @return {string} - The name/title of the assignment.
+     */
+    fetchAssignmentName(courseId, assignmentId) {
+        try {
+            const courseWork = Classroom.Courses.CourseWork.get(courseId, assignmentId);
+            return courseWork.title || `Assignment ${assignmentId}`;
+        } catch (error) {
+            console.error(`Error fetching assignment name for ID ${assignmentId}:`, error);
+            return `Assignment ${assignmentId}`;
+        }
     }
 
     /**
