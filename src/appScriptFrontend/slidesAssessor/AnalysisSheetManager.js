@@ -5,15 +5,14 @@
  * 
  * Handles the creation and formatting of the analysis sheet for a given assignment.
  */
-class AnalysisSheetManager {
+class AnalysisSheetManager extends BaseSheetManager {
     /**
      * Constructs an AnalysisSheetManager instance.
      * @param {Assignment} assignment - The Assignment instance containing all the data.
      */
     constructor(assignment) {
+        super();
         this.assignment = assignment;
-        this.sheet = null;
-        this.requests = []; // To collect batchUpdate requests
         this.headers = {
             topHeaders: [],
             subHeaders: []
@@ -24,27 +23,8 @@ class AnalysisSheetManager {
      * Creates or retrieves the analysis sheet for the assignment.
      */
     createOrGetSheet() {
-        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
         const sheetName = this.assignment.assignmentName || `Assignment ${this.assignment.assignmentId}`;
-        this.sheet = spreadsheet.getSheetByName(sheetName);
-
-        if (!this.sheet) {
-            this.sheet = spreadsheet.insertSheet(sheetName);
-        } else {
-            // Clear existing content and formatting
-            this.clearSheet();
-        }
-    }
-
-
-    /**
-     * Clears the content and formatting of the sheet.
-     */
-    clearSheet() {
-        this.sheet.clear();
-        this.sheet.clearFormats();
-        this.sheet.clearNotes();
-        this.sheet.clearConditionalFormatRules();
+        super.createOrGetSheet(sheetName);
     }
 
     /**
@@ -94,80 +74,9 @@ class AnalysisSheetManager {
 
         // Add header formatting requests
         this.requests.push(this.createHeaderFormattingRequest(sheetId, this.headers.topHeaders.length));
-        this.requests.push(this.createSecondRowFormattingRequest(sheetId, this.headers.topHeaders.length));
 
         // Add merge requests for task headers
         this.requests.push(...this.createMergeRequests(sheetId, this.headers.topHeaders));
-    }
-
-    /**
-     * Ensures the sheet has enough columns to accommodate the data.
-     * @param {number} requiredColumns - The number of columns required.
-     */
-    ensureSheetHasEnoughColumns(requiredColumns) {
-        const sheetId = this.sheet.getSheetId();
-        const currentColumns = this.sheet.getMaxColumns();
-        if (currentColumns < requiredColumns) {
-            this.requests.push({
-                appendDimension: {
-                    sheetId: sheetId,
-                    dimension: "COLUMNS",
-                    length: requiredColumns - currentColumns
-                }
-            });
-        }
-    }
-
-    /**
-     * Creates a request to set header values in the sheet.
-     * @param {number} sheetId - The ID of the sheet.
-     * @param {Array<string>} headers - The header values to set.
-     * @param {number} rowIndex - The row index to start setting the header values.
-     * @return {Object} - A request to update cells with header values.
-     */
-    createHeaderValuesRequest(sheetId, headers, rowIndex) {
-        return {
-            updateCells: {
-                rows: [
-                    {
-                        values: headers.map(header => ({ userEnteredValue: { stringValue: header } }))
-                    }
-                ],
-                fields: 'userEnteredValue',
-                start: { sheetId: sheetId, rowIndex: rowIndex, columnIndex: 0 }
-            }
-        };
-    }
-
-    /**
-     * Creates a request to format header cells in the sheet.
-     * @param {number} sheetId - The ID of the sheet.
-     * @param {number} headerLength - The number of header columns to format.
-     * @returns {Object} - A request to format header cells.
-     */
-    createHeaderFormattingRequest(sheetId, headerLength) {
-        return {
-            repeatCell: {
-                range: {
-                    sheetId: sheetId,
-                    startRowIndex: 0,
-                    endRowIndex: 2,
-                    startColumnIndex: 0,
-                    endColumnIndex: headerLength
-                },
-                cell: {
-                    userEnteredFormat: {
-                        backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 },
-                        horizontalAlignment: "CENTER",
-                        verticalAlignment: "MIDDLE",
-                        textFormat: {
-                            bold: true
-                        }
-                    }
-                },
-                fields: "userEnteredFormat(backgroundColor, horizontalAlignment, verticalAlignment, textFormat)"
-            }
-        };
     }
 
     /**
@@ -213,35 +122,8 @@ class AnalysisSheetManager {
     }
 
     /**
-     * Creates a request to format the second row of headers in the sheet.
-     * @param {number} sheetId - The ID of the sheet.
-     * @param {number} headerLength - The number of header columns to format.
-     * @returns {Object} - A request to format the second row of headers.
+     * Creates data rows for each student.
      */
-    createSecondRowFormattingRequest(sheetId, headerLength) {
-        return {
-            repeatCell: {
-                range: {
-                    sheetId: sheetId,
-                    startRowIndex: 1,
-                    endRowIndex: 2,
-                    startColumnIndex: 1,
-                    endColumnIndex: headerLength
-                },
-                cell: {
-                    userEnteredFormat: {
-                        textRotation: {
-                            angle: 45,
-                        },
-                        horizontalAlignment: "CENTER",
-                        verticalAlignment: "MIDDLE"
-                    }
-                },
-                fields: "userEnteredFormat(textRotation, horizontalAlignment, verticalAlignment)"
-            }
-        };
-    }
-
     createDataRowsRequests() {
         const sheetId = this.sheet.getSheetId();
         const startRowIndex = 2; // Data starts after headers
@@ -263,8 +145,6 @@ class AnalysisSheetManager {
             Object.keys(this.assignment.tasks).forEach(taskKey => {
                 const response = studentTask.getResponse(taskKey);
                 if (response && response.assessment) {
-
-
                     // Completeness
                     const completeness = response.assessment['completeness']?.score;
                     if (typeof completeness === 'number') {
@@ -347,7 +227,6 @@ class AnalysisSheetManager {
                 }
             });
 
-
             // Add notes for each cell
             notesData.forEach(noteData => {
                 this.requests.push({
@@ -367,7 +246,6 @@ class AnalysisSheetManager {
 
         });
     }
-
 
     /**
      * Applies formatting to the sheet, including conditional formatting and column widths.
@@ -409,12 +287,12 @@ class AnalysisSheetManager {
     }
 
     /**
- * Creates conditional formatting requests for the data cells, including the class average row.
- * @param {number} sheetId - The ID of the sheet.
- * @param {number} dataRowCount - The number of data rows (excluding headers, blank row, and class average row).
- * @param {number} numColumns - The number of columns to format.
- * @returns {Array<Object>} - An array of conditional formatting requests.
- */
+     * Creates conditional formatting requests for the data cells, including the class average row.
+     * @param {number} sheetId - The ID of the sheet.
+     * @param {number} dataRowCount - The number of data rows (excluding headers, blank row, and class average row).
+     * @param {number} numColumns - The number of columns to format.
+     * @returns {Array<Object>} - An array of conditional formatting requests.
+     */
     createConditionalFormattingRequests(sheetId, dataRowCount, numColumns) {
         const requests = [];
         const dataStartRowIndex = 2; // Data starts after headers
@@ -482,7 +360,6 @@ class AnalysisSheetManager {
         return requests;
     }
 
-
     /**
      * Calculates the widths of columns based on headers.
      * @returns {Array<number>} - An array of column widths.
@@ -499,53 +376,6 @@ class AnalysisSheetManager {
         }
 
         return columnWidths;
-    }
-
-    /**
-     * Creates requests to set column widths in the sheet.
-     * @param {number} sheetId - The ID of the sheet.
-     * @param {Array<number>} columnWidths - The widths of the columns to set.
-     * @returns {Array<Object>} - An array of requests to update column widths.
-     */
-    createColumnWidthRequests(sheetId, columnWidths) {
-        const requests = [];
-        columnWidths.forEach((width, index) => {
-            requests.push({
-                updateDimensionProperties: {
-                    range: {
-                        sheetId: sheetId,
-                        dimension: "COLUMNS",
-                        startIndex: index,
-                        endIndex: index + 1
-                    },
-                    properties: {
-                        pixelSize: width
-                    },
-                    fields: "pixelSize"
-                }
-            });
-        });
-        return requests;
-    }
-
-    /**
-     * Creates a request to freeze the first two rows and first column in the sheet.
-     * @param {number} sheetId - The ID of the sheet.
-     * @returns {Object} - A request to freeze rows and columns.
-     */
-    createFreezeRequest(sheetId) {
-        return {
-            updateSheetProperties: {
-                properties: {
-                    sheetId: sheetId,
-                    gridProperties: {
-                        frozenRowCount: 2,
-                        frozenColumnCount: 1
-                    }
-                },
-                fields: 'gridProperties.frozenRowCount,gridProperties.frozenColumnCount'
-            }
-        };
     }
 
     /**
@@ -588,27 +418,49 @@ class AnalysisSheetManager {
     }
 
     /**
- * Formats the note content with the specified reasoning and student response.
- * @param {string} reasoning - The reasoning text.
- * @param {string} studentResponse - The student's response text.
- * @return {string} - The formatted note content.
- */
+     * Formats the note content with the specified reasoning and student response.
+     * @param {string} reasoning - The reasoning text.
+     * @param {string} studentResponse - The student's response text.
+     * @return {string} - The formatted note content.
+     */
     formatNote(reasoning, studentResponse) {
         return `Reasoning\n========\n${reasoning}\n\nStudent Response\n===============\n${studentResponse}`;
     }
 
-
     /**
-     * Executes all batchUpdate requests collected.
+     * After creating the analysis sheet, stores the average ranges for the overview sheet.
      */
-    executeBatchUpdate() {
-        const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        try {
-            Sheets.Spreadsheets.batchUpdate({ requests: this.requests }, spreadsheetId);
-        } catch (e) {
-            console.error("Error executing batch update:", e);
-            throw new Error(`Error applying batch update. ${e.message}`);
-        }
+    storeAverageRanges() {
+        const documentProperties = PropertiesService.getDocumentProperties();
+        const sheetName = this.sheet.getName();
+        const numStudents = this.assignment.studentTasks.length;
+        const firstDataRow = 2; // Data starts from row index 2 (3rd row)
+        const lastDataRow = firstDataRow + numStudents - 1;
+
+        // Assuming that 'Averages' columns are the last three columns
+        const completenessColIndex = this.headers.subHeaders.length - 3;
+        const accuracyColIndex = this.headers.subHeaders.length - 2;
+        const spagColIndex = this.headers.subHeaders.length - 1;
+
+        const studentNameRange = `${sheetName}!A${firstDataRow + 1}:A${lastDataRow + 1}`;
+        const completenessRange = `${sheetName}!${Utils.getColumnLetter(completenessColIndex)}${firstDataRow + 1}:${Utils.getColumnLetter(completenessColIndex)}${lastDataRow + 1}`;
+        const accuracyRange = `${sheetName}!${Utils.getColumnLetter(accuracyColIndex)}${firstDataRow + 1}:${Utils.getColumnLetter(accuracyColIndex)}${lastDataRow + 1}`;
+        const spagRange = `${sheetName}!${Utils.getColumnLetter(spagColIndex)}${firstDataRow + 1}:${Utils.getColumnLetter(spagColIndex)}${lastDataRow + 1}`;
+
+        // Retrieve existing ranges
+        const existingRanges = documentProperties.getProperty('averagesRanges');
+        const ranges = existingRanges ? JSON.parse(existingRanges) : {};
+
+        // Add new ranges
+        ranges[sheetName] = {
+            studentName: studentNameRange,
+            completeness: completenessRange,
+            accuracy: accuracyRange,
+            spag: spagRange
+        };
+
+        // Store updated ranges
+        documentProperties.setProperty('averagesRanges', JSON.stringify(ranges));
     }
 
     /**
@@ -618,5 +470,7 @@ class AnalysisSheetManager {
         this.createOrGetSheet();
         this.prepareData();
         this.executeBatchUpdate();
+        // After creating the sheet, store the average ranges
+        this.storeAverageRanges();
     }
 }
