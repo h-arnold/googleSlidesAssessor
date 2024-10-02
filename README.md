@@ -10,7 +10,7 @@ You’ll need:
 1. A **perfect reference** with all tasks done properly.
 2. A **blank template** – the one your students will use so the LLM can differentiate between the template and student work..
 
-The Assessor pulls submissions from your Google Classroom, compares them to the reference copy using `Google Gemini Flash 1.5` via a [Langflow](https://github.com/langflow-ai/langflow backend, and scores them on the usual fronts: completeness, accuracy, and SPaG.
+The Assessor pulls submissions from your Google Classroom, compares them to the reference copy using `Google Gemini Flash 1.5` via a [Langflow](https://github.com/langflow-ai/langflow) backend, and scores them on the usual fronts: completeness, accuracy, and SPaG.
 
 It then delivers a beautifully formatted spreadsheet (because SLT can’t resist one and let's be honest, neither can you), with student scores and a preview of their work. An overview also averages their performance across assignments, and there's a department view in progress for Quality Assurance, though that needs work.
 
