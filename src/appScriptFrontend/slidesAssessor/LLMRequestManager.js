@@ -1,7 +1,7 @@
 /**
  * LLMRequestManager Class
  * 
- * Manages the creation and sending of request objects to the LLM.
+ * Manages the creation, caching, and sending of request objects to the LLM.
  */
 class LLMRequestManager {
     /**
@@ -9,10 +9,56 @@ class LLMRequestManager {
      */
     constructor() {
         this.configManager = configurationManager; // Reference to the singleton ConfigurationManager
+        this.cache = CacheService.getScriptCache(); // Initialize the script cache
+    }
+
+    /**
+     * Generates a unique cache key based on referenceContent and studentResponse.
+     * @param {string} referenceContent - The reference content from the task.
+     * @param {string} studentResponse - The student's response.
+     * @return {string} - A SHA-256 hash serving as the cache key.
+     */
+    generateCacheKey(referenceContent, studentResponse) {
+        const keyString = JSON.stringify(referenceContent) + JSON.stringify(studentResponse);
+        return Utils.generateHash(keyString);
+    }
+
+    /**
+     * Retrieves cached assessment data if available.
+     * @param {string} referenceContent - The reference content from the task.
+     * @param {string} studentResponse - The student's response.
+     * @return {Object|null} - The cached assessment data or null if not found.
+     */
+    getCachedAssessment(referenceContent, studentResponse) {
+        const cacheKey = this.generateCacheKey(referenceContent, studentResponse);
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch (e) {
+                console.error("Error parsing cached assessment data:", e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Stores assessment data in the cache.
+     * @param {string} referenceContent - The reference content from the task.
+     * @param {string} studentResponse - The student's response.
+     * @param {Object} assessmentData - The assessment data to cache.
+     */
+    setCachedAssessment(referenceContent, studentResponse, assessmentData) {
+        const cacheKey = this.generateCacheKey(referenceContent, studentResponse);
+        const serialized = JSON.stringify(assessmentData);
+        const cacheExpirationInSeconds = 6 * 60 * 60; // 6 hours
+        this.cache.put(cacheKey, serialized, cacheExpirationInSeconds);
     }
 
     /**
      * Generates an array of request objects based on the Assignment instance.
+     * Utilizes caching to avoid redundant requests.
      * @param {Assignment} assignment - The Assignment instance containing student tasks.
      * @return {Object[]} - An array of request objects ready to be sent via UrlFetchApp.fetchAll().
      */
@@ -27,6 +73,15 @@ class LLMRequestManager {
                 if (!task) {
                     console.warn(`No corresponding task found for task key: ${taskKey}`);
                     return;
+                }
+
+                const referenceContent = task.taskReference; // Assuming this holds the reference content
+                const cachedAssessment = this.getCachedAssessment(referenceContent, studentResponse);
+                if (cachedAssessment) {
+                    // Assign assessment directly from cache
+                    this.assignAssessmentToStudentTask(uid, cachedAssessment, assignment);
+                    Logger.log(`Cache hit for UID: ${uid}. Assigned assessment from cache.`);
+                    return; // Skip adding to requests
                 }
 
                 const taskType = task.taskType.toLowerCase();
@@ -62,10 +117,10 @@ class LLMRequestManager {
                 // Construct the tweaks object with the uid
                 const tweaks = {};
                 tweaks[tweakId] = {
-                    referenceTask: task.taskReference,
+                    referenceTask: referenceContent,
                     emptyTask: task.emptyContent,
                     studentTask: studentResponse
-                    //uid: uid // Embed uid within the tweak for response mapping if needed
+                    // uid is stored separately for easy access
                 };
 
                 // Include notes if available
@@ -153,6 +208,7 @@ class LLMRequestManager {
 
     /**
      * Processes the responses from the LLM and assigns assessments to StudentTasks.
+     * Also caches successful assessments.
      * @param {Object[]} responses - Array of HTTPResponse objects from UrlFetchApp.fetchAll().
      * @param {Object[]} batch - Array of request objects sent in the current batch.
      * @param {Assignment} assignment - The Assignment instance containing StudentTasks.
@@ -166,9 +222,8 @@ class LLMRequestManager {
                 try {
                     const responseData = JSON.parse(response.getContentText());
 
-
-                    // Assuming the LLM returns the assessment data as per the example
-                    const assessmentData = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message); // Adjust parsing as needed
+                    // Adjust parsing based on actual response structure
+                    const assessmentData = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message);
 
                     // Validate the assessment data structure
                     if (this.validateAssessmentData(assessmentData)) {
@@ -176,6 +231,19 @@ class LLMRequestManager {
 
                         // Find the StudentTask and assign the assessment
                         this.assignAssessmentToStudentTask(uid, assessment, assignment);
+
+                        // Cache the successful assessment
+                        const studentTask = this.findStudentTaskByUid(uid, assignment);
+                        if (studentTask) {
+                            const taskKey = this.findTaskKeyByUid(uid, studentTask);
+                            const task = assignment.tasks[taskKey];
+                            if (task) {
+                                const referenceContent = task.taskReference;
+                                const studentResponse = studentTask.responses[taskKey].response;
+                                this.setCachedAssessment(referenceContent, studentResponse, assessmentData);
+                                Logger.log(`Cached assessment for UID: ${uid}.`);
+                            }
+                        }
                     } else {
                         console.warn(`Invalid assessment data structure for UID: ${uid}`);
                         // Optionally, mark this response for retry
@@ -243,6 +311,38 @@ class LLMRequestManager {
     }
 
     /**
+     * Finds the StudentTask instance by UID.
+     * @param {string} uid - The unique identifier of the response.
+     * @param {Assignment} assignment - The Assignment instance.
+     * @return {StudentTask|null} - The matching StudentTask or null if not found.
+     */
+    findStudentTaskByUid(uid, assignment) {
+        for (const studentTask of assignment.studentTasks) {
+            for (const response of Object.values(studentTask.responses)) {
+                if (response.uid === uid) {
+                    return studentTask;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds the task key within a StudentTask by UID.
+     * @param {string} uid - The unique identifier of the response.
+     * @param {StudentTask} studentTask - The StudentTask instance.
+     * @return {string|null} - The task key or null if not found.
+     */
+    findTaskKeyByUid(uid, studentTask) {
+        for (const [taskKey, response] of Object.entries(studentTask.responses)) {
+            if (response.uid === uid) {
+                return taskKey;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Retries a failed request by re-adding it to the requests array.
      * Implements exponential backoff for retries.
      * @param {Object} request - The original request object.
@@ -304,3 +404,7 @@ class LLMRequestManager {
         }
     }
 }
+
+// Ensure singleton instance (if needed)
+const llmRequestManager = new LLMRequestManager();
+Object.freeze(llmRequestManager);
