@@ -8,22 +8,21 @@
 class Assignment {
     /**
      * Constructs an Assignment instance.
-     * @param {string} assignmentId - The unique identifier for the assignment (courseWorkId in Google Classroom).
-     * @param {string} courseId - The unique identifier for the course in Google Classroom.
-     * @param {string} documentType - The type of reference document (e.g., "Google Slide").
-     * @param {string} referenceDocumentId - The ID of the reference Google Slides document.
-     * @param {string} emptyDocumentId - The ID of the empty Google Slides template document.
+     * @param {string} courseId - The ID of the course.
+     * @param {string} assignmentId - The ID of the assignment.
+     * @param {string} referenceDocumentId - The ID of the reference slides document.
+     * @param {string} emptyDocumentId - The ID of the empty slides document.
      */
-    constructor(courseId, assignmentId, documentType, referenceDocumentId, emptyDocumentId) {
-        this.assignmentId = assignmentId;
+    constructor(courseId, assignmentId, referenceDocumentId, emptyDocumentId) {
         this.courseId = courseId;
+        this.assignmentId = assignmentId;
         this.assignmentName = this.fetchAssignmentName(courseId, assignmentId);
-        this.documentType = documentType;
         this.referenceDocumentId = referenceDocumentId;
         this.emptyDocumentId = emptyDocumentId;
-        this.tasks = {}; // Object: Mapping of taskKey to Task instances
-        this.studentTasks = []; // Array of StudentTask instances
+        this.tasks = {};           // { taskKey: Task }
+        this.studentTasks = [];    // Array of StudentTask instances
     }
+
 
     /**
      * Fetches the assignment name from Google Classroom.

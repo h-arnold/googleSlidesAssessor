@@ -51,6 +51,47 @@ class Utils {
         }
         return true;
     }
+    /**
+      * Retrieves the course ID from the 'ClassInfo' sheet.
+      * @returns {string} The course ID.
+      */
+    static getCourseId() {
+        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = spreadsheet.getSheetByName('ClassInfo');
+        if (!sheet) {
+            throw new Error('ClassInfo sheet not found.');
+        }
+        const courseId = sheet.getRange('B2').getValue();
+        if (!courseId) {
+            throw new Error('Course ID not found in ClassInfo sheet.');
+        }
+        return courseId.toString();
+    }
+
+    /**
+     * Retrieves assignments for a given course.
+     * @param {string} courseId - The ID of the course.
+     * @returns {Object[]} The list of assignments.
+     */
+    static getAssignments(courseId) {
+        const courseWork = Classroom.Courses.CourseWork.list(courseId);
+        let assignments = [];
+
+        if (courseWork.courseWork && courseWork.courseWork.length > 0) {
+            assignments = courseWork.courseWork.map(assignment => {
+                return {
+                    id: assignment.id,
+                    title: assignment.title,
+                    creationTime: new Date(assignment.creationTime)
+                };
+            });
+
+            // Sort assignments by creation time in descending order
+            assignments.sort((a, b) => b.creationTime - a.creationTime);
+        }
+
+        return assignments;
+    }
 
     // -------------------
     // UI Methods
