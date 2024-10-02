@@ -131,13 +131,16 @@ class UIManager {
     }
 
     /**
-     * Opens a modal dialog to get the reference and empty slide IDs.
-     * @param {string} assignmentData - The JSON string containing assignment data.
-     */
+        * Opens a modal dialog to get the reference and empty slide IDs.
+        * @param {string} assignmentData - The JSON string containing assignment data.
+        */
     openSlideIdsModal(assignmentData) {
         assignmentData = JSON.parse(assignmentData);
 
-        const htmlContent = this.createSlideIdsModalHtml(assignmentData);
+        // Fetch any saved slide IDs for this assignment using the assignment ID
+        const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentData.id);
+
+        const htmlContent = this.createSlideIdsModalHtml(assignmentData, savedSlideIds);
         const html = HtmlService.createHtmlOutput(htmlContent)
             .setWidth(400)
             .setHeight(350);
@@ -146,78 +149,103 @@ class UIManager {
     }
 
     /**
-     * Creates the HTML for the slide IDs modal.
-     * @param {Object} assignmentData - The assignment data.
-     * @returns {string} The HTML string for the modal.
-     */
-    createSlideIdsModalHtml(assignmentData) {
+    * Creates the HTML for the slide IDs modal.
+    * @param {Object} assignmentData - The assignment data.
+    * @param {Object} savedSlideIds - The saved slide IDs for the assignment, if any.
+    * @returns {string} The HTML string for the modal.
+    */
+    createSlideIdsModalHtml(assignmentData, savedSlideIds = {}) {
+        const referenceSlideId = savedSlideIds.referenceSlideId || '';
+        const emptySlideId = savedSlideIds.emptySlideId || '';
+        const assignmentId = assignmentData.id;
+
         let html = `
-        <html>
-        <head>
-            <base target="_top">
-            <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-            <style>
-                .modal-content {
-                    padding: 20px;
-                }
-                .modal-footer {
-                    text-align: right;
-                    padding: 10px;
-                }
-                .modal-footer button {
-                    margin-left: 10px;
-                }
-                .input-field label {
-                    top: -20px;
-                    font-size: 14px;
-                    color: #9e9e9e;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="modal-content">
-                <h5>Enter Slide IDs</h5>
-                <div class="input-field">
-                    <input type="text" id="referenceSlideId" placeholder="Reference Slide ID">
-                    <label for="referenceSlideId">Reference Slide ID</label>
-                </div>
-                <div class="input-field">
-                    <input type="text" id="emptySlideId" placeholder="Empty Slide ID">
-                    <label for="emptySlideId">Empty Slide ID</label>
-                </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <base target="_top">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <style>
+            .modal-content {
+                padding: 20px;
+            }
+            .modal-footer {
+                text-align: right;
+                padding: 10px;
+            }
+            .modal-footer button {
+                margin-left: 10px;
+            }
+            .input-field label {
+                top: -20px;
+                font-size: 14px;
+                color: #9e9e9e;
+            }
+            .input-field input[type="text"] {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="modal-content">
+            <h5>Enter Slide IDs</h5>
+            <div class="input-field">
+                <input type="text" id="referenceSlideId" placeholder="Reference Slide ID" value="${referenceSlideId}">
+                <label for="referenceSlideId" class="active">Reference Slide ID</label>
             </div>
-            <div class="modal-footer">
-                <button class="btn waves-effect waves-light" onclick="google.script.host.close()">Cancel</button>
-                <button class="btn waves-effect waves-light" onclick="saveAndRun()">Go</button>
+            <div class="input-field">
+                <input type="text" id="emptySlideId" placeholder="Empty Slide ID" value="${emptySlideId}">
+                <label for="emptySlideId" class="active">Empty Slide ID</label>
             </div>
-            <script>
-                function saveAndRun() {
-                    const referenceSlideId = document.getElementById('referenceSlideId').value;
-                    const emptySlideId = document.getElementById('emptySlideId').value;
-                    
-                    if (!referenceSlideId || !emptySlideId) {
-                        alert('Please enter both Reference Slide ID and Empty Slide ID.');
-                        return;
-                    }
+        </div>
+        <div class="modal-footer">
+            <button class="btn waves-effect waves-light" onclick="google.script.host.close()">Cancel</button>
+            <button class="btn waves-effect waves-light" onclick="saveAndRun()">Go</button>
+        </div>
+        <script>
+            function saveAndRun() {
+                const referenceSlideId = document.getElementById('referenceSlideId').value.trim();
+                const emptySlideId = document.getElementById('emptySlideId').value.trim();
 
-                    // Start warming up the LLM asynchronously
-                    //google.script.run.warmUpLLM();
-
-                    // Proceed to process the assignment
-                    google.script.run
-                        .withFailureHandler(function(error) {
-                            alert('Error processing assignment: ' + error.message);
-                        })
-                        .processSelectedAssignment('${assignmentData.id}', referenceSlideId, emptySlideId);
-
-                    google.script.host.close();
+                if (!referenceSlideId || !emptySlideId) {
+                    alert('Please enter both Reference Slide ID and Empty Slide ID.');
+                    return;
                 }
-            </script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-        </body>
-        </html>
-        `;
+
+                // Save the slide IDs for this assignment
+                const assignmentId = "${assignmentId}";
+                const slideIds = {
+                    referenceSlideId: referenceSlideId,
+                    emptySlideId: emptySlideId
+                };
+
+                google.script.run
+                    .withFailureHandler(function(error) {
+                        alert('Error saving slide IDs: ' + error.message);
+                    })
+                    .saveSlideIdsForAssignment(assignmentId, slideIds);
+
+                // Proceed to process the assignment
+                google.script.run
+                    .withFailureHandler(function(error) {
+                        alert('Error processing assignment: ' + error.message);
+                    })
+                    .processSelectedAssignment('${assignmentId}', referenceSlideId, emptySlideId);
+
+                google.script.host.close();
+            }
+
+            // Initialize Materialize components
+            document.addEventListener('DOMContentLoaded', function() {
+                M.updateTextFields();
+            });
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    </body>
+    </html>
+    `;
         return html;
     }
+
 }

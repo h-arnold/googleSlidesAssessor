@@ -1,31 +1,16 @@
 // Main.gs
-//This file holds the global functions needed to start the assessment process and handle other functions like managing configurations
+//This file holds the global functions needed to start the assessment process and handle other functions like managing configurations.
 
-function onOpen() {
-  const uiManager = new UIManager();
-  uiManager.addCustomMenus();
-}
+//This is the main function that starts the assessment process.
 
-function showConfigurationDialog() {
-  const uiManager = new UIManager();
-  uiManager.showConfigurationDialog();
-}
-
-function showAssignmentDropdown() {
-  const uiManager = new UIManager();
-  uiManager.showAssignmentDropdown();
-}
-
-function openSlideIdsModal(assignmentData) {
-  const uiManager = new UIManager();
-  uiManager.openSlideIdsModal(assignmentData);
-}
-
+/**
+ * Processes the selected assignment with the provided slide IDs.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
+ */
 function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
   Utils.toastMessage("Assessment run starting...");
-  // Warm up the LLM asynchronously
-  const llmRequestManager = new LLMRequestManager();
-  llmRequestManager.warmUpLLM();
 
   const courseId = Utils.getCourseId();
   console.log('Assignment Id: ' + assignmentId);
@@ -51,4 +36,35 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
   const overviewSheetManager = new OverviewSheetManager();
   overviewSheetManager.createOverviewSheet();
 }
+
+
+function onOpen() {
+  const uiManager = new UIManager();
+  uiManager.addCustomMenus();
+}
+
+function showConfigurationDialog() {
+  const uiManager = new UIManager();
+  uiManager.showConfigurationDialog();
+}
+
+function showAssignmentDropdown() {
+  const uiManager = new UIManager();
+  uiManager.showAssignmentDropdown();
+}
+
+function openSlideIdsModal(assignmentData) {
+  const uiManager = new UIManager();
+  uiManager.openSlideIdsModal(assignmentData);
+}
+
+/**
+ * Saves slide IDs for a specific assignment.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ */
+function saveSlideIdsForAssignment(assignmentId, slideIds) {
+  AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
+}
+
 
