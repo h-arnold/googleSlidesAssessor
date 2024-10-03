@@ -1,9 +1,16 @@
 # Create Classroom Assessment Records in Google Drive
-#### [Made by Hamish Arnold with Scribe](https://scribehow.com/shared/Create_Classroom_Assessment_Records_in_Google_Drive__b7W88azVRgmFyQkQY7peEg)
 
+- [Create Classroom Assessment Records in Google Drive](#create-classroom-assessment-records-in-google-drive)
+      - [Copying the template files](#copying-the-template-files)
+      - [Populating the Assessment Record Generator with your classes](#populating-the-assessment-record-generator-with-your-classes)
+      - [Preparing to create the Assessment Records](#preparing-to-create-the-assessment-records)
+      - [Setting up the Assessment Record Template](#setting-up-the-assessment-record-template)
+      - [Setting the location of the Assessment Record Template](#setting-the-location-of-the-assessment-record-template)
+      - [Setting the destination folder of the Assessment Records](#setting-the-destination-folder-of-the-assessment-records)
+      - [Creating the assessment records](#creating-the-assessment-records)
+      - [Made with Scribe](#made-with-scribe)
 
 #### Copying the template files
-
 
 1\. Make a copy of the template files from [here](https://drive.google.com/drive/u/0/folders/16DcR-0sXJQasrX6kjw-l9F-1evMFT8fk).
 
