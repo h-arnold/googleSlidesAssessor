@@ -120,7 +120,7 @@ class UIManager {
                         .withFailureHandler(function(error) {
                             alert('Error: ' + error.message);
                         })
-                        .openSlideIdsModal(assignmentData);
+                        .openReferenceSlideModal(assignmentData);
                 }
             </script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -138,7 +138,7 @@ class UIManager {
         assignmentData = JSON.parse(assignmentData);
 
         // Fetch any saved slide IDs for this assignment using the assignment ID
-        const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentData.id);
+        const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentData.name);
 
         const htmlContent = this.createSlideIdsModalHtml(assignmentData, savedSlideIds);
         const html = HtmlService.createHtmlOutput(htmlContent)
@@ -157,7 +157,8 @@ class UIManager {
     createSlideIdsModalHtml(assignmentData, savedSlideIds = {}) {
         const referenceSlideId = savedSlideIds.referenceSlideId || '';
         const emptySlideId = savedSlideIds.emptySlideId || '';
-        const assignmentId = assignmentData.id;
+        const assignmentTitle = assignmentData.name;
+        const assignmentId = assignmentData.id
 
         let html = `
     <!DOCTYPE html>
@@ -214,7 +215,7 @@ class UIManager {
                 }
 
                 // Save the slide IDs for this assignment
-                const assignmentId = "${assignmentId}";
+                const assignmentTitle = "${assignmentTitle}";
                 const slideIds = {
                     referenceSlideId: referenceSlideId,
                     emptySlideId: emptySlideId
@@ -224,7 +225,7 @@ class UIManager {
                     .withFailureHandler(function(error) {
                         alert('Error saving slide IDs: ' + error.message);
                     })
-                    .saveSlideIdsForAssignment(assignmentId, slideIds);
+                    .saveSlideIdsForAssignment(assignmentTitle, slideIds);
 
                 // Proceed to process the assignment
                 google.script.run
