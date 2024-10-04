@@ -154,7 +154,7 @@ class Assignment {
             if (studentTask.documentId) {
                 studentTask.extractAndAssignResponses(slideExtractor, this.tasks);
             } else {
-                Logger.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
+                console.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
             }
         });
     }
