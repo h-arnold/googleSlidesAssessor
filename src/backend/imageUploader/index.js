@@ -8,10 +8,10 @@ const sizeOf = require('image-size'); // To verify image dimensions and type
 const storage = new Storage();
 
 // Maximum allowed image size in bytes (1MB)
-const MAX_IMAGE_SIZE = 1 * 2048 * 2048; // 1MB
+const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
 
-// Allowed image MIME types
-const ALLOWED_MIME_TYPES = ['image/png'];
+// Allowed image types
+const ALLOWED_IMAGE_TYPES = ['png'];
 
 exports.uploadImage = async (req, res) => {
   try {
@@ -85,8 +85,11 @@ exports.uploadImage = async (req, res) => {
       return;
     }
 
-    // Ensure the image is a PNG
-    if (!ALLOWED_MIME_TYPES.includes(dimensions.type)) {
+    // Log both type and mime for debugging
+    console.log(`Image type: ${dimensions.type}, MIME type: ${dimensions.mime}`);
+
+    // Ensure the image is a PNG by checking type
+    if (!ALLOWED_IMAGE_TYPES.includes(dimensions.type)) {
       console.warn('Unsupported image type:', dimensions.type);
       res.status(415).send({ error: 'Unsupported Media Type: Only PNG images are allowed.' });
       return;
