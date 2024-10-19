@@ -48,6 +48,12 @@
             font-size: 12px;
             display: none;
         }
+
+        small {
+            color: #555;
+            display: block;
+            margin-top: 5px;
+        }
     </style>
 </head>
 
@@ -66,28 +72,15 @@
         <div class="form-group">
             <label for="langflowUrl">Langflow URL:</label>
             <input type="url" id="langflowUrl" name="langflowUrl" required />
+            <small>Assessment URLs are automatically derived from this base URL.</small>
         </div>
-        <div class="form-group">
-            <label for="warmUpUrl">Warm-Up URL:</label>
-            <input type="url" id="warmUpUrl" name="warmUpUrl" required />
-        </div>
-        <div class="form-group">
-            <label for="referenceSlideId">Reference Slide ID:</label>
-            <input type="text" id="referenceSlideId" name="referenceSlideId" required />
-        </div>
-        <div class="form-group">
-            <label for="emptySlideId">Empty Slide ID:</label>
-            <input type="text" id="emptySlideId" name="emptySlideId" required />
-        </div>
+
+        <!-- Removed Warm-Up URL, Reference Slide ID, and Empty Slide ID Fields -->
 
         <!-- New Configuration Fields -->
         <hr />
         <h3>Assessment Configurations</h3>
 
-        <div class="form-group">
-            <label for="textAssessmentUrl">Text Assessment URL:</label>
-            <input type="url" id="textAssessmentUrl" name="textAssessmentUrl" required />
-        </div>
         <div class="form-group">
             <label for="textAssessmentTweakId">Text Assessment Tweak ID:</label>
             <input type="text" id="textAssessmentTweakId" name="textAssessmentTweakId" placeholder="e.g., Prompt-abc"
@@ -96,20 +89,12 @@
         </div>
 
         <div class="form-group">
-            <label for="tableAssessmentUrl">Table Assessment URL:</label>
-            <input type="url" id="tableAssessmentUrl" name="tableAssessmentUrl" required />
-        </div>
-        <div class="form-group">
             <label for="tableAssessmentTweakId">Table Assessment Tweak ID:</label>
             <input type="text" id="tableAssessmentTweakId" name="tableAssessmentTweakId" placeholder="e.g., Prompt-xyz"
                 required />
             <div id="tableTweakIdError" class="error-message">Tweak ID cannot be empty.</div>
         </div>
 
-        <div class="form-group">
-            <label for="imageAssessmentUrl">Image Assessment URL:</label>
-            <input type="url" id="imageAssessmentUrl" name="imageAssessmentUrl" required />
-        </div>
         <div class="form-group">
             <label for="imageAssessmentTweakId">Image Assessment Tweak ID:</label>
             <input type="text" id="imageAssessmentTweakId" name="imageAssessmentTweakId" placeholder="e.g., Prompt-123"
@@ -131,7 +116,7 @@
          * @return {boolean} - True if valid, false otherwise.
          */
         function isValidUrl(url) {
-            const urlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+            const urlPattern = new RegExp('^(https?:\\/\\/)' + // protocol
                 '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
                 '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
                 '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
@@ -159,14 +144,9 @@
             document.getElementById('batchSize').value = data.batchSize || 5; // Default to 5 if not set
             document.getElementById('langflowApiKey').value = data.langflowApiKey || '';
             document.getElementById('langflowUrl').value = data.langflowUrl || '';
-            document.getElementById('warmUpUrl').value = data.warmUpUrl || '';
-            document.getElementById('referenceSlideId').value = data.referenceSlideId || '';
-            document.getElementById('emptySlideId').value = data.emptySlideId || '';
-            document.getElementById('textAssessmentUrl').value = data.textAssessmentUrl || '';
+            // Removed Warm-Up URL, Reference Slide ID, and Empty Slide ID Fields
             document.getElementById('textAssessmentTweakId').value = data.textAssessmentTweakId || '';
-            document.getElementById('tableAssessmentUrl').value = data.tableAssessmentUrl || '';
             document.getElementById('tableAssessmentTweakId').value = data.tableAssessmentTweakId || '';
-            document.getElementById('imageAssessmentUrl').value = data.imageAssessmentUrl || '';
             document.getElementById('imageAssessmentTweakId').value = data.imageAssessmentTweakId || '';
         }
 
@@ -179,14 +159,9 @@
                 batchSize: parseInt(document.getElementById('batchSize').value, 10),
                 langflowApiKey: document.getElementById('langflowApiKey').value.trim(),
                 langflowUrl: document.getElementById('langflowUrl').value.trim(),
-                warmUpUrl: document.getElementById('warmUpUrl').value.trim(),
-                referenceSlideId: document.getElementById('referenceSlideId').value.trim(),
-                emptySlideId: document.getElementById('emptySlideId').value.trim(),
-                textAssessmentUrl: document.getElementById('textAssessmentUrl').value.trim(),
+                // Removed Warm-Up URL, Reference Slide ID, and Empty Slide ID Fields
                 textAssessmentTweakId: document.getElementById('textAssessmentTweakId').value.trim(),
-                tableAssessmentUrl: document.getElementById('tableAssessmentUrl').value.trim(),
                 tableAssessmentTweakId: document.getElementById('tableAssessmentTweakId').value.trim(),
-                imageAssessmentUrl: document.getElementById('imageAssessmentUrl').value.trim(),
                 imageAssessmentTweakId: document.getElementById('imageAssessmentTweakId').value.trim()
             };
 
@@ -199,7 +174,7 @@
             }
 
             // Validate URL fields
-            ['langflowUrl', 'warmUpUrl', 'textAssessmentUrl', 'tableAssessmentUrl', 'imageAssessmentUrl'].forEach(urlField => {
+            ['langflowUrl'].forEach(urlField => {
                 if (!isValidUrl(formData[urlField])) {
                     alert(`Please enter a valid URL for ${urlField}.`);
                     isValid = false;
