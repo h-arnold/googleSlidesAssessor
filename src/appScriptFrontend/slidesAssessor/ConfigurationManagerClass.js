@@ -1,4 +1,4 @@
-// ConfigurationManager.gs
+// ConfigurationManagerClass.gs
 
 /**
  * ConfigurationManager Class
@@ -11,15 +11,11 @@ class ConfigurationManager {
             BATCH_SIZE: 'batchSize',
             LANGFLOW_API_KEY: 'langflowApiKey',
             LANGFLOW_URL: 'langflowUrl',
-            WARM_UP_URL: 'warmUpUrl',
-            REFERENCE_SLIDE_ID: 'referenceSlideId',
-            EMPTY_SLIDE_ID: 'emptySlideId',
-            TEXT_ASSESSMENT_URL: 'textAssessmentUrl',
             TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
-            TABLE_ASSESSMENT_URL: 'tableAssessmentUrl',
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
-            IMAGE_ASSESSMENT_URL: 'imageAssessmentUrl',
             IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId'
+            // Removed TEXT_ASSESSMENT_URL, TABLE_ASSESSMENT_URL, IMAGE_ASSESSMENT_URL,
+            // WARM_UP_URL, REFERENCE_SLIDE_ID, EMPTY_SLIDE_ID
         };
     }
 
@@ -71,11 +67,9 @@ class ConfigurationManager {
                     throw new Error("Batch Size must be a positive integer.");
                 }
                 break;
-            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL:
-            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL:
-            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL:
+            case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
                 if (typeof value !== 'string' || !this.isValidUrl(value)) {
-                    throw new Error(`${key} must be a valid URL string.`);
+                    throw new Error("Langflow URL must be a valid URL string.");
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
@@ -101,7 +95,7 @@ class ConfigurationManager {
      */
     setProperties(config) {
         Object.entries(config).forEach(([key, value]) => {
-            // No longer handling JSON tweaks; only Tweak IDs
+            // No longer handling JSON tweaks; only Tweak IDs and base URL
             this.setProperty(key, value);
         });
 
@@ -114,7 +108,7 @@ class ConfigurationManager {
      * @return {boolean} - True if valid, false otherwise.
      */
     isValidUrl(url) {
-        const urlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+        const urlPattern = new RegExp('^(https?:\\/\\/)' + // protocol
             '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
             '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
             '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
@@ -141,36 +135,51 @@ class ConfigurationManager {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL);
     }
 
+    /**
+     * Dynamically constructs the Warm-Up URL based on the base Langflow URL.
+     * @return {string} - The constructed Warm-Up URL.
+     */
     getWarmUpUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.WARM_UP_URL);
+        const baseUrl = this.getLangflowUrl();
+        return `${baseUrl}/api/v1/run/warmUp?stream=false`;
     }
 
-    getReferenceSlideId() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.REFERENCE_SLIDE_ID);
-    }
-
-    getEmptySlideId() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.EMPTY_SLIDE_ID);
-    }
-
+    /**
+     * Dynamically constructs the Text Assessment URL based on the base Langflow URL.
+     * @return {string} - The constructed Text Assessment URL.
+     */
     getTextAssessmentUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL);
+        const baseUrl = this.getLangflowUrl();
+        return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
     }
 
+    /**
+     * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
+     * @return {string} - The constructed Table Assessment URL.
+     */
+    getTableAssessmentUrl() {
+        const baseUrl = this.getLangflowUrl();
+        return `${baseUrl}/api/v1/run/tableAssessment?stream=false`;
+    }
+
+    /**
+     * Dynamically constructs the Image Assessment URL based on the base Langflow URL.
+     * @return {string} - The constructed Image Assessment URL.
+     */
+    getImageAssessmentUrl() {
+        const baseUrl = this.getLangflowUrl();
+        return `${baseUrl}/api/v1/run/imageAssessment?stream=false`;
+    }
+
+    /**
+     * Getter Methods for Tweak IDs
+     */
     getTextAssessmentTweakId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID);
     }
 
-    getTableAssessmentUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL);
-    }
-
     getTableAssessmentTweakId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID);
-    }
-
-    getImageAssessmentUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL);
     }
 
     getImageAssessmentTweakId() {
@@ -188,40 +197,41 @@ class ConfigurationManager {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY, apiKey);
     }
 
+    /**
+     * Sets the base Langflow URL.
+     * All assessment URLs are derived from this base URL.
+     * @param {string} url - The base Langflow URL.
+     */
     setLangflowUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL, url);
     }
 
-    setWarmUpUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.WARM_UP_URL, url);
-    }
-
-    setReferenceSlideId(slideId) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.REFERENCE_SLIDE_ID, slideId);
-    }
-
-    setEmptySlideId(slideId) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.EMPTY_SLIDE_ID, slideId);
-    }
-
+    /**
+     * Setter Methods for Assessment URLs.
+     * Since URLs are derived from the base Langflow URL, these setters throw an error if used.
+     * To update assessment URLs, update the Langflow URL instead.
+     */
     setTextAssessmentUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_URL, url);
+        throw new Error("Text Assessment URL is derived from the Langflow URL and cannot be set directly.");
     }
 
+    setTableAssessmentUrl(url) {
+        throw new Error("Table Assessment URL is derived from the Langflow URL and cannot be set directly.");
+    }
+
+    setImageAssessmentUrl(url) {
+        throw new Error("Image Assessment URL is derived from the Langflow URL and cannot be set directly.");
+    }
+
+    /**
+     * Setter Methods for Tweak IDs
+     */
     setTextAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID, tweakId);
     }
 
-    setTableAssessmentUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_URL, url);
-    }
-
     setTableAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID, tweakId);
-    }
-
-    setImageAssessmentUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_URL, url);
     }
 
     setImageAssessmentTweakId(tweakId) {
@@ -257,29 +267,14 @@ function saveConfiguration(config) {
         if (config.langflowUrl !== undefined) {
             configurationManager.setLangflowUrl(config.langflowUrl);
         }
-        if (config.warmUpUrl !== undefined) {
-            configurationManager.setWarmUpUrl(config.warmUpUrl);
-        }
-        if (config.referenceSlideId !== undefined) {
-            configurationManager.setReferenceSlideId(config.referenceSlideId);
-        }
-        if (config.emptySlideId !== undefined) {
-            configurationManager.setEmptySlideId(config.emptySlideId);
-        }
-        if (config.textAssessmentUrl !== undefined) {
-            configurationManager.setTextAssessmentUrl(config.textAssessmentUrl);
-        }
+        // Removed handling for warmUpUrl, referenceSlideId, emptySlideId
+
+        // Handle Tweak IDs
         if (config.textAssessmentTweakId !== undefined) {
             configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
         }
-        if (config.tableAssessmentUrl !== undefined) {
-            configurationManager.setTableAssessmentUrl(config.tableAssessmentUrl);
-        }
         if (config.tableAssessmentTweakId !== undefined) {
             configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
-        }
-        if (config.imageAssessmentUrl !== undefined) {
-            configurationManager.setImageAssessmentUrl(config.imageAssessmentUrl);
         }
         if (config.imageAssessmentTweakId !== undefined) {
             configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
