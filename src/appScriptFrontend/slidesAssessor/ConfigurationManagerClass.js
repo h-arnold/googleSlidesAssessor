@@ -1,289 +1,185 @@
-// ConfigurationManagerClass.gs
+// StudentTask.gs
 
 /**
- * ConfigurationManager Class
+ * StudentTask Class
  * 
- * Manages script properties with getter and setter methods.
+ * Represents a student's submission for an assignment, containing responses to each task.
  */
-class ConfigurationManager {
-    static get CONFIG_KEYS() {
-        return {
-            BATCH_SIZE: 'batchSize',
-            LANGFLOW_API_KEY: 'langflowApiKey',
-            LANGFLOW_URL: 'langflowUrl',
-            TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
-            TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
-            IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId'
-            // Removed TEXT_ASSESSMENT_URL, TABLE_ASSESSMENT_URL, IMAGE_ASSESSMENT_URL,
-            // WARM_UP_URL, REFERENCE_SLIDE_ID, EMPTY_SLIDE_ID
+class StudentTask {
+    /**
+     * Constructs a StudentTask instance.
+     * @param {Student} student - The Student instance associated with this submission.
+     * @param {string} assignmentId - The ID of the associated Assignment.
+     * @param {string} documentId - The ID of the student's submission document.
+     */
+    constructor(student, assignmentId, documentId) {
+        this.student = student;           // Student: Associated student
+        this.assignmentId = assignmentId; // string: ID of the assignment
+        this.documentId = documentId;     // string: Document ID of the student's submission
+        this.responses = {};              // Object: Mapping of taskIndex to { uid, slideId, response, assessments }
+    }
+
+    /**
+     * Adds a response to a specific task.
+     * @param {string|null} taskIndex - The index of the task.
+     * @param {string} uid - The unique ID of this response.
+     * @param {string} slideId - The ID of the slide where the task is located.
+     * @param {string|Blob|null} response - The student's response to the task (text, table, or image Blob).
+     */
+    addResponse(taskIndex, uid, slideId, response) {
+        this.responses[taskIndex] = {
+            uid: uid,
+            slideId: slideId,
+            response: response, // Can be text, table data, or image Blob
+            assessment: null // To be filled after LLM assessment
         };
     }
 
-    constructor() {
-        if (ConfigurationManager.instance) {
-            return ConfigurationManager.instance;
-        }
-
-        this.scriptProperties = PropertiesService.getScriptProperties();
-        this.configCache = null; // Initialize cache
-
-        ConfigurationManager.instance = this;
-        return this;
+    /**
+     * Retrieves a response for a specific task.
+     * @param {string} taskIndex - The index of the task.
+     * @return {Object|null} - An object containing uid, slideId, response, and assessment, or null if not found.
+     */
+    getResponse(taskIndex) {
+        return this.responses.hasOwnProperty(taskIndex) ? this.responses[taskIndex] : null;
     }
 
     /**
-     * Retrieves all configuration properties.
-     * @return {Object} - An object containing all configuration properties.
+     * Adds an assessment to a specific task response.
+     * @param {string} taskKey - The index/key of the task.
+     * @param {string} criterion - The assessment criterion (e.g., 'completeness').
+     * @param {Assessment} assessment - The Assessment instance to add.
      */
-    getAllConfigurations() {
-        if (!this.configCache) {
-            this.configCache = this.scriptProperties.getProperties();
+    addAssessment(taskKey, criterion, assessment) {
+        if (this.responses[taskKey]) {
+            // Initialize assessment as an empty object if it's null
+            if (!this.responses[taskKey].assessment) {
+                this.responses[taskKey].assessment = {};
+            }
+            this.responses[taskKey].assessment[criterion] = {
+                "score" : assessment.score,
+                "reasoning" : assessment.reasoning
+            };
+        } else {
+            console.warn(`No response found for taskKey: ${taskKey}`);
         }
-        return this.configCache;
     }
 
     /**
-     * Retrieves a single configuration property.
-     * @param {string} key - The configuration key.
-     * @return {string} - The value of the configuration property.
+     * Retrieves an assessment for a specific task.
+     * @param {string} taskIndex - The index/key of the task.
+     * @return {Object|null} - The assessment object or null if not found.
      */
-    getProperty(key) {
-        if (!this.configCache) {
-            this.getAllConfigurations();
-        }
-        return this.configCache[key] || '';
+    getAssessment(taskIndex) {
+        return this.responses[taskIndex]?.assessment || null;
     }
 
     /**
-     * Sets a single configuration property.
-     * @param {string} key - The configuration key.
-     * @param {string} value - The value to set.
+     * Serializes the StudentTask instance to a JSON object.
+     * Converts image Blobs to Base64 strings if present.
+     * @return {Object} - The JSON representation of the StudentTask.
      */
-    setProperty(key, value) {
-        // Add validation based on key
-        switch (key) {
-            case ConfigurationManager.CONFIG_KEYS.BATCH_SIZE:
-                if (!Number.isInteger(value) || value <= 0) {
-                    throw new Error("Batch Size must be a positive integer.");
-                }
-                break;
-            case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
-                if (typeof value !== 'string' || !this.isValidUrl(value)) {
-                    throw new Error("Langflow URL must be a valid URL string.");
-                }
-                break;
-            case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
-            case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID:
-            case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID:
-                if (typeof value !== 'string' || value.trim() === '') {
-                    throw new Error(`${key} must be a non-empty string.`);
-                }
-                break;
-            // Add more validations as needed
-            default:
-                // No specific validation
-                break;
-        }
-
-        this.scriptProperties.setProperty(key, value.toString());
-        this.configCache = null; // Invalidate cache
+    toJSON() {
+        return {
+            student: this.student.toJSON(),
+            assignmentId: this.assignmentId,
+            documentId: this.documentId,
+            responses: Object.fromEntries(
+                Object.entries(this.responses).map(([key, value]) => [
+                    key,
+                    {
+                        uid: value.uid,
+                        slideId: value.slideId,
+                        response: value.response ? (value.response instanceof Blob ? Utilities.base64Encode(value.response.getBytes()) : value.response) : null,
+                        assessment: value.assessment ? value.assessment : null
+                    }
+                ])
+            )
+        };
     }
 
     /**
-     * Sets multiple configuration properties.
-     * @param {Object} config - An object containing key-value pairs of configurations.
+     * Deserializes a JSON object to a StudentTask instance.
+     * Converts Base64 strings back to Blobs for image responses.
+     * @param {Object} json - The JSON object representing a StudentTask.
+     * @return {StudentTask} - The StudentTask instance.
      */
-    setProperties(config) {
-        Object.entries(config).forEach(([key, value]) => {
-            // No longer handling JSON tweaks; only Tweak IDs and base URL
-            this.setProperty(key, value);
+    static fromJSON(json) {
+        const { student, assignmentId, documentId, responses } = json;
+        const studentInstance = Student.fromJSON(student);
+        const studentTask = new StudentTask(studentInstance, assignmentId, documentId);
+        for (const [taskKey, responseObj] of Object.entries(responses)) {
+            let response = responseObj.response;
+            // If the task is an image, decode the Base64 string back to Blob
+            // Assuming that the task type is known, otherwise, additional data is needed
+            // For this example, we'll assume that image tasks have response as Base64 strings
+            if (responseObj.response && isBase64(responseObj.response)) { // Implement isBase64 as needed
+                response = Utilities.newBlob(Utilities.base64Decode(responseObj.response), 'image/jpeg', `Slide_${responseObj.slideId}.jpg`);
+            }
+            studentTask.responses[taskKey] = {
+                uid: responseObj.uid,
+                slideId: responseObj.slideId,
+                response: response,
+                assessment: responseObj.assessment ? responseObj.assessment : null
+            };
+        }
+        return studentTask;
+    }
+
+    /**
+     * Generates a unique UID for the StudentTask instance.
+     * Utilizes the Utils class to generate a hash based on student ID and timestamp.
+     * @param {string} slideId - The ID of the slide.
+     * @return {string} - The generated UID.
+     */
+    static generateUID(slideId) {
+        const timestamp = new Date().getTime();
+        const uniqueString = `${slideId}-${timestamp}`;
+        return Utils.generateHash(uniqueString);
+    }
+
+    /**
+     * Extracts and assigns responses from the student's submission document.
+     * @param {SlideExtractor} slideExtractor - An instance of SlideExtractor.
+     * @param {Task[]} tasks - An array of Task instances from the Assignment.
+     */
+    extractAndAssignResponses(slideExtractor, tasks) {
+        // Extract tasks from the student's submission document
+        const studentTasks = slideExtractor.extractTasksFromSlides(this.documentId);
+
+        // Create a map of taskTitle to task data (slideId and response)
+        const submissionMap = {};
+        studentTasks.forEach(task => {
+            submissionMap[task.taskTitle] = {
+                slideId: task.slideId,         // Slide ID within the student's submission document
+                response: task.taskType === "Image" ? task.imageBlob : task.taskReference   // For Image tasks, response is the Blob
+            };
         });
 
-        this.configCache = null; // Invalidate cache
-    }
-
-    /**
-     * Validates if a string is a well-formed URL.
-     * @param {string} url - The URL string to validate.
-     * @return {boolean} - True if valid, false otherwise.
-     */
-    isValidUrl(url) {
-        const urlPattern = new RegExp('^(https?:\\/\\/)' + // protocol
-            '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
-            '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
-            '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
-            '(\\:[0-9]+)?' + // port
-            '(\\/[-a-zA-Z0-9%_.~+]*)*' + // path
-            '(\\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
-            '(\\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
-        return urlPattern.test(url);
-    }
-
-    /**
-     * Getter Methods
-     */
-    getBatchSize() {
-        const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE), 10);
-        return isNaN(value) ? 5 : value; // Default batch size is 5
-    }
-
-    getLangflowApiKey() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY);
-    }
-
-    getLangflowUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL);
-    }
-
-    /**
-     * Dynamically constructs the Warm-Up URL based on the base Langflow URL.
-     * @return {string} - The constructed Warm-Up URL.
-     */
-    getWarmUpUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/warmUp?stream=false`;
-    }
-
-    /**
-     * Dynamically constructs the Text Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Text Assessment URL.
-     */
-    getTextAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
-    }
-
-    /**
-     * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Table Assessment URL.
-     */
-    getTableAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/tableAssessment?stream=false`;
-    }
-
-    /**
-     * Dynamically constructs the Image Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Image Assessment URL.
-     */
-    getImageAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/imageAssessment?stream=false`;
-    }
-
-    /**
-     * Getter Methods for Tweak IDs
-     */
-    getTextAssessmentTweakId() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID);
-    }
-
-    getTableAssessmentTweakId() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID);
-    }
-
-    getImageAssessmentTweakId() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID);
-    }
-
-    /**
-     * Setter Methods
-     */
-    setBatchSize(batchSize) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE, batchSize);
-    }
-
-    setLangflowApiKey(apiKey) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY, apiKey);
-    }
-
-    /**
-     * Sets the base Langflow URL.
-     * All assessment URLs are derived from this base URL.
-     * @param {string} url - The base Langflow URL.
-     */
-    setLangflowUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL, url);
-    }
-
-    /**
-     * Setter Methods for Assessment URLs.
-     * Since URLs are derived from the base Langflow URL, these setters throw an error if used.
-     * To update assessment URLs, update the Langflow URL instead.
-     */
-    setTextAssessmentUrl(url) {
-        throw new Error("Text Assessment URL is derived from the Langflow URL and cannot be set directly.");
-    }
-
-    setTableAssessmentUrl(url) {
-        throw new Error("Table Assessment URL is derived from the Langflow URL and cannot be set directly.");
-    }
-
-    setImageAssessmentUrl(url) {
-        throw new Error("Image Assessment URL is derived from the Langflow URL and cannot be set directly.");
-    }
-
-    /**
-     * Setter Methods for Tweak IDs
-     */
-    setTextAssessmentTweakId(tweakId) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID, tweakId);
-    }
-
-    setTableAssessmentTweakId(tweakId) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID, tweakId);
-    }
-
-    setImageAssessmentTweakId(tweakId) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID, tweakId);
+        // Assign responses ensuring consistency with Assignment's tasks
+        Object.keys(tasks).forEach(taskKey => {
+            const task = tasks[taskKey];
+            const taskTitle = task.taskTitle;
+            if (submissionMap.hasOwnProperty(taskTitle)) {
+                const { slideId, response } = submissionMap[taskTitle];
+                const uid = StudentTask.generateUID(slideId);
+                this.addResponse(taskKey, uid, slideId, response);
+            } else {
+                this.addResponse(taskKey, null, null, null);
+            }
+        });
     }
 }
 
-// Ensure singleton instance
-const configurationManager = new ConfigurationManager();
-// Object.freeze(configurationManager); // Removed to allow modifications
-
 /**
- * Retrieves all configuration properties.
- * @return {Object} - An object containing all configuration properties.
+ * Utility function to check if a string is Base64 encoded.
+ * @param {string} str - The string to check.
+ * @return {boolean} - True if the string is Base64 encoded, false otherwise.
  */
-function getConfiguration() {
-    return configurationManager.getAllConfigurations();
-}
-
-/**
- * Saves the provided configuration properties.
- * @param {Object} config - An object containing key-value pairs of configurations.
- */
-function saveConfiguration(config) {
+function isBase64(str) {
     try {
-        // Map the incoming config to the ConfigurationManager setters
-        if (config.batchSize !== undefined) {
-            configurationManager.setBatchSize(config.batchSize);
-        }
-        if (config.langflowApiKey !== undefined) {
-            configurationManager.setLangflowApiKey(config.langflowApiKey);
-        }
-        if (config.langflowUrl !== undefined) {
-            configurationManager.setLangflowUrl(config.langflowUrl);
-        }
-        // Removed handling for warmUpUrl, referenceSlideId, emptySlideId
-
-        // Handle Tweak IDs
-        if (config.textAssessmentTweakId !== undefined) {
-            configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
-        }
-        if (config.tableAssessmentTweakId !== undefined) {
-            configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
-        }
-        if (config.imageAssessmentTweakId !== undefined) {
-            configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
-        }
-
-        Utils.toastMessage("Configuration saved successfully.", "Success", 5);
-    } catch (error) {
-        console.error("Error saving configuration:", error);
-        Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
-        throw new Error("Failed to save configuration. Please check the inputs.");
+        return btoa(atob(str)) === str;
+    } catch (err) {
+        return false;
     }
 }
