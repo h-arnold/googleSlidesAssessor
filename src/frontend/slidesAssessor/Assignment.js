@@ -189,7 +189,4 @@ class Assignment {
 
     }
 
-    /**
-     * (Optional) Additional methods related to the Assignment can be added here.
-     */
 }
