@@ -1,5 +1,3 @@
-// ConfigurationManagerClass.gs
-
 /**
  * ConfigurationManager Class
  * 
@@ -13,9 +11,9 @@ class ConfigurationManager {
             LANGFLOW_URL: 'langflowUrl',
             TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
-            IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId'
-            // Removed TEXT_ASSESSMENT_URL, TABLE_ASSESSMENT_URL, IMAGE_ASSESSMENT_URL,
-            // WARM_UP_URL, REFERENCE_SLIDE_ID, EMPTY_SLIDE_ID
+            IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
+            IMAGE_UPLOAD_URL: 'imageUploadUrl',
+            IMAGE_UPLOADER_API_KEY: 'imageUploaderApiKey'
         };
     }
 
@@ -57,7 +55,7 @@ class ConfigurationManager {
     /**
      * Sets a single configuration property.
      * @param {string} key - The configuration key.
-     * @param {string} value - The value to set.
+     * @param {string|number} value - The value to set.
      */
     setProperty(key, value) {
         // Add validation based on key
@@ -68,15 +66,17 @@ class ConfigurationManager {
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL:
                 if (typeof value !== 'string' || !this.isValidUrl(value)) {
-                    throw new Error("Langflow URL must be a valid URL string.");
+                    throw new Error(`${this.toReadableKey(key)} must be a valid URL string.`);
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID:
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY:
                 if (typeof value !== 'string' || value.trim() === '') {
-                    throw new Error(`${key} must be a non-empty string.`);
+                    throw new Error(`${this.toReadableKey(key)} must be a non-empty string.`);
                 }
                 break;
             // Add more validations as needed
@@ -120,6 +120,17 @@ class ConfigurationManager {
     }
 
     /**
+     * Converts a configuration key to a more readable format for error messages.
+     * @param {string} key - The configuration key.
+     * @return {string} - Readable key.
+     */
+    toReadableKey(key) {
+        // Convert camelCase or PascalCase to Regular Text
+        return key.replace(/([A-Z])/g, ' $1')
+                  .replace(/^./, str => str.toUpperCase());
+    }
+
+    /**
      * Getter Methods
      */
     getBatchSize() {
@@ -150,7 +161,7 @@ class ConfigurationManager {
      */
     getTextAssessmentUrl() {
         const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/testAssessment?stream=false`;
+        return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
     }
 
     /**
@@ -184,6 +195,17 @@ class ConfigurationManager {
 
     getImageAssessmentTweakId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID);
+    }
+
+    /**
+     * Getter Methods for New Configuration Parameters
+     */
+    getImageUploadUrl() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL);
+    }
+
+    getImageUploaderApiKey() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY);
     }
 
     /**
@@ -237,11 +259,21 @@ class ConfigurationManager {
     setImageAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID, tweakId);
     }
+
+    /**
+     * Setter Methods for New Configuration Parameters
+     */
+    setImageUploadUrl(url) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL, url);
+    }
+
+    setImageUploaderApiKey(apiKey) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY, apiKey);
+    }
 }
 
 // Ensure singleton instance
 const configurationManager = new ConfigurationManager();
-// Object.freeze(configurationManager); // Removed to allow modifications
 
 /**
  * Retrieves all configuration properties.
@@ -267,7 +299,6 @@ function saveConfiguration(config) {
         if (config.langflowUrl !== undefined) {
             configurationManager.setLangflowUrl(config.langflowUrl);
         }
-        // Removed handling for warmUpUrl, referenceSlideId, emptySlideId
 
         // Handle Tweak IDs
         if (config.textAssessmentTweakId !== undefined) {
@@ -278,6 +309,13 @@ function saveConfiguration(config) {
         }
         if (config.imageAssessmentTweakId !== undefined) {
             configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+        }
+
+        if (config.imageUploadUrl !== undefined) {
+            configurationManager.setImageUploadUrl(config.imageUploadUrl);
+        }
+        if (config.imageUploaderApiKey !== undefined) {
+            configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
         }
 
         Utils.toastMessage("Configuration saved successfully.", "Success", 5);
