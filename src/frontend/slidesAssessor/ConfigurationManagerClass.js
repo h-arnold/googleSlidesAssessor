@@ -311,6 +311,7 @@ function saveConfiguration(config) {
             configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
         }
 
+        // Handle New Configuration Parameters
         if (config.imageUploadUrl !== undefined) {
             configurationManager.setImageUploadUrl(config.imageUploadUrl);
         }
