@@ -10,31 +10,47 @@
  * @param {string} emptySlideId - The ID of the empty slide.
  */
 function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
-  Utils.toastMessage("Assessment run starting...");
+  
+  const lock = LockService.getScriptLock();
 
-  const courseId = Utils.getCourseId();
-  console.log('Assignment Id: ' + assignmentId);
+  if (!lock.tryLock(5000)) { // Attempt to lock for up to 5 seconds
+    console.log("Script is already running.");
+    Utils.toastMessage("Script is already running. Please wait a while and try again.")
+    
+    return; // Exit if the lock can't be obtained
+  }
+  
+  try {
+    Utils.toastMessage("Assessment run starting...");
 
-  // Create an Assignment instance
-  const assignment = new Assignment(courseId, assignmentId, referenceSlideId, emptySlideId);
+    const courseId = Utils.getCourseId();
+    console.log('Assignment Id: ' + assignmentId);
 
-  // Fetch all students and add them to the assignment
-  const students = Student.fetchAllStudents(courseId);
-  students.forEach(student => assignment.addStudent(student));
+    // Create an Assignment instance
+    const assignment = new Assignment(courseId, assignmentId, referenceSlideId, emptySlideId);
 
-  // Process the assignment
-  assignment.populateTasksFromSlides();
-  assignment.fetchSubmittedSlides();
-  assignment.processAllSubmissions();
-  assignment.assessResponses();
+    // Fetch all students and add them to the assignment
+    const students = Student.fetchAllStudents(courseId);
+    students.forEach(student => assignment.addStudent(student));
 
-  // Create the analysis sheet
-  const analysisSheetManager = new AnalysisSheetManager(assignment);
-  analysisSheetManager.createAnalysisSheet();
+    // Process the assignment
+    assignment.populateTasksFromSlides();
+    assignment.fetchSubmittedSlides();
+    assignment.processAllSubmissions();
+    assignment.assessResponses();
 
-  // Update the overview sheet
-  const overviewSheetManager = new OverviewSheetManager();
-  overviewSheetManager.createOverviewSheet();
+    // Create the analysis sheet
+    const analysisSheetManager = new AnalysisSheetManager(assignment);
+    analysisSheetManager.createAnalysisSheet();
+
+    // Update the overview sheet
+    const overviewSheetManager = new OverviewSheetManager();
+    overviewSheetManager.createOverviewSheet();
+  
+  } finally {
+    lock.releaseLock(); // Always release the lock when done
+  }
+  
 }
 
 
@@ -53,7 +69,9 @@ function showAssignmentDropdown() {
   uiManager.showAssignmentDropdown();
 }
 
-function openSlideIdsModal(assignmentData) {
+
+
+function openReferenceSlideModal(assignmentData) {
   const uiManager = new UIManager();
   uiManager.openSlideIdsModal(assignmentData);
 }
@@ -68,3 +86,6 @@ function saveSlideIdsForAssignment(assignmentId, slideIds) {
 }
 
 
+function testProcessSelectedAssignment() {
+  processSelectedAssignment("726424353027","1sWLTTg71FwcyYA5TxcCgQ_V9b2FzPHfPD6PZMJ_5cYw","1E_0jjitFk1RRtFYyFIqlkZtK4jHYQh3xOI-dk8GohKY")
+}
