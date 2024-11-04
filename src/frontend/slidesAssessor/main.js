@@ -84,8 +84,3 @@ function openReferenceSlideModal(assignmentData) {
 function saveSlideIdsForAssignment(assignmentId, slideIds) {
   AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
 }
-
-
-function testProcessSelectedAssignment() {
-  processSelectedAssignment("726424353027","1sWLTTg71FwcyYA5TxcCgQ_V9b2FzPHfPD6PZMJ_5cYw","1E_0jjitFk1RRtFYyFIqlkZtK4jHYQh3xOI-dk8GohKY")
-}
