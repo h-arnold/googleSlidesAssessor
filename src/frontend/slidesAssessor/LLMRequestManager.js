@@ -2,14 +2,14 @@
  * LLMRequestManager Class
  * 
  * Manages the creation, caching, and sending of request objects to the LLM.
+ * Inherits from BaseRequestManager for generic request handling.
  */
-class LLMRequestManager {
+class LLMRequestManager extends BaseRequestManager {
     /**
      * Constructs an LLMRequestManager instance.
      */
     constructor() {
-        this.configManager = configurationManager; // Reference to the singleton ConfigurationManager
-        this.cache = CacheService.getScriptCache(); // Initialize the script cache
+        super(); // Initialize BaseRequestManager
     }
 
     /**
@@ -80,7 +80,7 @@ class LLMRequestManager {
                 if (cachedAssessment) {
                     // Assign assessment directly from cache
                     this.assignAssessmentToStudentTask(uid, cachedAssessment, assignment);
-                    Logger.log(`Cache hit for UID: ${uid}. Assigned assessment from cache.`);
+                    console.log(`Cache hit for UID: ${uid}. Assigned assessment from cache.`);
                     return; // Skip adding to requests
                 }
 
@@ -151,7 +151,7 @@ class LLMRequestManager {
             });
         });
 
-        Logger.log(`Generated ${requests.length} request objects for LLM.`);
+        console.log(`Generated ${requests.length} request objects for LLM.`);
         return requests;
     }
 
@@ -163,59 +163,29 @@ class LLMRequestManager {
      */
     sendRequestsInBatches(requests, assignment) {
         if (!requests || requests.length === 0) {
-            Logger.log("No requests to send.");
+            console.log("No requests to send.");
             return;
         }
 
-        const batchSize = this.configManager.getBatchSize();
-        Logger.log(`Processing requests in batches of ${batchSize}.`);
+        console.log(`Processing requests in batches of ${this.configManager.getBatchSize()}.`);
 
-        // Split requests into batches
-        const batches = [];
-        for (let i = 0; i < requests.length; i += batchSize) {
-            batches.push(requests.slice(i, i + batchSize));
-        }
+        // Use BaseRequestManager's sendRequestsInBatches method
+        const responses = this.sendRequestsInBatches(requests);
 
-        Logger.log(`Total batches to process: ${batches.length}`);
-
-        // Process each batch sequentially
-        batches.forEach((batch, batchIndex) => {
-            Logger.log(`Processing batch ${batchIndex + 1} of ${batches.length}.`);
-
-            // Send the current batch
-            const responses = this.sendSingleBatch(batch);
-
-            // Process responses
-            this.processResponses(responses, batch, assignment);
-        });
-    }
-
-    /**
-     * Sends a single batch of requests to the LLM.
-     * @param {Object[]} batch - An array of request objects in the current batch.
-     * @return {HTTPResponse[]} - An array of responses from the LLM.
-     */
-    sendSingleBatch(batch) {
-        try {
-            const responses = UrlFetchApp.fetchAll(batch);
-            Logger.log(`Sent batch of ${batch.length} requests.`);
-            return responses;
-        } catch (error) {
-            console.error("Error sending batch of requests to the LLM:", error);
-            return [];
-        }
+        // Process responses
+        this.processResponses(responses, requests, assignment);
     }
 
     /**
      * Processes the responses from the LLM and assigns assessments to StudentTasks.
      * Also caches successful assessments.
-     * @param {Object[]} responses - Array of HTTPResponse objects from UrlFetchApp.fetchAll().
-     * @param {Object[]} batch - Array of request objects sent in the current batch.
+     * @param {HTTPResponse[]} responses - Array of HTTPResponse objects from UrlFetchApp.fetchAll().
+     * @param {Object[]} requests - Array of request objects sent in the current batch.
      * @param {Assignment} assignment - The Assignment instance containing StudentTasks.
      */
-    processResponses(responses, batch, assignment) {
+    processResponses(responses, requests, assignment) {
         responses.forEach((response, index) => {
-            const request = batch[index];
+            const request = requests[index];
             const uid = request.uid;
 
             if (response.getResponseCode() === 200) {
@@ -241,7 +211,7 @@ class LLMRequestManager {
                                 const referenceContent = task.taskReference;
                                 const studentResponse = studentTask.responses[taskKey].response;
                                 this.setCachedAssessment(referenceContent, studentResponse, assessmentData);
-                                Logger.log(`Cached assessment for UID: ${uid}.`);
+                                console.log(`Cached assessment for UID: ${uid}.`);
                             }
                         }
                     } else {
@@ -255,6 +225,7 @@ class LLMRequestManager {
                 }
             } else {
                 console.error(`Non-200 response for UID: ${uid} - Code: ${response.getResponseCode()}`);
+                console.log(`Response text is: ${response.getContentText()}`);
                 this.retryRequest(request, assignment);
             }
         });
@@ -356,18 +327,18 @@ class LLMRequestManager {
             request.retries += 1;
             const delay = Math.pow(2, request.retries) * 1000; // Exponential backoff
 
-            Logger.log(`Retrying UID: ${request.uid} - Attempt ${request.retries} after ${delay}ms`);
+            console.log(`Retrying UID: ${request.uid} - Attempt ${request.retries} after ${delay}ms`);
 
             Utilities.sleep(delay);
 
-            // Resend the request
-            try {
-                const newResponse = UrlFetchApp.fetch(request.url, request);
+            // Resend the request using BaseRequestManager's sendRequestWithRetries
+            const newResponse = this.sendRequestWithRetries(request, maxRetries);
+            if (newResponse && newResponse.getResponseCode() === 200) {
                 this.processResponses([newResponse], [request], assignment);
-            } catch (e) {
-                console.error(`Retry failed for UID: ${request.uid} - ${e.message}`);
-                // Optionally, implement further retry logic or logging
-                this.retryRequest(request, assignment); // Recursive retry
+            } else {
+                console.error(`Retry failed for UID: ${request.uid}`);
+                // Optionally, mark the assessment as failed or notify the administrator
+                Utils.toastMessage(`Failed to process assessment for UID: ${request.uid}`, "Error", 5);
             }
         } else {
             console.error(`Max retries exceeded for UID: ${request.uid}`);
@@ -396,8 +367,12 @@ class LLMRequestManager {
         };
 
         try {
-            UrlFetchApp.fetch(request.url, request);
-            Utils.toastMessage("AI backend warmed up and ready to go...", "Warm-Up", 5);
+            const response = this.sendRequestWithRetries(request);
+            if (response) {
+                Utils.toastMessage("AI backend warmed up and ready to go...", "Warm-Up", 5);
+            } else {
+                throw new Error("No response received.");
+            }
         } catch (e) {
             console.error("Error warming up LLM:", e);
             Utils.toastMessage("Failed to warm up AI backend.", "Error", 5);
@@ -405,6 +380,6 @@ class LLMRequestManager {
     }
 }
 
-// Ensure singleton instance (if needed)
+// Ensure singleton instance
 const llmRequestManager = new LLMRequestManager();
 Object.freeze(llmRequestManager);
