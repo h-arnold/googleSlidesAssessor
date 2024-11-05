@@ -22,6 +22,65 @@ class Assignment {
   }
 
   /**
+  * Processes image Blobs in tasks and student responses, uploads them, and replaces them with URLs.
+  */
+  processImageBlobs() {
+    const imageRequestManager = new ImageRequestManager();
+
+    // Process tasks
+    Object.values(this.tasks).forEach(task => {
+      if (task.taskType === 'Image') {
+        // Process taskReference
+        if (task.taskReference) {
+          if (Array.isArray(task.taskReference)) {
+            task.taskReference = task.taskReference.map(blob => {
+              const url = imageRequestManager.uploadImage(blob);
+              return url;
+            });
+          } else {
+            // Single Blob
+            const url = imageRequestManager.uploadImage(task.taskReference);
+            task.taskReference = url;
+          }
+        }
+        // Process emptyContent
+        if (task.emptyContent) {
+          if (Array.isArray(task.emptyContent)) {
+            task.emptyContent = task.emptyContent.map(blob => {
+              const url = imageRequestManager.uploadImage(blob);
+              return url;
+            });
+          } else {
+            const url = imageRequestManager.uploadImage(task.emptyContent);
+            task.emptyContent = url;
+          }
+        }
+      }
+    });
+
+    // Process student responses
+    this.studentTasks.forEach(studentTask => {
+      Object.keys(studentTask.responses).forEach(taskKey => {
+        const responseObj = studentTask.responses[taskKey];
+        if (responseObj && responseObj.response) {
+          if (Array.isArray(responseObj.response)) {
+            // It's an array of Blobs
+            responseObj.response = responseObj.response.map(blob => {
+              const url = imageRequestManager.uploadImage(blob);
+              return url;
+            });
+          } else if (typeof responseObj.response.getBytes === 'function') {
+            // Single Blob
+            const url = imageRequestManager.uploadImage(responseObj.response);
+            responseObj.response = url;
+          }
+          // Else, it's a string or null, no action needed
+        }
+      });
+    });
+  }
+
+  /**
    * Fetches the assignment name from Google Classroom.
    * @param {string} courseId - The ID of the course.
    * @param {string} assignmentId - The ID of the assignment.
@@ -38,9 +97,9 @@ class Assignment {
   }
 
   /**
-* Populates tasks from the reference and empty slides.
-* Combines reference and empty content based on task keys.
-*/
+   * Populates tasks from the reference and empty slides.
+   * Combines reference and empty content based on task keys.
+   */
   populateTasksFromSlides() {
     const slideExtractor = new SlideExtractor();
 
@@ -163,13 +222,16 @@ class Assignment {
    * @return {Object[]} - An array of request objects.
    */
   generateLLMRequests() {
-    const llmRequestManager = new LLMRequestManager();
+    // Utilize the singleton instance of LLMRequestManager
     const requests = llmRequestManager.generateRequestObjects(this);
     return requests;
   }
 
+  /**
+   * Assesses student responses by interacting with the LLM.
+   */
   assessResponses() {
-    const llmRequestManager = new LLMRequestManager();
+    // Utilize the singleton instance of LLMRequestManager
 
     // Warm up LLM
     llmRequestManager.warmUpLLM();
@@ -182,9 +244,27 @@ class Assignment {
     }
 
     // Send Requests in Batches
-    const responses = llmRequestManager.sendRequestsInBatches(requests, this);
-
-    return responses;
+    llmRequestManager.sendRequestsInBatches(requests, this);
   }
 
+  /**
+       * Uploads all image blobs in tasks and student responses to the image service.
+       * Replaces blobs with the returned URLs.
+       */
+  uploadAllImages() {
+    const imageRequestManager = new ImageRequestManager();
+
+    // Upload images in tasks
+    for (const taskKey in this.tasks) {
+      const task = this.tasks[taskKey];
+      task.uploadImages(imageRequestManager);
+    }
+
+    // Upload images in student responses
+    for (const studentTask of this.studentTasks) {
+      studentTask.uploadResponsesImages(imageRequestManager);
+    }
+
+    console.log("All images have been uploaded and URLs have been updated.");
+  }
 }
