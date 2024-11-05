@@ -22,13 +22,13 @@ class StudentTask {
      * @param {string|null} taskIndex - The index of the task.
      * @param {string} uid - The unique ID of this response.
      * @param {string} slideId - The ID of the slide where the task is located.
-     * @param {string|Blob[]} response - The student's response to the task (string or Blob[]).
+     * @param {string|string[]} response - The student's response to the task (string or array of URLs).
      */
     addResponse(taskIndex, uid, slideId, response) {
         this.responses[taskIndex] = {
             uid: uid,
             slideId: slideId,
-            response: response, // String for Text/Table, Blob[] for Image
+            response: response, // String for Text/Table, array of URLs for Image
             assessments: null   // To be filled after LLM assessment
         };
     }
@@ -74,7 +74,6 @@ class StudentTask {
 
     /**
      * Serializes the StudentTask instance to a JSON object.
-     * Converts image Blobs to Base64 strings if present.
      * @return {Object} - The JSON representation of the StudentTask.
      */
     toJSON() {
@@ -88,7 +87,7 @@ class StudentTask {
                     {
                         uid: value.uid,
                         slideId: value.slideId,
-                        response: this.serializeResponse(value.response),
+                        response: value.response,
                         assessments: value.assessments ? value.assessments : null
                     }
                 ])
@@ -97,23 +96,7 @@ class StudentTask {
     }
 
     /**
-     * Helper method to serialize the response based on its type.
-     * @param {string|Blob[]} response - The response to serialize.
-     * @return {string|string[]} - The serialized response.
-     */
-    serializeResponse(response) {
-        if (Array.isArray(response)) {
-            // It's an array of Blobs (Image task)
-            return response.map(blob => Utilities.base64Encode(blob.getBytes()));
-        } else {
-            // It's a string (Text or Table task)
-            return response;
-        }
-    }
-
-    /**
      * Deserializes a JSON object to a StudentTask instance.
-     * Converts Base64 strings back to Blobs for image responses.
      * @param {Object} json - The JSON object representing a StudentTask.
      * @return {StudentTask} - The StudentTask instance.
      */
@@ -122,19 +105,10 @@ class StudentTask {
         const studentInstance = Student.fromJSON(student);
         const studentTask = new StudentTask(studentInstance, assignmentId, documentId);
         for (const [taskKey, responseObj] of Object.entries(responses)) {
-            const response = responseObj.response;
-
-            let deserializedResponse = response;
-
-            if (Array.isArray(response)) {
-                // It's an array of Base64 strings (Image task)
-                deserializedResponse = response.map(base64Str => Utilities.newBlob(Utilities.base64Decode(base64Str), 'image/png'));
-            }
-
             studentTask.responses[taskKey] = {
                 uid: responseObj.uid,
                 slideId: responseObj.slideId,
-                response: deserializedResponse,
+                response: responseObj.response,
                 assessments: responseObj.assessments ? responseObj.assessments : null
             };
         }
@@ -160,7 +134,7 @@ class StudentTask {
      */
     extractAndAssignResponses(slideExtractor, tasks) {
         // Extract tasks from the student's submission document
-        const studentTasks = slideExtractor.extractTasksFromSlides(this.documentId, "reference"); // Assuming "reference" contentType
+        const studentTasks = slideExtractor.extractTasksFromSlides(this.documentId);
 
         // Create a map of taskTitle to task data (slideId and response)
         const submissionMap = {};
