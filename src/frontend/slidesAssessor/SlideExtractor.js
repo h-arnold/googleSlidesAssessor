@@ -9,11 +9,51 @@ class SlideExtractor {
      */
     constructor() {
         // Initialize any required properties here
+        this.requestManager = new BaseRequestManager(); // Utilize BaseRequestManager
+    }
+
+    /**
+     * Fetches an image of a Google Slide and returns it as a Blob.
+     * Utilizes BaseRequestManager for handling the HTTP request.
+     * @param {Object} params - Parameters containing documentId and slideId.
+     * @param {string} params.documentId - The ID of the Google Slides presentation.
+     * @param {string} params.slideId - The ID of the specific slide within the presentation.
+     * @return {Blob|null} - The Blob object of the slide image or null if not successful.
+     */
+    getSlideImage(params) {
+        // Construct the URL using the provided parameters
+        const url = `https://docs.google.com/presentation/d/${params.documentId}/export/png?id=${params.documentId}&pageid=${params.slideId}`;
+        const request = {
+            url: url,
+            method: "get",
+            headers: {
+                'Authorization': 'Bearer ' + ScriptApp.getOAuthToken()
+            },
+            muteHttpExceptions: true
+        };
+
+        try {
+            // Use BaseRequestManager to send the request with retries and error handling
+            const response = this.requestManager.sendRequestWithRetries(request);
+            if (response && response.getResponseCode() === 200) {
+                // Get the Blob object from the response
+                const blob = response.getBlob().setName(`Slide_${params.slideId}.png`);
+                console.log("Slide image successfully retrieved!");
+                // Return the Blob object
+                return blob;
+            } else {
+                console.log(`Failed to retrieve slide image for slide ID ${params.slideId}. Response Code: ${response ? response.getResponseCode() : 'No Response'}`);
+                return null;
+            }
+        } catch (e) {
+            console.log(`Unable to download slide image for slide ID ${params.slideId}: ${e.message}`);
+            return null;
+        }
     }
 
     /**
      * Extracts Task instances from a Google Slides presentation.
-     * Differentiates between task titles, images, and notes based on slide element descriptions.
+     * Differentiates between task titles, images, notes, and entire slide images based on slide element descriptions.
      * @param {string} documentId - The ID of the Google Slides presentation.
      * @param {string|null} contentType - Type of content to extract: "reference", "empty", or null for default.
      * @return {Task[]} - An array of Task instances extracted from the slides.
@@ -40,7 +80,7 @@ class SlideExtractor {
 
                 switch (tag) {
                     case '#': // Text-Based Task Title
-                        // Ensure the page element is of a supported type (Shape or Table)
+                        // Existing logic for handling text-based task titles
                         let content = '';
                         let taskType = '';
                         const type = pageElement.getPageElementType();
@@ -65,7 +105,7 @@ class SlideExtractor {
                         break;
 
                     case '~': // Image-Based Task Title
-                        // Handle image tasks
+                        // Existing logic for handling image-based task titles
                         const imagesWithin = this.getImagesWithinBoundary(slide, pageElement);
                         const imageBlobs = imagesWithin.map(img => img.getBlob().setName(`Image_${img.getObjectId()}.png`));
 
@@ -77,11 +117,26 @@ class SlideExtractor {
                         break;
 
                     case '^': // Notes
+                        // Existing logic for handling notes
                         if (lastTask) {
                             const notesContent = this.extractTextFromPageElement(pageElement);
                             lastTask.taskNotes = notesContent;
                         } else {
                             console.warn(`Note found without an associated task. Description: ${description}`);
+                        }
+                        break;
+
+                    case '|': // Entire Slide Image
+                        // New logic for handling entire slide images
+                        const slideImage = this.getSlideImage({ documentId, slideId: currentSlideId });
+                        if (slideImage) {
+                            const slideImageTask = this.parseTask(key, slideImage, currentSlideId, "SlideImage", contentType);
+                            if (slideImageTask) {
+                                tasks.push(slideImageTask);
+                                lastTask = slideImageTask; // Update the lastTask reference
+                            }
+                        } else {
+                            console.log(`Failed to retrieve image for slide ID ${currentSlideId}`);
                         }
                         break;
 
@@ -99,9 +154,9 @@ class SlideExtractor {
     /**
      * Parses raw task content to create a Task instance.
      * @param {string} key - The task key extracted from the slide.
-     * @param {string|Blob[]} content - The raw content of the task (string or Blob[]).
+     * @param {string|Blob[]} content - The raw content of the task (string, Blob, or Blob[]).
      * @param {string} slideId - The ID of the slide where the task is located.
-     * @param {string} taskType - The type of the task: "Text", "Table", or "Image".
+     * @param {string} taskType - The type of the task: "Text", "Table", "Image", or "SlideImage".
      * @param {string|null} contentType - Type of content: "reference", "empty", or null for default.
      * @return {Task|null} - The Task instance or null if parsing fails.
      */
