@@ -130,7 +130,7 @@ class SlideExtractor {
                         // New logic for handling entire slide images
                         const slideImage = this.getSlideImage({ documentId, slideId: currentSlideId });
                         if (slideImage) {
-                            const slideImageTask = this.parseTask(key, slideImage, currentSlideId, "SlideImage", contentType);
+                            const slideImageTask = this.parseTask(key, slideImage, currentSlideId, "Image", contentType);
                             if (slideImageTask) {
                                 tasks.push(slideImageTask);
                                 lastTask = slideImageTask; // Update the lastTask reference
