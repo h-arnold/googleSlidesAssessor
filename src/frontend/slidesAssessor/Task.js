@@ -10,9 +10,9 @@ class Task {
      * @param {string} taskType - Type of the task: "Text", "Table", or "Image".
      * @param {string} slideId - The ID of the slide where the task is located in the reference document.
      * @param {string|null} imageCategory - Applicable only for images (e.g., "diagram", "block code"). Null otherwise.
-     * @param {string|string[]} taskReference - Reference content for assessment (string for Text/Table, array of URLs for Image).
+     * @param {string|string[]} taskReference - Reference content for assessment (string for Text/Table, array of file paths for Image).
      * @param {string|null} taskNotes - Additional notes for LLM assessment. Can be null.
-     * @param {string|string[]} emptyContent - Blank template content for the task (string or array of URLs).
+     * @param {string|string[]} emptyContent - Blank template content for the task (string or array of file paths).
      */
     constructor(taskTitle, taskType, slideId, imageCategory, taskReference = null, taskNotes = null, emptyContent = null) {
         this.taskTitle = taskTitle;          // string

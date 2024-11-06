@@ -15,7 +15,7 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
 
   if (!lock.tryLock(5000)) { // Attempt to lock for up to 5 seconds
     console.log("Script is already running.");
-    Utils.toastMessage("Script is already running. Please wait a while and try again.")
+    Utils.toastMessage("Script is already running. Please wait a while and try again.","Notice", 2)
     
     return; // Exit if the lock can't be obtained
   }
