@@ -1,5 +1,5 @@
 # Use the specified base image
-FROM langflowai/langflow-backend:latest
+FROM langflowai/langflow:latest
 
 # Ensure the user is root
 USER root
