@@ -1,9 +1,0 @@
-{
-    "name": "upload-image-function",
-    "version": "0.0.1",
-    "dependencies": {
-        "@google-cloud/storage": "^7.13.0",
-        "uuid": "^10.0.0",
-        "image-size": "^1.1.1"
-    }
-}

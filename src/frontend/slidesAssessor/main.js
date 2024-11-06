@@ -37,6 +37,7 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
     assignment.populateTasksFromSlides();
     assignment.fetchSubmittedSlides();
     assignment.processAllSubmissions();
+    assignment.processImageBlobs();
     assignment.assessResponses();
 
     // Create the analysis sheet
@@ -74,13 +75,4 @@ function showAssignmentDropdown() {
 function openReferenceSlideModal(assignmentData) {
   const uiManager = new UIManager();
   uiManager.openSlideIdsModal(assignmentData);
-}
-
-/**
- * Saves slide IDs for a specific assignment.
- * @param {string} assignmentId - The ID of the assignment.
- * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
- */
-function saveSlideIdsForAssignment(assignmentId, slideIds) {
-  AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
 }
