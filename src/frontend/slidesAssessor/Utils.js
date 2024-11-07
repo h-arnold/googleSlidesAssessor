@@ -99,6 +99,7 @@ class Utils {
         return assignments;
     }
 
+
   // -------------------
   // UI Methods
   // -------------------
@@ -123,7 +124,6 @@ class Utils {
     }
   }
 
-  // Add other utility methods as needed
 }
 
 // Ensure singleton instance (if needed)

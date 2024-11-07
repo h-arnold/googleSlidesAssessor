@@ -1,10 +1,5 @@
-//AnalysisSheetManager.gs
+// AnalysisSheetManager.gs
 
-/**
- * AnalysisSheetManager Class
- * 
- * Handles the creation and formatting of the analysis sheet for a given assignment.
- */
 class AnalysisSheetManager extends BaseSheetManager {
     /**
      * Constructs an AnalysisSheetManager instance.
@@ -144,15 +139,15 @@ class AnalysisSheetManager extends BaseSheetManager {
             // For each task
             Object.keys(this.assignment.tasks).forEach(taskKey => {
                 const response = studentTask.getResponse(taskKey);
-                if (response && response.assessment) {
+                if (response && response.assessments) {
                     // Completeness
-                    const completeness = response.assessment['completeness']?.score;
-                    if (typeof completeness === 'number') {
+                    const completeness = response.assessments['completeness']?.score;
+                    if (typeof completeness === 'number' && completeness > 0) {
                         rowData.push({ userEnteredValue: { numberValue: completeness } });
                     } else {
                         rowData.push({ userEnteredValue: { stringValue: 'N' } });
                     }
-                    const completenessReasoning = response.assessment['completeness']?.reasoning || 'No reasoning provided.';
+                    const completenessReasoning = response.assessments['completeness']?.reasoning || 'No reasoning provided.';
                     notesData.push({
                         note: this.formatNote(
                             completenessReasoning,
@@ -164,13 +159,13 @@ class AnalysisSheetManager extends BaseSheetManager {
                     currentColumnIndex++;
 
                     // Accuracy
-                    const accuracy = response.assessment['accuracy']?.score;
-                    if (typeof accuracy === 'number') {
+                    const accuracy = response.assessments['accuracy']?.score;
+                    if (typeof accuracy === 'number' && accuracy > 0) {
                         rowData.push({ userEnteredValue: { numberValue: accuracy } });
                     } else {
                         rowData.push({ userEnteredValue: { stringValue: 'N' } });
                     }
-                    const accuracyReasoning = response.assessment['accuracy']?.reasoning || 'No reasoning provided.';
+                    const accuracyReasoning = response.assessments['accuracy']?.reasoning || 'No reasoning provided.';
                     notesData.push({
                         note: this.formatNote(
                             accuracyReasoning,
@@ -182,13 +177,13 @@ class AnalysisSheetManager extends BaseSheetManager {
                     currentColumnIndex++;
 
                     // SPaG
-                    const spag = response.assessment['spag']?.score;
-                    if (typeof spag === 'number') {
+                    const spag = response.assessments['spag']?.score;
+                    if (typeof spag === 'number' && spag > 0) {
                         rowData.push({ userEnteredValue: { numberValue: spag } });
                     } else {
                         rowData.push({ userEnteredValue: { stringValue: 'N' } });
                     }
-                    const spagReasoning = response.assessment['spag']?.reasoning || 'No reasoning provided.';
+                    const spagReasoning = response.assessments['spag']?.reasoning || 'No reasoning provided.';
                     notesData.push({
                         note: this.formatNote(
                             spagReasoning,
@@ -201,9 +196,9 @@ class AnalysisSheetManager extends BaseSheetManager {
 
                 } else {
                     // If no assessment, fill with 'N'
-                    rowData.push({ userEnteredValue: { stringValue: 'N' } });
-                    rowData.push({ userEnteredValue: { stringValue: 'N' } });
-                    rowData.push({ userEnteredValue: { stringValue: 'N' } });
+                    rowData.push({ userEnteredValue: { stringValue: 'E' } });
+                    rowData.push({ userEnteredValue: { stringValue: 'E' } });
+                    rowData.push({ userEnteredValue: { stringValue: 'E' } });
                     currentColumnIndex += 3;
                 }
             });

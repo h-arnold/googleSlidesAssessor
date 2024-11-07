@@ -25,7 +25,8 @@ class BaseRequestManager {
         while (attempt <= maxRetries) {
             try {
                 const response = UrlFetchApp.fetch(request.url, request);
-                if (response.getResponseCode() === 200) {
+                const responseCode = response.getResponseCode()
+                if (responseCode === 200 || responseCode === 201) {
                     return response;
                 } else {
                     console.warn(`Request to ${request.url} failed with status ${response.getResponseCode()}. Attempt ${attempt + 1} of ${maxRetries + 1}.`);

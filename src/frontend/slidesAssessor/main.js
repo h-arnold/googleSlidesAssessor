@@ -75,4 +75,6 @@ function showAssignmentDropdown() {
 function openReferenceSlideModal(assignmentData) {
   const uiManager = new UIManager();
   uiManager.openSlideIdsModal(assignmentData);
+
+
 }

@@ -243,8 +243,8 @@ class Assignment {
       return;
     }
 
-    // Send Requests in Batches
-    llmRequestManager.sendRequestsInBatches(requests, this);
+    // Send Requests in Batches and adds the responses to the assignment instance
+    llmRequestManager.processStudentResponses(requests, this)
   }
 
   /**

@@ -22,7 +22,7 @@ class StudentTask {
      * @param {string|null} taskIndex - The index of the task.
      * @param {string} uid - The unique ID of this response.
      * @param {string} slideId - The ID of the slide where the task is located.
-     * @param {string|string[]} response - The student's response to the task (string or array of file paths).
+     * @param {string|string[]} response - The student's response to the task (string or array of URLs).
      */
     addResponse(taskIndex, uid, slideId, response) {
         this.responses[taskIndex] = {
