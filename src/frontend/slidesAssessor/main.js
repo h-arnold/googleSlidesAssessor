@@ -78,3 +78,13 @@ function openReferenceSlideModal(assignmentData) {
 
 
 }
+
+/**
+ * Saves slide IDs for a specific assignment.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ */
+function saveSlideIdsForAssignment(assignmentId, slideIds) {
+  AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
+}
+
