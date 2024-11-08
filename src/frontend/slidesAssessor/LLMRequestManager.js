@@ -114,6 +114,12 @@ class LLMRequestManager extends BaseRequestManager {
           return;
         }
 
+        //Handles null student responses.
+        if (!studentResponse) {
+          console.warn(`No student response for UID ${uid}. Is the tag mismatched or deleted?. Skipping.`)
+          return; //Skip blank student responses.
+        }
+
         // Construct the tweaks object with the uid
         const tweaks = {};
         tweaks[tweakId] = {
