@@ -13,6 +13,8 @@ class OverviewSheetManager extends BaseSheetManager {
         super();
         this.headers = ['Name', 'Completeness', 'Accuracy', 'SPaG', 'Average'];
         this.studentAverages = []; // To hold calculated averages
+        this.rangeAssociations = []; // To keep track of range types and sheet names
+        this.requests = []; // Initialize requests array
     }
 
     /**
@@ -50,12 +52,31 @@ class OverviewSheetManager extends BaseSheetManager {
         const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
         const ranges = [];
 
+        // Since ranges may overlap, we need to keep track of the association
+        this.rangeAssociations = [];
+
         for (const sheetName in this.averagesRanges) {
             const sheetRanges = this.averagesRanges[sheetName];
-            ranges.push(sheetRanges.studentName);
-            ranges.push(sheetRanges.completeness);
-            ranges.push(sheetRanges.accuracy);
-            ranges.push(sheetRanges.spag);
+
+            if (sheetRanges.studentName) {
+                ranges.push(sheetRanges.studentName);
+                this.rangeAssociations.push({ type: 'studentName', sheetName });
+            }
+
+            if (sheetRanges.completeness) {
+                ranges.push(sheetRanges.completeness);
+                this.rangeAssociations.push({ type: 'completeness', sheetName });
+            }
+
+            if (sheetRanges.accuracy) {
+                ranges.push(sheetRanges.accuracy);
+                this.rangeAssociations.push({ type: 'accuracy', sheetName });
+            }
+
+            if (sheetRanges.spag) {
+                ranges.push(sheetRanges.spag);
+                this.rangeAssociations.push({ type: 'spag', sheetName });
+            }
         }
 
         const response = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges: ranges });
@@ -63,48 +84,102 @@ class OverviewSheetManager extends BaseSheetManager {
     }
 
     /**
-     * Calculates overall averages for each student.
+     * Calculates overall averages for each student, skipping non-numeric values.
      */
     calculateAverages() {
         const studentData = {};
 
-        for (let i = 0; i < this.retrievedData.length; i += 4) {
-            const names = this.retrievedData[i].values || [];
-            const completenessValues = this.retrievedData[i + 1].values || [];
-            const accuracyValues = this.retrievedData[i + 2].values || [];
-            const spagValues = this.retrievedData[i + 3].values || [];
+        for (let i = 0; i < this.retrievedData.length; i++) {
+            const association = this.rangeAssociations[i];
+            const values = this.retrievedData[i].values || [];
 
-            for (let j = 0; j < names.length; j++) {
-                const name = names[j][0];
-                const completeness = parseFloat(completenessValues[j][0]);
-                const accuracy = parseFloat(accuracyValues[j][0]);
-                const spag = parseFloat(spagValues[j][0]);
+            values.forEach((row, index) => {
+                const value = row[0];
+                const studentKey = `${association.sheetName}_${index}`;
 
-                if (!studentData[name]) {
-                    studentData[name] = { completeness: 0, accuracy: 0, spag: 0, count: 0 };
+                if (association.type === 'studentName') {
+                    if (!studentData[studentKey]) {
+                        studentData[studentKey] = { name: value };
+                    } else {
+                        studentData[studentKey].name = value;
+                    }
+                } else {
+                    const numericValue = parseFloat(value);
+                    if (!studentData[studentKey]) {
+                        studentData[studentKey] = { name: '' };
+                    }
+                    if (association.type !== 'studentName') {
+                        if (!studentData[studentKey][association.type]) {
+                            studentData[studentKey][association.type] = 0;
+                            studentData[studentKey][`${association.type}Count`] = 0;
+                        }
+                        if (!isNaN(numericValue)) {
+                            studentData[studentKey][association.type] += numericValue;
+                            studentData[studentKey][`${association.type}Count`] += 1;
+                        }
+                    }
                 }
+            });
+        }
 
-                if (!isNaN(completeness)) {
-                    studentData[name].completeness += completeness;
-                }
-                if (!isNaN(accuracy)) {
-                    studentData[name].accuracy += accuracy;
-                }
-                if (!isNaN(spag)) {
-                    studentData[name].spag += spag;
-                }
-                studentData[name].count++;
+        // Aggregate data by student name
+        const aggregatedData = {};
+
+        for (const key in studentData) {
+            const data = studentData[key];
+            const name = data.name.trim();
+            if (!name) continue; // Skip entries without a name
+
+            if (!aggregatedData[name]) {
+                aggregatedData[name] = {
+                    completeness: 0,
+                    completenessCount: 0,
+                    accuracy: 0,
+                    accuracyCount: 0,
+                    spag: 0,
+                    spagCount: 0
+                };
+            }
+
+            if (data.completeness !== undefined) {
+                aggregatedData[name].completeness += data.completeness;
+                aggregatedData[name].completenessCount += data.completenessCount;
+            }
+
+            if (data.accuracy !== undefined) {
+                aggregatedData[name].accuracy += data.accuracy;
+                aggregatedData[name].accuracyCount += data.accuracyCount;
+            }
+
+            if (data.spag !== undefined) {
+                aggregatedData[name].spag += data.spag;
+                aggregatedData[name].spagCount += data.spagCount;
             }
         }
 
         // Prepare student averages array
-        for (const name in studentData) {
-            const data = studentData[name];
+        this.studentAverages = [];
+
+        for (const name in aggregatedData) {
+            const data = aggregatedData[name];
+
+            const completenessAvg = data.completenessCount > 0
+                ? (data.completeness / data.completenessCount).toFixed(2)
+                : 'N/A';
+
+            const accuracyAvg = data.accuracyCount > 0
+                ? (data.accuracy / data.accuracyCount).toFixed(2)
+                : 'N/A';
+
+            const spagAvg = data.spagCount > 0
+                ? (data.spag / data.spagCount).toFixed(2)
+                : 'N/A';
+
             this.studentAverages.push({
                 name: name,
-                completeness: (data.completeness / data.count).toFixed(2),
-                accuracy: (data.accuracy / data.count).toFixed(2),
-                spag: (data.spag / data.count).toFixed(2)
+                completeness: completenessAvg,
+                accuracy: accuracyAvg,
+                spag: spagAvg
             });
         }
 
@@ -154,9 +229,9 @@ class OverviewSheetManager extends BaseSheetManager {
         this.studentAverages.forEach((student, index) => {
             const rowData = [
                 { userEnteredValue: { stringValue: student.name } },
-                { userEnteredValue: { numberValue: parseFloat(student.completeness) } },
-                { userEnteredValue: { numberValue: parseFloat(student.accuracy) } },
-                { userEnteredValue: { numberValue: parseFloat(student.spag) } },
+                { userEnteredValue: { numberValue: student.completeness !== 'N/A' ? parseFloat(student.completeness) : null } },
+                { userEnteredValue: { numberValue: student.accuracy !== 'N/A' ? parseFloat(student.accuracy) : null } },
+                { userEnteredValue: { numberValue: student.spag !== 'N/A' ? parseFloat(student.spag) : null } },
                 {
                     userEnteredValue: {
                         formulaValue: `=IFERROR(ROUND(AVERAGE(B${startRowIndex + index + 1}:D${startRowIndex + index + 1}),1),0)`
@@ -201,7 +276,15 @@ class OverviewSheetManager extends BaseSheetManager {
 
         const columns = ['B', 'C', 'D', 'E'];
         columns.forEach((col, index) => {
-            const formula = `=IFERROR(ROUND(AVERAGE(${col}2:${col}${lastDataRowIndex}),1),0)`;
+            let formula;
+            if (col === 'E') {
+                // Overall average
+                formula = `=IFERROR(ROUND(AVERAGE(E2:E${lastDataRowIndex}),1),0)`;
+            } else {
+                // Column-specific average
+                formula = `=IFERROR(ROUND(AVERAGE(${col}2:${col}${lastDataRowIndex}),1),0)`;
+            }
+
             rowData.push({
                 userEnteredValue: { formulaValue: formula },
                 userEnteredFormat: {
@@ -236,7 +319,7 @@ class OverviewSheetManager extends BaseSheetManager {
                 range: {
                     sheetId: sheetId,
                     startRowIndex: 1, // After headers
-                    endRowIndex: numRows,
+                    endRowIndex: numRows + 2, // Including blank and average rows
                     startColumnIndex: 1,
                     endColumnIndex: numColumns
                 },
@@ -307,107 +390,117 @@ class OverviewSheetManager extends BaseSheetManager {
     }
 
     /**
-     * Fetches data from the stored ranges using batchGet.
+     * Ensures the sheet has enough columns.
+     * @param {number} requiredColumns - The number of required columns.
      */
-    fetchData() {
-        const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        const ranges = [];
-
-        // Since ranges may overlap, we need to keep track of the association
-        this.rangeAssociations = [];
-
-        for (const sheetName in this.averagesRanges) {
-            const sheetRanges = this.averagesRanges[sheetName];
-
-            ranges.push(sheetRanges.studentName);
-            this.rangeAssociations.push({ type: 'studentName', sheetName });
-
-            ranges.push(sheetRanges.completeness);
-            this.rangeAssociations.push({ type: 'completeness', sheetName });
-
-            ranges.push(sheetRanges.accuracy);
-            this.rangeAssociations.push({ type: 'accuracy', sheetName });
-
-            ranges.push(sheetRanges.spag);
-            this.rangeAssociations.push({ type: 'spag', sheetName });
+    ensureSheetHasEnoughColumns(requiredColumns) {
+        const currentColumns = this.sheet.getMaxColumns();
+        if (currentColumns < requiredColumns) {
+            this.sheet.insertColumnsAfter(currentColumns, requiredColumns - currentColumns);
         }
-
-        const response = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges: ranges });
-        this.retrievedData = response.valueRanges;
     }
 
     /**
-     * Calculates overall averages for each student.
+     * Creates a request to set header values.
+     * @param {number} sheetId - The ID of the sheet.
+     * @param {Array<string>} headers - The header titles.
+     * @param {number} rowIndex - The row index to set headers.
+     * @returns {Object} - The header values request.
      */
-    calculateAverages() {
-        const studentData = {};
-
-        for (let i = 0; i < this.retrievedData.length; i++) {
-            const association = this.rangeAssociations[i];
-            const values = this.retrievedData[i].values || [];
-
-            values.forEach((row, index) => {
-                const value = row[0];
-                const studentIndex = `${association.sheetName}_${index}`;
-
-                if (association.type === 'studentName') {
-                    if (!studentData[studentIndex]) {
-                        studentData[studentIndex] = { name: value };
-                    } else {
-                        studentData[studentIndex].name = value;
-                    }
-                } else {
-                    const numericValue = parseFloat(value);
-                    if (!studentData[studentIndex]) {
-                        studentData[studentIndex] = {};
-                    }
-                    if (!studentData[studentIndex][association.type]) {
-                        studentData[studentIndex][association.type] = 0;
-                        studentData[studentIndex].count = 0;
-                    }
-                    if (!isNaN(numericValue)) {
-                        studentData[studentIndex][association.type] += numericValue;
-                    }
-                    if (association.type === 'spag') {
-                        studentData[studentIndex].count++;
-                    }
-                }
-            });
-        }
-
-        // Prepare student averages array
-        const studentMap = {};
-
-        for (const key in studentData) {
-            const data = studentData[key];
-            const name = data.name;
-            if (!studentMap[name]) {
-                studentMap[name] = {
-                    completeness: 0,
-                    accuracy: 0,
-                    spag: 0,
-                    count: 0
-                };
+    createHeaderValuesRequest(sheetId, headers, rowIndex) {
+        return {
+            updateCells: {
+                rows: [{
+                    values: headers.map(header => ({
+                        userEnteredValue: { stringValue: header }
+                    }))
+                }],
+                fields: 'userEnteredValue',
+                start: { sheetId: sheetId, rowIndex: rowIndex, columnIndex: 0 }
             }
-            studentMap[name].completeness += data.completeness || 0;
-            studentMap[name].accuracy += data.accuracy || 0;
-            studentMap[name].spag += data.spag || 0;
-            studentMap[name].count += data.count || 0;
-        }
+        };
+    }
 
-        this.studentAverages = [];
+    /**
+     * Creates a request to format headers.
+     * @param {number} sheetId - The ID of the sheet.
+     * @param {number} numColumns - Number of columns to format.
+     * @param {number} rowIndex - The row index of headers.
+     * @param {number} numRows - Number of rows to format.
+     * @returns {Object} - The header formatting request.
+     */
+    createHeaderFormattingRequest(sheetId, numColumns, rowIndex, numRows) {
+        return {
+            repeatCell: {
+                range: {
+                    sheetId: sheetId,
+                    startRowIndex: rowIndex,
+                    endRowIndex: rowIndex + numRows,
+                    startColumnIndex: 0,
+                    endColumnIndex: numColumns
+                },
+                cell: {
+                    userEnteredFormat: {
+                        textFormat: { bold: true },
+                        horizontalAlignment: "CENTER",
+                        verticalAlignment: "MIDDLE"
+                    }
+                },
+                fields: "userEnteredFormat(textFormat, horizontalAlignment, verticalAlignment)"
+            }
+        };
+    }
 
-        for (const name in studentMap) {
-            const data = studentMap[name];
-            this.studentAverages.push({
-                name: name,
-                completeness: (data.completeness / data.count).toFixed(2),
-                accuracy: (data.accuracy / data.count).toFixed(2),
-                spag: (data.spag / data.count).toFixed(2)
-            });
-        }
+    /**
+     * Creates requests to set column widths.
+     * @param {number} sheetId - The ID of the sheet.
+     * @param {Array<number>} widths - Array of widths for each column.
+     * @returns {Array<Object>} - Array of column width requests.
+     */
+    createColumnWidthRequests(sheetId, widths) {
+        return widths.map((width, index) => ({
+            updateDimensionProperties: {
+                range: {
+                    sheetId: sheetId,
+                    dimension: "COLUMNS",
+                    startIndex: index,
+                    endIndex: index + 1
+                },
+                properties: { pixelSize: width },
+                fields: "pixelSize"
+            }
+        }));
+    }
 
-        // Sort students alphabetically
-        this.studentAverages.sort((a, b) => a.name.localeCompare(b.name));
+    /**
+     * Creates a request to freeze rows or columns.
+     * @param {number} sheetId - The ID of the sheet.
+     * @param {number} frozenRowCount - Number of rows to freeze.
+     * @param {number} frozenColumnCount - Number of columns to freeze.
+     * @returns {Object} - The freeze request.
+     */
+    createFreezeRequest(sheetId, frozenRowCount, frozenColumnCount) {
+        return {
+            updateSheetProperties: {
+                properties: {
+                    sheetId: sheetId,
+                    gridProperties: {
+                        frozenRowCount: frozenRowCount,
+                        frozenColumnCount: frozenColumnCount
+                    }
+                },
+                fields: "gridProperties.frozenRowCount, gridProperties.frozenColumnCount"
+            }
+        };
+    }
+
+    /**
+     * Executes all batch update requests.
+     */
+    executeBatchUpdate() {
+        if (this.requests.length === 0) return;
+
+        const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        Sheets.Spreadsheets.batchUpdate({ requests: this.requests }, spreadsheetId);
     }
 }

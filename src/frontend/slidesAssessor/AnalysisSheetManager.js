@@ -195,7 +195,7 @@ class AnalysisSheetManager extends BaseSheetManager {
                     currentColumnIndex++;
 
                 } else {
-                    // If no assessment, fill with 'N'
+                    // If no assessment, then there is an error. Fill the sheet with E.
                     rowData.push({ userEnteredValue: { stringValue: 'E' } });
                     rowData.push({ userEnteredValue: { stringValue: 'E' } });
                     rowData.push({ userEnteredValue: { stringValue: 'E' } });
@@ -204,9 +204,9 @@ class AnalysisSheetManager extends BaseSheetManager {
             });
 
             // Averages formulas
-            const completenessFormula = `=IFERROR(ROUND(AVERAGEA(${completenessCells.join(",")}),1),0)`;
-            const accuracyFormula = `=IFERROR(ROUND(AVERAGE(${accuracyCells.join(",")}),1),0)`;
-            const spagFormula = `=IFERROR(ROUND(AVERAGE(${spagCells.join(",")}),1),0)`;
+            const completenessFormula = `=IFERROR(ROUND(AVERAGEA(${completenessCells.join(",")}),1),"E")`; //
+            const accuracyFormula = `=IFERROR(ROUND(AVERAGE(${accuracyCells.join(",")}),1),"N")`;
+            const spagFormula = `=IFERROR(ROUND(AVERAGE(${spagCells.join(",")}),1),"N")`;
             rowData.push({ userEnteredValue: { formulaValue: completenessFormula } });
             rowData.push({ userEnteredValue: { formulaValue: accuracyFormula } });
             rowData.push({ userEnteredValue: { formulaValue: spagFormula } });
