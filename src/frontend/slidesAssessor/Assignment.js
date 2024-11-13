@@ -19,65 +19,7 @@ class Assignment {
     this.emptyDocumentId = emptyDocumentId;
     this.tasks = {};           // { taskKey: Task }
     this.studentTasks = [];    // Array of StudentTask instances
-  }
-
-  /**
-  * Processes image Blobs in tasks and student responses, uploads them, and replaces them with URLs.
-  */
-  processImageBlobs() {
-    const imageRequestManager = new ImageRequestManager();
-
-    // Process tasks
-    Object.values(this.tasks).forEach(task => {
-      if (task.taskType === 'Image') {
-        // Process taskReference
-        if (task.taskReference) {
-          if (Array.isArray(task.taskReference)) {
-            task.taskReference = task.taskReference.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else {
-            // Single Blob
-            const url = imageRequestManager.uploadImage(task.taskReference);
-            task.taskReference = url;
-          }
-        }
-        // Process emptyContent
-        if (task.emptyContent) {
-          if (Array.isArray(task.emptyContent)) {
-            task.emptyContent = task.emptyContent.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else {
-            const url = imageRequestManager.uploadImage(task.emptyContent);
-            task.emptyContent = url;
-          }
-        }
-      }
-    });
-
-    // Process student responses
-    this.studentTasks.forEach(studentTask => {
-      Object.keys(studentTask.responses).forEach(taskKey => {
-        const responseObj = studentTask.responses[taskKey];
-        if (responseObj && responseObj.response) {
-          if (Array.isArray(responseObj.response)) {
-            // It's an array of Blobs
-            responseObj.response = responseObj.response.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else if (typeof responseObj.response.getBytes === 'function') {
-            // Single Blob
-            const url = imageRequestManager.uploadImage(responseObj.response);
-            responseObj.response = url;
-          }
-          // Else, it's a string or null, no action needed
-        }
-      });
-    });
+    this.imageManager = new ImageManager(); // Initialize ImageManager instance
   }
 
   /**
@@ -101,7 +43,7 @@ class Assignment {
    * Combines reference and empty content based on task keys.
    */
   populateTasksFromSlides() {
-    const slideExtractor = new SlideExtractor();
+    const slideExtractor = new SlideContentManager();
 
     // Extract reference tasks
     const referenceTasks = slideExtractor.extractTasksFromSlides(this.referenceDocumentId, "reference");
@@ -131,7 +73,6 @@ class Assignment {
 
     console.log(`Populated ${Object.keys(this.tasks).length} tasks from slides.`);
   }
-
 
   /**
    * Adds a student to the assignment.
@@ -206,7 +147,7 @@ class Assignment {
    * Processes all student submissions by extracting responses.
    */
   processAllSubmissions() {
-    const slideExtractor = new SlideExtractor();
+    const slideExtractor = new SlideContentManager(); // Use SlideContentManager instead of SlideExtractor
 
     this.studentTasks.forEach(studentTask => {
       if (studentTask.documentId) {
@@ -215,6 +156,13 @@ class Assignment {
         console.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
       }
     });
+  }
+
+  /**
+   * Processes images by delegating to ImageManager.
+   */
+  processImages() {
+    this.imageManager.processImages(this);
   }
 
   /**
@@ -245,26 +193,5 @@ class Assignment {
 
     // Send Requests in Batches and adds the responses to the assignment instance
     llmRequestManager.processStudentResponses(requests, this)
-  }
-
-  /**
-       * Uploads all image blobs in tasks and student responses to the image service.
-       * Replaces blobs with the returned URLs.
-       */
-  uploadAllImages() {
-    const imageRequestManager = new ImageRequestManager();
-
-    // Upload images in tasks
-    for (const taskKey in this.tasks) {
-      const task = this.tasks[taskKey];
-      task.uploadImages(imageRequestManager);
-    }
-
-    // Upload images in student responses
-    for (const studentTask of this.studentTasks) {
-      studentTask.uploadResponsesImages(imageRequestManager);
-    }
-
-    console.log("All images have been uploaded and URLs have been updated.");
   }
 }

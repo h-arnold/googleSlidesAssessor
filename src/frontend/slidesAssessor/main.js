@@ -1,8 +1,3 @@
-// Main.gs
-//This file holds the global functions needed to start the assessment process and handle other functions like managing configurations.
-
-//This is the main function that starts the assessment process.
-
 /**
  * Processes the selected assignment with the provided slide IDs.
  * @param {string} assignmentId - The ID of the assignment.
@@ -37,7 +32,7 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
     assignment.populateTasksFromSlides();
     assignment.fetchSubmittedSlides();
     assignment.processAllSubmissions();
-    assignment.processImageBlobs();
+    assignment.processImages(); // Delegates image processing to ImageManager
     assignment.assessResponses();
 
     // Create the analysis sheet
@@ -53,38 +48,3 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
   }
   
 }
-
-
-function onOpen() {
-  const uiManager = new UIManager();
-  uiManager.addCustomMenus();
-}
-
-function showConfigurationDialog() {
-  const uiManager = new UIManager();
-  uiManager.showConfigurationDialog();
-}
-
-function showAssignmentDropdown() {
-  const uiManager = new UIManager();
-  uiManager.showAssignmentDropdown();
-}
-
-
-
-function openReferenceSlideModal(assignmentData) {
-  const uiManager = new UIManager();
-  uiManager.openSlideIdsModal(assignmentData);
-
-
-}
-
-/**
- * Saves slide IDs for a specific assignment.
- * @param {string} assignmentId - The ID of the assignment.
- * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
- */
-function saveSlideIdsForAssignment(assignmentId, slideIds) {
-  AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
-}
-
