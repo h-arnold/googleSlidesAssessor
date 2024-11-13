@@ -20,7 +20,7 @@ class BaseRequestManager {
      */
     sendRequestWithRetries(request, maxRetries = 3) {
         let attempt = 0;
-        let delay = 2000; // Initial delay of 2 seconds.
+        let delay = 5000; // Initial delay of 5 seconds. When extracting whole slide images you get rate limited quite early. A 5 second delay seems to be the minimum needed to avoid a retry.
 
         while (attempt <= maxRetries) {
             try {
@@ -39,7 +39,7 @@ class BaseRequestManager {
             attempt++;
             if (attempt > maxRetries) break;
             Utilities.sleep(delay);
-            delay *= 2; // Exponential backoff
+            delay *= 1.5; // Increase the backoff by 50% as the base pause time is quite high 
         }
 
         console.error(`All ${maxRetries + 1} attempts failed for request to ${request.url}.`);
