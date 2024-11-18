@@ -19,7 +19,27 @@ class Assignment {
     this.emptyDocumentId = emptyDocumentId;
     this.tasks = {};           // { taskKey: Task }
     this.studentTasks = [];    // Array of StudentTask instances
-    this.imageManager = new ImageManager(); // Initialize ImageManager instance
+  }
+
+  /**
+       * Processes all images in tasks and student responses by fetching and uploading them.
+       */
+  processImages() {
+    const imageManager = new ImageManager();
+
+    // Collect all slide URLs
+    const slideUrls = imageManager.collectAllSlideUrls(this);
+
+    // Fetch images
+    const imageBlobs = imageManager.batchFetchImages(slideUrls);
+
+    // Upload images
+    const urlMappings = imageManager.batchUploadImages(imageBlobs);
+
+    // Update assignment with uploaded image URLs
+    imageManager.updateAssignmentWithImageUrls(this, urlMappings);
+
+    console.log("All images have been processed and URLs have been updated.");
   }
 
   /**
@@ -43,12 +63,12 @@ class Assignment {
    * Combines reference and empty content based on task keys.
    */
   populateTasksFromSlides() {
-    const slideExtractor = new SlideContentManager();
+    const slideContentManager = new SlideContentManager();
 
     // Extract reference tasks
-    const referenceTasks = slideExtractor.extractTasksFromSlides(this.referenceDocumentId, "reference");
+    const referenceTasks = slideContentManager.extractTasksFromSlides(this.referenceDocumentId, "reference");
     // Extract empty tasks
-    const emptyTasks = slideExtractor.extractTasksFromSlides(this.emptyDocumentId, "empty");
+    const emptyTasks = slideContentManager.extractTasksFromSlides(this.emptyDocumentId, "empty");
 
     // Create a map of tasks from referenceTasks
     const tasksMap = {};
@@ -73,6 +93,7 @@ class Assignment {
 
     console.log(`Populated ${Object.keys(this.tasks).length} tasks from slides.`);
   }
+
 
   /**
    * Adds a student to the assignment.
@@ -144,25 +165,18 @@ class Assignment {
   }
 
   /**
-   * Processes all student submissions by extracting responses.
-   */
+    * Processes all student submissions by extracting responses.
+    */
   processAllSubmissions() {
-    const slideExtractor = new SlideContentManager(); // Use SlideContentManager instead of SlideExtractor
+    const slideContentManager = new SlideContentManager();
 
     this.studentTasks.forEach(studentTask => {
       if (studentTask.documentId) {
-        studentTask.extractAndAssignResponses(slideExtractor, this.tasks);
+        studentTask.extractAndAssignResponses(slideContentManager, this.tasks);
       } else {
         console.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
       }
     });
-  }
-
-  /**
-   * Processes images by delegating to ImageManager.
-   */
-  processImages() {
-    this.imageManager.processImages(this);
   }
 
   /**
@@ -180,6 +194,7 @@ class Assignment {
    */
   assessResponses() {
     // Utilize the singleton instance of LLMRequestManager
+    const llmRequestManager = new LLMRequestManager();
 
     // Warm up LLM
     llmRequestManager.warmUpLLM();
@@ -193,5 +208,26 @@ class Assignment {
 
     // Send Requests in Batches and adds the responses to the assignment instance
     llmRequestManager.processStudentResponses(requests, this)
+  }
+
+  /**
+       * Uploads all image blobs in tasks and student responses to the image service.
+       * Replaces blobs with the returned URLs.
+       */
+  uploadAllImages() {
+    const imageRequestManager = new ImageRequestManager();
+
+    // Upload images in tasks
+    for (const taskKey in this.tasks) {
+      const task = this.tasks[taskKey];
+      task.uploadImages(imageRequestManager);
+    }
+
+    // Upload images in student responses
+    for (const studentTask of this.studentTasks) {
+      studentTask.uploadResponsesImages(imageRequestManager);
+    }
+
+    console.log("All images have been uploaded and URLs have been updated.");
   }
 }

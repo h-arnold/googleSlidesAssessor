@@ -2,6 +2,8 @@
  * SlideContentManager Class
  * 
  * Handles extraction and processing of content from Google Slides presentations.
+ * Generates slide export URLs.
+ * Handles per-document rate limiting.
  */
 class SlideContentManager {
   /**
@@ -9,7 +11,18 @@ class SlideContentManager {
    */
   constructor() {
     // Initialize any required properties here
-    this.requestManager = new BaseRequestManager(); // Utilize BaseRequestManager if needed
+    // No need for requestManager since we're not fetching images here
+    this.rateLimitCounters = {};
+  }
+
+  /**
+   * Generates a slide export URL for a given slide in a Google Slides presentation.
+   * @param {string} documentId - The ID of the Google Slides presentation.
+   * @param {string} slideId - The ID of the specific slide within the presentation.
+   * @return {string} - The URL to export the slide as an image.
+   */
+  generateSlideImageUrl(documentId, slideId) {
+    return `https://docs.google.com/presentation/d/${documentId}/export/png?id=${documentId}&pageid=${slideId}`;
   }
 
   /**
@@ -24,7 +37,6 @@ class SlideContentManager {
     const slides = presentation.getSlides();
     let tasks = [];
     let lastTask = null; // To keep track of the last parsed Task for assigning notes
-    let slideImagesExtractedCount = 0;
 
     slides.forEach((slide) => {
       const pageElements = slide.getPageElements();
@@ -75,25 +87,16 @@ class SlideContentManager {
             }
             break;
 
-          case '~': // Quick workaround - see details above.
+          case '~': //Quick workaround - see details above.
           case '|': // Entire Slide Image
-            // New logic for handling entire slide images
+            // For slide images, generate the slide export URL instead of fetching the image Blob
             const slideImageUrl = this.generateSlideImageUrl(documentId, currentSlideId);
-            slideImagesExtractedCount++;
-
-            if (slideImagesExtractedCount > 6) {
-              Utilities.sleep(6000);
-              slideImagesExtractedCount = 0;
-            }
-
-            if (slideImageUrl) {
-              const slideImageTask = this.parseTask(key, slideImageUrl, currentSlideId, "Image", contentType);
-              if (slideImageTask) {
-                tasks.push(slideImageTask);
-                lastTask = slideImageTask; // Update the lastTask reference
-              }
+            const slideImageTask = this.parseTask(key, slideImageUrl, currentSlideId, "Image", contentType);
+            if (slideImageTask) {
+              tasks.push(slideImageTask);
+              lastTask = slideImageTask; // Update the lastTask reference
             } else {
-              console.log(`Failed to generate image URL for slide ID ${currentSlideId}`);
+              console.log(`Failed to create task for slide ID ${currentSlideId}`);
             }
             break;
 
@@ -109,33 +112,9 @@ class SlideContentManager {
   }
 
   /**
-   * Generates the export URL for a specific slide in PNG format.
-   * @param {string} documentId - The ID of the Google Slides presentation.
-   * @param {string} slideId - The ID of the specific slide within the presentation.
-   * @return {string|null} - The export URL or null if generation fails.
-   */
-  generateSlideImageUrl(documentId, slideId) {
-    try {
-      return `https://docs.google.com/presentation/d/${documentId}/export/png?id=${documentId}&pageid=${slideId}`;
-    } catch (error) {
-      console.error(`Error generating slide image URL for slide ID ${slideId}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Helper function to retrieve the slide ID.
-   * @param {GoogleAppsScript.Slides.Slide} slide - The slide object.
-   * @return {string} - The unique ID of the slide.
-   */
-  getSlideId(slide) {
-    return slide.getObjectId();
-  }
-
-  /**
    * Parses raw task content to create a Task instance.
    * @param {string} key - The task key extracted from the slide.
-   * @param {string|Blob[]} content - The raw content of the task (string, Blob, or Blob[]).
+   * @param {string} content - The raw content of the task (string or URL).
    * @param {string} slideId - The ID of the slide where the task is located.
    * @param {string} taskType - The type of the task: "Text", "Table", "Image", or "SlideImage".
    * @param {string|null} contentType - Type of content: "reference", "empty", or null for default.
@@ -163,6 +142,15 @@ class SlideContentManager {
       taskNotes,  // Will be assigned separately if present
       emptyContent
     );
+  }
+
+  /**
+   * Helper function to retrieve the slide ID.
+   * @param {GoogleAppsScript.Slides.Slide} slide - The slide object.
+   * @return {string} - The unique ID of the slide.
+   */
+  getSlideId(slide) {
+    return slide.getObjectId();
   }
 
   /**

@@ -1,167 +1,262 @@
-/**
- * ImageManager Class
- *
- * Handles all image-related operations including fetching and uploading images.
- * Manages batching to avoid rate limits and maintains mappings between slide URLs and uploaded image URLs.
- */
 class ImageManager {
-  /**
-   * Constructs an ImageManager instance.
-   */
-  constructor() {
-    this.imageUploadManager = new ImageUploader(); // Utilize ImageUploader for uploads
-    this.slideContentManager = new SlideContentManager(); // Utilize SlideContentManager for slide operations
-    this.configurationManager = configurationManager; // Reference to ConfigurationManager
-    this.rateLimitPerDocument = 6; // Maximum number of requests per unique document per batch
-  }
-
-  /**
-   * Collects all unique slide URLs from the assignment tasks and student responses.
-   * Ensures that each batch contains URLs from unique documents to manage rate limits.
-   * @param {Assignment} assignment - The Assignment instance.
-   * @return {Object[]} - An array of objects containing UID and slide URLs.
-   */
-  collectAllSlideUrls(assignment) {
-    const slideUrlMappings = [];
-
-    // Collect slide URLs from assignment tasks
-    Object.values(assignment.tasks).forEach(task => {
-      if (task.taskType === 'Image' && typeof task.taskReference === 'string') {
-        slideUrlMappings.push({
-          uid: task.taskReference, // Assuming UID is stored or can be derived
-          slideUrl: task.taskReference
-        });
-      }
-
-      if (task.emptyContent && typeof task.emptyContent === 'string') {
-        slideUrlMappings.push({
-          uid: task.emptyContent, // Assuming UID is stored or can be derived
-          slideUrl: task.emptyContent
-        });
-      }
-    });
-
-    // Collect slide URLs from student responses
-    assignment.studentTasks.forEach(studentTask => {
-      Object.values(studentTask.responses).forEach(response => {
-        if (response.response && typeof response.response === 'string') {
-          slideUrlMappings.push({
-            uid: response.uid,
-            slideUrl: response.response
-          });
-        }
-      });
-    });
-
-    return slideUrlMappings;
-  }
-
-  /**
-   * Fetches images from slide URLs in batches, respecting rate limits.
-   * @param {Object[]} slideUrlMappings - Array of objects containing UID and slide URLs.
-   * @return {Object[]} - Array of objects containing UID and image Blobs.
-   */
-  batchFetchImages(slideUrlMappings) {
-    const imageBlobs = [];
-
-    // Split into batches based on rate limits
-    for (let i = 0; i < slideUrlMappings.length; i += this.rateLimitPerDocument) {
-      const batch = slideUrlMappings.slice(i, i + this.rateLimitPerDocument);
-      
-      batch.forEach(mapping => {
-        const response = UrlFetchApp.fetch(mapping.slideUrl, {
-          method: 'get',
-          headers: {
-            'Authorization': 'Bearer ' + ScriptApp.getOAuthToken()
-          },
-          muteHttpExceptions: true
-        });
-
-        if (response.getResponseCode() === 200) {
-          const blob = response.getBlob().setName(`Slide_${mapping.uid}.png`);
-          imageBlobs.push({
-            uid: mapping.uid,
-            blob: blob
-          });
-        } else {
-          console.error(`Failed to fetch image from URL: ${mapping.slideUrl}. Response Code: ${response.getResponseCode()}`);
-        }
-      });
-
-      // Pause between batches to respect rate limits
-      Utilities.sleep(1000); // 1 second pause; adjust as necessary
+    constructor() {
+        // Initialize properties
+        this.configurationManager = new ConfigurationManager();
+        this.uploadUrl = this.configurationManager.getImageUploadUrl();
+        this.apiKey = this.configurationManager.getImageUploaderApiKey();
+        this.requestManager = new BaseRequestManager(); // Utilize BaseRequestManager
     }
 
-    return imageBlobs;
-  }
+    /**
+     * Collects all unique slide URLs from the assignment's tasks and student responses.
+     * @param {Assignment} assignment - The Assignment instance.
+     * @return {Object[]} - An array of objects containing documentId, slideURL, and uid.
+     */
+    collectAllSlideUrls(assignment) {
+        const slideUrls = [];  // Array to hold { documentId, slideURL, uid }
 
-  /**
-   * Uploads image Blobs in batches and returns the uploaded image URLs.
-   * @param {Object[]} imageBlobs - Array of objects containing UID and image Blobs.
-   * @return {Object[]} - Array of objects containing UID and uploaded image URLs.
-   */
-  batchUploadImages(imageBlobs) {
-    const uploadedImageUrls = [];
+        // Collect from tasks
+        for (const taskKey in assignment.tasks) {
+            const task = assignment.tasks[taskKey];
 
-    imageBlobs.forEach(imageObj => {
-      try {
-        const imageUrl = this.imageUploadManager.uploadImage(imageObj.blob);
-        uploadedImageUrls.push({
-          uid: imageObj.uid,
-          imageUrl: imageUrl
-        });
-      } catch (error) {
-        console.error(`Error uploading image for UID: ${imageObj.uid} - ${error.message}`);
-      }
-    });
-
-    return uploadedImageUrls;
-  }
-
-  /**
-   * Updates the assignment tasks and student responses with the uploaded image URLs.
-   * @param {Assignment} assignment - The Assignment instance.
-   * @param {Object[]} uploadedImageUrls - Array of objects containing UID and uploaded image URLs.
-   */
-  updateAssignmentWithImageUrls(assignment, uploadedImageUrls) {
-    uploadedImageUrls.forEach(mapping => {
-      // Update assignment tasks
-      Object.values(assignment.tasks).forEach(task => {
-        if (task.taskReference === mapping.uid) {
-          task.taskReference = mapping.imageUrl;
+            // For Image tasks
+            if (task.taskType === 'Image') {
+                if (task.taskReference) {
+                    slideUrls.push({
+                        documentId: assignment.referenceDocumentId,
+                        slideURL: task.taskReference,
+                        uid: task.uid + '-reference'  // Append 'reference' to distinguish
+                    });
+                }
+                if (task.emptyContent) {
+                    slideUrls.push({
+                        documentId: assignment.emptyDocumentId,
+                        slideURL: task.emptyContent,
+                        uid: task.uid + '-empty'  // Append 'empty' to distinguish
+                    });
+                }
+            }
         }
 
-        if (task.emptyContent === mapping.uid) {
-          task.emptyContent = mapping.imageUrl;
+        // Collect from student responses
+        for (const studentTask of assignment.studentTasks) {
+            if (studentTask.documentId) {
+                for (const taskKey in studentTask.responses) {
+                    const response = studentTask.responses[taskKey];
+                    const task = assignment.tasks[taskKey];
+
+                    if (task.taskType === 'Image' && response.response) {
+                        slideUrls.push({
+                            documentId: studentTask.documentId,
+                            slideURL: response.response,
+                            uid: response.uid  // UID from student response
+                        });
+                    }
+                }
+            } else {
+                console.warn(`No document ID for student: ${studentTask.student.email}. Skipping slide URL collection.`);
+            }
         }
-      });
 
-      // Update student responses
-      assignment.studentTasks.forEach(studentTask => {
-        Object.values(studentTask.responses).forEach(response => {
-          if (response.uid === mapping.uid) {
-            response.response = mapping.imageUrl;
-          }
+        return slideUrls;
+    }
+
+    /**
+     * Fetches images from the given slide URLs in batches, optimizing to avoid rate limits.
+     * @param {Object[]} slideUrls - An array of objects containing documentId, slideURL, and uid.
+     * @return {Object[]} - An array of objects containing uid and image Blob.
+     */
+    batchFetchImages(slideUrls) {
+        const batches = [];
+        const slidesByDocument = {};
+
+        // Organize slide URLs by documentId
+        slideUrls.forEach(slide => {
+            const docId = slide.documentId;
+            if (!slidesByDocument[docId]) {
+                slidesByDocument[docId] = [];
+            }
+            slidesByDocument[docId].push(slide);
         });
-      });
-    });
-  }
 
-  /**
-   * Orchestrates the image processing workflow: fetching and uploading images.
-   * @param {Assignment} assignment - The Assignment instance.
-   */
-  processImages(assignment) {
-    const slideUrlMappings = this.collectAllSlideUrls(assignment);
-    console.log(`Collected ${slideUrlMappings.length} slide URLs for image processing.`);
+        let batchComplete = false;
 
-    const imageBlobs = this.batchFetchImages(slideUrlMappings);
-    console.log(`Fetched ${imageBlobs.length} image Blobs.`);
+        while (!batchComplete) {
+            const batch = [];
+            batchComplete = true;
 
-    const uploadedImageUrls = this.batchUploadImages(imageBlobs);
-    console.log(`Uploaded ${uploadedImageUrls.length} images and obtained URLs.`);
+            // Take one slide from each documentId
+            for (const docId in slidesByDocument) {
+                const slides = slidesByDocument[docId];
+                if (slides.length > 0) {
+                    batch.push(slides.shift());  // Remove and return the first slide
+                    batchComplete = false;  // Still have slides to process
+                }
+            }
 
-    this.updateAssignmentWithImageUrls(assignment, uploadedImageUrls);
-    console.log(`Updated assignment tasks and student responses with uploaded image URLs.`);
-  }
+            if (batch.length > 0) {
+                batches.push(batch);
+            }
+        }
+
+        // Now we have batches, where each batch contains slides from different documents
+
+        const imageBlobs = [];  // Array to hold { uid, blob }
+
+        batches.forEach((batch, batchIndex) => {
+            console.log(`Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`);
+            const requests = batch.map(slide => {
+                return {
+                    url: slide.slideURL,
+                    method: 'get',
+                    headers: {
+                        'Authorization': 'Bearer ' + ScriptApp.getOAuthToken()
+                    },
+                    muteHttpExceptions: true
+                };
+            });
+
+            // Use BaseRequestManager's sendRequestsInBatches method
+            const responses = this.requestManager.sendRequestsInBatches(requests);
+
+            responses.forEach((response, index) => {
+                const slide = batch[index];
+                if (response && response.getResponseCode() === 200) {
+                    const blob = response.getBlob().setName(`Slide_${slide.uid}.png`);
+                    imageBlobs.push({
+                        uid: slide.uid,
+                        blob: blob
+                    });
+                } else {
+                    console.warn(`Failed to fetch image for UID: ${slide.uid}`);
+                    // Handle failures as needed
+                }
+            });
+        });
+
+        return imageBlobs;
+    }
+
+    /**
+     * Uploads image Blobs to the image service in batches.
+     * @param {Object[]} imageBlobs - An array of objects containing uid and Blob.
+     * @return {Object} - A mapping of UIDs to uploaded image URLs.
+     */
+    batchUploadImages(imageBlobs) {
+        const batches = [];
+        const batchSize = this.configurationManager.getBatchSize() || 5; // Get batch size from config, default to 5
+
+        // Split imageBlobs into batches
+        for (let i = 0; i < imageBlobs.length; i += batchSize) {
+            batches.push(imageBlobs.slice(i, i + batchSize));
+        }
+
+        const urlMappings = {};  // Mapping of UIDs to uploaded image URLs
+
+        batches.forEach((batch, batchIndex) => {
+            console.log(`Uploading batch ${batchIndex + 1} of ${batches.length}`);
+
+            const requests = batch.map(imageBlobObj => {
+                const boundary = '---GoogleAppScriptBoundary';
+                const imageBytes = imageBlobObj.blob.getBytes();
+                const imageFileName = imageBlobObj.blob.getName();
+
+                // Construct the multipart payload in binary format
+                const payloadParts = [
+                    Utilities.newBlob(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${imageFileName}"\r\nContent-Type: image/png\r\n\r\n`).getBytes(),
+                    imageBytes,
+                    Utilities.newBlob(`\r\n--${boundary}--`).getBytes()
+                ];
+
+                // Combine all parts into one payload blob
+                const fullPayload = Utilities.newBlob(payloadParts.reduce((acc, part) => acc.concat(part), []));
+
+                return {
+                    uid: imageBlobObj.uid,
+                    url: this.uploadUrl,
+                    method: 'post',
+                    contentType: `multipart/form-data; boundary=${boundary}`,
+                    payload: fullPayload.getBytes(),
+                    headers: {
+                        'accept': 'application/json',
+                        'x-api-key': this.apiKey,
+                    },
+                    muteHttpExceptions: true
+                };
+            });
+
+            // Use BaseRequestManager's sendRequestsInBatches method
+            const responses = this.requestManager.sendRequestsInBatches(requests);
+
+            responses.forEach((response, index) => {
+                const request = requests[index];
+                const uid = request.uid;
+                if (response && response.getResponseCode() === 200 || 201) {
+                    try {
+                        const responseData = JSON.parse(response.getContentText());
+                        if (responseData && responseData.file_path) {
+                            urlMappings[uid] = responseData.file_path;
+                        } else {
+                            console.warn(`Invalid response for UID: ${uid}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error parsing response for UID: ${uid}`, error);
+                    }
+                } else {
+                    console.warn(`Failed to upload image for UID: ${uid}`);
+                    // Handle failures as needed
+                }
+            });
+        });
+
+        return urlMappings;
+    }
+
+    /**
+     * Updates the assignment's tasks and student responses with the uploaded image URLs.
+     * @param {Assignment} assignment - The Assignment instance.
+     * @param {Object} urlMappings - A mapping of UIDs to uploaded image URLs.
+     */
+    updateAssignmentWithImageUrls(assignment, urlMappings) {
+        // Update tasks
+        for (const taskKey in assignment.tasks) {
+            const task = assignment.tasks[taskKey];
+            if (task.taskType === 'Image') {
+                // Update taskReference
+                if (task.taskReference) {
+                    const uid = task.uid + '-reference';
+                    if (urlMappings[uid]) {
+                        task.taskReference = urlMappings[uid];
+                    } else {
+                        console.warn(`No uploaded URL found for taskReference UID: ${uid}`);
+                    }
+                }
+                // Update emptyContent
+                if (task.emptyContent) {
+                    const uid = task.uid + '-empty';
+                    if (urlMappings[uid]) {
+                        task.emptyContent = urlMappings[uid];
+                    } else {
+                        console.warn(`No uploaded URL found for emptyContent UID: ${uid}`);
+                    }
+                }
+            }
+        }
+
+        // Update student responses
+        for (const studentTask of assignment.studentTasks) {
+            for (const taskKey in studentTask.responses) {
+                const response = studentTask.responses[taskKey];
+                const task = assignment.tasks[taskKey];
+                if (task.taskType === 'Image' && response.response) {
+                    const uid = response.uid;
+                    if (urlMappings[uid]) {
+                        response.response = urlMappings[uid];
+                    } else {
+                        console.warn(`No uploaded URL found for response UID: ${uid}`);
+                    }
+                }
+            }
+        }
+    }
 }
