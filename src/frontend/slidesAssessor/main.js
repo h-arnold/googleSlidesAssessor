@@ -26,16 +26,22 @@ function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
         students.forEach(student => assignment.addStudent(student));
 
         // Process the assignment
+        Utils.toastMessage("Getting the tasks from the reference slides.", "Processing", 2);
         assignment.populateTasksFromSlides();
+        
+        Utils.toastMessage("Getting all the student work together.", "Processing", 2);
         assignment.fetchSubmittedSlides();
         assignment.processAllSubmissions();
 
+        Utils.toastMessage("Uploading any images.", "Processing", 2);
         // Process images
         assignment.processImages();
 
+        Utils.toastMessage("Uploading any images.", "Assessing", 2);
         // Assess responses
         assignment.assessResponses();
 
+        Utils.toastMessage("Processing and updating all the data.", "Analysing", 2);
         // Create the analysis sheet
         const analysisSheetManager = new AnalysisSheetManager(assignment);
         analysisSheetManager.createAnalysisSheet();
@@ -84,4 +90,3 @@ function openReferenceSlideModal(assignmentData) {
 function saveSlideIdsForAssignment(assignmentId, slideIds) {
   AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
 }
-

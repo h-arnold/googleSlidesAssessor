@@ -1,10 +1,8 @@
-class ImageManager {
+class ImageManager extends BaseRequestManager {
     constructor() {
-        // Initialize properties
-        this.configurationManager = new ConfigurationManager();
-        this.uploadUrl = this.configurationManager.getImageUploadUrl();
-        this.apiKey = this.configurationManager.getImageUploaderApiKey();
-        this.requestManager = new BaseRequestManager(); // Utilize BaseRequestManager
+        super();
+        this.uploadUrl = this.configManager.getImageUploadUrl();
+        this.apiKey = this.configManager.getImageUploaderApiKey();
     }
 
     /**
@@ -117,7 +115,7 @@ class ImageManager {
             });
 
             // Use BaseRequestManager's sendRequestsInBatches method
-            const responses = this.requestManager.sendRequestsInBatches(requests);
+            const responses = this.sendRequestsInBatches(requests);
 
             responses.forEach((response, index) => {
                 const slide = batch[index];
@@ -144,7 +142,7 @@ class ImageManager {
      */
     batchUploadImages(imageBlobs) {
         const batches = [];
-        const batchSize = this.configurationManager.getBatchSize() || 5; // Get batch size from config, default to 5
+        const batchSize = this.configManager.getBatchSize() || 5; // Get batch size from config, default to 5
 
         // Split imageBlobs into batches
         for (let i = 0; i < imageBlobs.length; i += batchSize) {
@@ -186,7 +184,7 @@ class ImageManager {
             });
 
             // Use BaseRequestManager's sendRequestsInBatches method
-            const responses = this.requestManager.sendRequestsInBatches(requests);
+            const responses = this.sendRequestsInBatches(requests);
 
             responses.forEach((response, index) => {
                 const request = requests[index];

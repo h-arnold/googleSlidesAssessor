@@ -57,47 +57,61 @@ class Utils {
     }
     return true;
   }
-   /**
-     * Retrieves the course ID from the 'ClassInfo' sheet.
-     * @returns {string} The course ID.
-     */
-    static getCourseId() {
-        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-        const sheet = spreadsheet.getSheetByName('ClassInfo');
-        if (!sheet) {
-            throw new Error('ClassInfo sheet not found.');
-        }
-        const courseId = sheet.getRange('B2').getValue();
-        if (!courseId) {
-            throw new Error('Course ID not found in ClassInfo sheet.');
-        }
-        return courseId.toString();
+  /**
+    * Retrieves the course ID from the 'ClassInfo' sheet.
+    * @returns {string} The course ID.
+    */
+  static getCourseId() {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName('ClassInfo');
+    if (!sheet) {
+      throw new Error('ClassInfo sheet not found.');
+    }
+    const courseId = sheet.getRange('B2').getValue();
+    if (!courseId) {
+      throw new Error('Course ID not found in ClassInfo sheet.');
+    }
+    return courseId.toString();
+  }
+
+  /**
+   * Retrieves assignments for a given course.
+   * @param {string} courseId - The ID of the course.
+   * @returns {Object[]} The list of assignments.
+   */
+  static getAssignments(courseId) {
+    const courseWork = Classroom.Courses.CourseWork.list(courseId);
+    let assignments = [];
+
+    if (courseWork.courseWork && courseWork.courseWork.length > 0) {
+      assignments = courseWork.courseWork.map(assignment => {
+        return {
+          id: assignment.id,
+          title: assignment.title,
+          creationTime: new Date(assignment.creationTime)
+        };
+      });
+
+      // Sort assignments by creation time in descending order
+      assignments.sort((a, b) => b.creationTime - a.creationTime);
     }
 
-    /**
-     * Retrieves assignments for a given course.
-     * @param {string} courseId - The ID of the course.
-     * @returns {Object[]} The list of assignments.
-     */
-    static getAssignments(courseId) {
-        const courseWork = Classroom.Courses.CourseWork.list(courseId);
-        let assignments = [];
+    return assignments;
+  }
 
-        if (courseWork.courseWork && courseWork.courseWork.length > 0) {
-            assignments = courseWork.courseWork.map(assignment => {
-                return {
-                    id: assignment.id,
-                    title: assignment.title,
-                    creationTime: new Date(assignment.creationTime)
-                };
-            });
-
-            // Sort assignments by creation time in descending order
-            assignments.sort((a, b) => b.creationTime - a.creationTime);
-        }
-
-        return assignments;
+  /**
+* Normalises all keys in an object to lowercase. Sometimes the LLM will capitalise the keys of objects which cases problems elseshere.
+* @param {Object} obj - The object whose keys are to be normalised.
+* @return {Object} - A new object with all keys in lowercase.
+*/
+static  normaliseKeysToLowerCase(obj) {
+    const normalisedObj = {};
+    for (const [key, value] of Object.entries(obj)) {
+      normalisedObj[key.toLowerCase()] = value;
     }
+    return normalisedObj;
+  }
+
 
 
   // -------------------

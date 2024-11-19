@@ -5,11 +5,34 @@
  * Inherits from BaseRequestManager for generic request handling.
  */
 class LLMRequestManager extends BaseRequestManager {
-  /**
-   * Constructs an LLMRequestManager instance.
-   */
   constructor() {
-    super(); // Initialize BaseRequestManager
+    super();
+  }
+
+  warmUpLLM() {
+    const payload = { "input_value": "Wake Up!" };
+    const request = {
+      url: this.configManager.getWarmUpUrl(),
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      headers: {
+        "x-api-key": this.configManager.getLangflowApiKey()
+      },
+      muteHttpExceptions: true
+    };
+
+    try {
+      const response = this.sendRequestWithRetries(request);
+      if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
+        Utils.toastMessage("AI backend warmed up and ready to go...", "Warm-Up", 5);
+      } else {
+        throw new Error("No successful response received.");
+      }
+    } catch (e) {
+      console.error("Error warming up LLM:", e);
+      Utils.toastMessage("Failed to warm up AI backend.", "Error", 5);
+    }
   }
 
   /**
@@ -110,16 +133,16 @@ class LLMRequestManager extends BaseRequestManager {
 
         switch (taskType) {
           case 'text':
-            assessmentUrl = this.configurationManager.getTextAssessmentUrl();
-            tweakId = this.configurationManager.getTextAssessmentTweakId();
+            assessmentUrl = this.configManager.getTextAssessmentUrl();
+            tweakId = this.configManager.getTextAssessmentTweakId();
             break;
           case 'table':
-            assessmentUrl = this.configurationManager.getTableAssessmentUrl();
-            tweakId = this.configurationManager.getTableAssessmentTweakId();
+            assessmentUrl = this.configManager.getTableAssessmentUrl();
+            tweakId = this.configManager.getTableAssessmentTweakId();
             break;
           case 'image':
-            assessmentUrl = this.configurationManager.getImageAssessmentUrl();
-            tweakId = this.configurationManager.getImageAssessmentTweakId();
+            assessmentUrl = this.configManager.getImageAssessmentUrl();
+            tweakId = this.configManager.getImageAssessmentTweakId();
             break;
           default:
             console.warn(`Unsupported taskType: ${taskType}. Skipping response with UID: ${uid}`);
@@ -146,7 +169,7 @@ class LLMRequestManager extends BaseRequestManager {
         const tweaks = {};
         tweaks[tweakId] = {
           referenceTask: task.taskReference,
-          emptyTask: task.emptyContent, 
+          emptyTask: task.emptyContent,
           studentTask: studentResponse
           // uid is stored separately for easy access
         };
@@ -170,7 +193,7 @@ class LLMRequestManager extends BaseRequestManager {
           contentType: "application/json",
           payload: JSON.stringify(requestPayload),
           headers: {
-            "x-api-key": this.configurationManager.getLangflowApiKey()
+            "x-api-key": this.configManager.getLangflowApiKey()
           },
           muteHttpExceptions: true
         };
@@ -200,7 +223,10 @@ class LLMRequestManager extends BaseRequestManager {
           const responseData = JSON.parse(response.getContentText());
 
           // Adjust parsing based on actual response structure
-          const assessmentData = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message);
+          const assessmentDataRaw = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message);
+
+          // Normalise keys to lowercase using the utility method
+          const assessmentData = Utils.normaliseKeysToLowerCase(assessmentDataRaw);
 
           // Validate the assessment data structure
           if (this.validateAssessmentData(assessmentData)) {
@@ -215,7 +241,6 @@ class LLMRequestManager extends BaseRequestManager {
               const taskKey = this.findTaskKeyByUid(uid, studentTask);
               const task = assignment.tasks[taskKey];
               if (task) {
-                const referenceContent = task.taskReference;
                 const studentResponse = studentTask.responses[taskKey].response;
                 this.setCachedAssessment(task.taskReference, studentResponse, assessmentData);
                 console.log(`Cached assessment for UID: ${uid}.`);
@@ -239,6 +264,7 @@ class LLMRequestManager extends BaseRequestManager {
       }
     });
   }
+
 
   /**
    * Handles retrying a failed request by utilizing the inherited sendRequestWithRetries method.
@@ -285,7 +311,7 @@ class LLMRequestManager extends BaseRequestManager {
       return;
     }
 
-    console.log(`Processing requests in batches of ${this.configurationManager.getBatchSize()}.`);
+    console.log(`Processing requests in batches of ${this.configManager.getBatchSize()}.`);
 
     // Use BaseRequestManager's sendRequestsInBatches method
     const responses = this.sendRequestsInBatches(requests);
@@ -360,37 +386,5 @@ class LLMRequestManager extends BaseRequestManager {
       }
     }
     return null;
-  }
-
-  /**
-   * Warms up the LLM backend by sending a dummy request.
-   */
-  warmUpLLM() {
-    const payload = {
-      "input_value": "Wake Up!"
-    };
-
-    const request = {
-      url: this.configurationManager.getWarmUpUrl(),
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify(payload),
-      headers: {
-        "x-api-key": this.configurationManager.getLangflowApiKey()
-      },
-      muteHttpExceptions: true
-    };
-
-    try {
-      const response = this.sendRequestWithRetries(request);
-      if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
-        Utils.toastMessage("AI backend warmed up and ready to go...", "Warm-Up", 5);
-      } else {
-        throw new Error("No successful response received.");
-      }
-    } catch (e) {
-      console.error("Error warming up LLM:", e);
-      Utils.toastMessage("Failed to warm up AI backend.", "Error", 5);
-    }
   }
 }

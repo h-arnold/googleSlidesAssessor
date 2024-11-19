@@ -4,12 +4,10 @@
  * Handles generic URL requests with error handling, retries, and exponential backoff.
  */
 class BaseRequestManager {
-    /**
-     * Constructs a BaseRequestManager instance.
-     */
     constructor() {
         this.configManager = configurationManager; // Reference to the singleton ConfigurationManager
         this.cache = CacheService.getScriptCache(); // Initialize the script cache
+
     }
 
     /**
