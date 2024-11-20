@@ -7,8 +7,13 @@
 class LLMRequestManager extends BaseRequestManager {
   constructor() {
     super();
+    this.retryAttempts = {}; // Tracks retry attempts for each UID
+    this.maxValidationRetries = 3; // Maximum retries for data validation
   }
 
+  /**
+   * Wakes up the LLM backend to ensure it's ready for processing.
+   */
   warmUpLLM() {
     const payload = { "input_value": "Wake Up!" };
     const request = {
@@ -163,7 +168,7 @@ class LLMRequestManager extends BaseRequestManager {
           return; // Skip invalid or empty student responses.
         }
 
-        console.log(`Student response with UID ${uid} object is: ${JSON.stringify(studentResponse)}`);
+        //console.log(`Student response with UID ${uid} object is: ${JSON.stringify(studentResponse)}`); For debug purposes only
 
         // Construct the tweaks object with the uid
         const tweaks = {};
@@ -243,45 +248,81 @@ class LLMRequestManager extends BaseRequestManager {
               if (task) {
                 const studentResponse = studentTask.responses[taskKey].response;
                 this.setCachedAssessment(task.taskReference, studentResponse, assessmentData);
-                console.log(`Cached assessment for UID: ${uid}.`);
+                //console.log(`Cached assessment for UID: ${uid}.`); Uncomment for debug purposes
               }
             }
+
+            // Reset retry attempts on successful processing
+            this.retryAttempts[uid] = 0;
           } else {
-            console.warn(`Invalid assessment data structure for UID: ${uid}`);
-            // Retry the request using the inherited method
-            this.handleRetry(request, assignment);
+            this.handleValidationFailure(uid, request, assignment);
           }
         } catch (e) {
           console.error(`Error parsing response for UID: ${uid} - ${e.message}`);
-          this.handleRetry(request, assignment);
+          this.handleValidationFailure(uid, request, assignment);
         }
       } else {
         console.error(`Non-200/201 response for UID: ${uid} - Code: ${response ? response.getResponseCode() : 'No Response'}`);
         if (response) {
           console.log(`Response text is: ${response.getContentText()}`);
         }
-        this.handleRetry(request, assignment);
+        Utils.toastMessage(`Failed to process assessment for UID: ${uid}`, "Error", 5);
       }
     });
   }
 
-
   /**
-   * Handles retrying a failed request by utilizing the inherited sendRequestWithRetries method.
+   * Handles validation failures by retrying the request if retry attempts are below the maximum limit.
+   * @param {string} uid - The unique identifier of the response.
    * @param {Object} request - The original request object.
    * @param {Assignment} assignment - The Assignment instance.
    */
-  handleRetry(request, assignment) {
-    const maxRetries = 3;
-    const retryResponse = this.sendRequestWithRetries(request, maxRetries);
+  handleValidationFailure(uid, request, assignment) {
+    if (!this.retryAttempts[uid]) {
+      this.retryAttempts[uid] = 0;
+    }
 
-    if (retryResponse && (retryResponse.getResponseCode() === 200 || retryResponse.getResponseCode() === 201)) {
-      // Process the successful retry response
-      this.processResponses([retryResponse], [request], assignment);
+    if (this.retryAttempts[uid] < this.maxValidationRetries) {
+      this.retryAttempts[uid]++;
+      console.warn(`Validation failed for UID: ${uid}. Retrying attempt ${this.retryAttempts[uid]} of ${this.maxValidationRetries}.`);
+
+      const retryResponse = this.sendRequestWithRetries(request, 3);
+
+      if (retryResponse && (retryResponse.getResponseCode() === 200 || retryResponse.getResponseCode() === 201)) {
+        try {
+          const responseData = JSON.parse(retryResponse.getContentText());
+          const assessmentDataRaw = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message);
+          const assessmentData = Utils.normaliseKeysToLowerCase(assessmentDataRaw);
+
+          if (this.validateAssessmentData(assessmentData)) {
+            const assessment = this.createAssessmentFromData(assessmentData);
+            this.assignAssessmentToStudentTask(uid, assessment, assignment);
+            const studentTask = this.findStudentTaskByUid(uid, assignment);
+            if (studentTask) {
+              const taskKey = this.findTaskKeyByUid(uid, studentTask);
+              const task = assignment.tasks[taskKey];
+              if (task) {
+                const studentResponse = studentTask.responses[taskKey].response;
+                this.setCachedAssessment(task.taskReference, studentResponse, assessmentData);
+                // console.log(`Cached assessment for UID: ${uid}.`); Uncomment for debug purposes
+              }
+            }
+            this.retryAttempts[uid] = 0; // Reset after successful retry
+          } else {
+            console.log(`Invalid assessment data for UID: ${uid}. \n Assessment data object: \n ${JSON.stringify(assessmentData)}`)
+            this.handleValidationFailure(uid, request, assignment);
+          }
+        } catch (e) {
+          console.error(`Error parsing retry response for UID: ${uid} - ${e.message}`);
+          this.handleValidationFailure(uid, request, assignment);
+        }
+      } else {
+        console.error(`Retry failed for UID: ${uid}`);
+        Utils.toastMessage(`Failed to process assessment for UID: ${uid}`, "Error", 5);
+      }
     } else {
-      console.error(`Retry failed for UID: ${request.uid}`);
-      // Optionally, mark the assessment as failed or notify the administrator
-      Utils.toastMessage(`Failed to process assessment for UID: ${request.uid}`, "Error", 5);
+      console.error(`Max validation retries reached for UID: ${uid}.`);
+      Utils.toastMessage(`Failed to process assessment for UID: ${uid}`, "Error", 5);
     }
   }
 
