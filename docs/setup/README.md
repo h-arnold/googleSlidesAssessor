@@ -1,77 +1,114 @@
-# Setting up Google Slides Assessor
+# 🛠️ Setting up Google Slides Assessor
 
-- [Setting up Google Slides Assessor](#setting-up-google-slides-assessor)
-    - [Prerequisites](#prerequisites)
-  - [Core Components](#core-components)
-      - [The Langflow Backend](#the-langflow-backend)
-      - [Google Slides Assessor Library](#google-slides-assessor-library)
-      - [The Assessment Records](#the-assessment-records)
-      - [Overview Sheet](#overview-sheet)
-  - [The Setup Process](#the-setup-process)
-    - [Setting up the Langflow Backend](#setting-up-the-langflow-backend)
-    - [Setting up the Google App Script Frontend](#setting-up-the-google-app-script-frontend)
-      - [Creating the assessment records](#creating-the-assessment-records)
-      - [\[Configuring Google Slides AI Assessor\](TODO: add later)](#configuring-google-slides-ai-assessortodo-add-later)
-      - [\[Setting up the overview sheet\] (TODO: add in later)](#setting-up-the-overview-sheet-todo-add-in-later)
-      - [Tagging your resources for automated assessment.](#tagging-your-resources-for-automated-assessment)
+This guide will walk you through setting up the Google Slides Assessor, a tool designed to streamline the assessment of student work in Google Slides. 
 
-### Prerequisites
- - **A Google Gemini API Key:** Respect your students privacy and make sure you use the PAYG option which doesn't use API responses to train future models.
-- **A Google Workspace for Education Account:** and active Google Classrooms from which to pull your students' Google Slides documents.
-  
-## Core Components
+- [🛠️ Setting up Google Slides Assessor](#️-setting-up-google-slides-assessor)
+  - [📝 Prerequisites](#-prerequisites)
+  - [🧩 Core Components](#-core-components)
+    - [1️⃣ Langflow Backend](#1️⃣-langflow-backend)
+    - [2️⃣ Google Slides Assessor Library](#2️⃣-google-slides-assessor-library)
+    - [3️⃣ Assessment Records](#3️⃣-assessment-records)
+    - [4️⃣ Overview Sheet](#4️⃣-overview-sheet)
+  - [🚀 The Setup Process](#-the-setup-process)
+    - [🌐 Setting up the Langflow Backend](#-setting-up-the-langflow-backend)
+      - [⚡ The Easy Way (For Testing)](#-the-easy-way-for-testing)
+      - [✅ The GDPR-Compliant Way (For Production)](#-the-gdpr-compliant-way-for-production)
+    - [🖥️ Setting up the Google Apps Script Frontend](#️-setting-up-the-google-apps-script-frontend)
+      - [1️⃣ Creating the Assessment Records](#1️⃣-creating-the-assessment-records)
+      - [2️⃣ Configuring Google Slides Assessor](#2️⃣-configuring-google-slides-assessor)
+      - [3️⃣ Setting up the Overview Sheet](#3️⃣-setting-up-the-overview-sheet)
+      - [4️⃣ Tagging Your Resources for Automated Assessment](#4️⃣-tagging-your-resources-for-automated-assessment)
+  - [🌟 Final Thoughts](#-final-thoughts)
 
-Understanding what each component does will help you understand how this system works together.
+## 📝 Prerequisites
 
-#### The Langflow Backend
+Before starting, ensure you have the following:
 
-[Langflow](https://github.com/langflow-ai/langflow) provides the LLM (large lanaguage model) backend for the Assessment Records.
+- **🔑 A Google Gemini API Key:** Respect your students' privacy by using the PAYG option, which does not use API responses to train future models.
+- **🏫 A Google Workspace for Education Account:** Ensure you have active Google Classrooms to pull your students' Google Slides documents from.
 
-#### Google Slides Assessor Library
+---
 
-This is a standalone Google App Script file that is referenced by the Assessment Records and contains most of the code that does the assessment and the data analysis. Referencing the library has two key advantages:
-  - **Ease of updates:** When there is an update to the Google Slides Assessor, you just update this file rather than each of the Assessment Records.
-  - **Centralised assessment store:** Once one person has entered the reference and template slide IDs for an assignment, it is stored in the `ScriptProperties` of that script, meaning that it only needs to be entered once for each assignment.
-  - **Protection of configuration values:** You should set the script to view-only to people other than you, preventing the accidental modification of key settings by members of your team.
+## 🧩 Core Components
 
-#### The Assessment Records
+Understanding the system's components will help you see how it all fits together:
 
-This is where the assessment data for each class is stored, and the compoent most of your team will use the most. 
+### 1️⃣ Langflow Backend
 
-#### Overview Sheet
+- Langflow ([GitHub Repo](https://github.com/langflow-ai/langflow)) provides the LLM (Large Language Model) backend for handling assessments. This allows for automated interpretation and marking of student submissions.
 
-This sheet pulls all the data from the Assessment Records so that you can analyse it as you please. 
+### 2️⃣ Google Slides Assessor Library
 
-## The Setup Process
+This is a standalone Google Apps Script file referenced by the Assessment Records. It performs most of the assessment and data analysis. Key benefits include:
 
-I've laid out the instructions below according to the order with which they need to be set up.
+- **🔄 Ease of Updates:** Updates to the Assessor are made centrally by updating this library, rather than each individual Assessment Record.
+- **📦 Centralised Configuration:** Once assignment details (e.g., reference and template slide IDs) are entered, they are stored in the script's `ScriptProperties`, meaning they only need to be set up once for each assignment.
+- **🔒 Secure Settings:** You can make the library file view-only to prevent accidental modification of key settings by others on your team.
 
-### Setting up the Langflow Backend
+### 3️⃣ Assessment Records
 
-The quickest and easiest way to set up a testing instance is using the [Langflow Cloud Service](TODO: add link). Unless something changes, make sure you use this **for testing only**. This is because I don't believe there are any GDPR guarantees for this service and you don't want to inadvertently send student data to a non-GDPR compliant desintation.
+- A separate Google Sheet for each class, where assessment data is stored. This will be the tool most commonly used by your team.
 
-**TODO: Write instructions on how to deploy Langflow to Google Cloud Run in as secure and GDPR compliant way as possible.** 
+### 4️⃣ Overview Sheet
 
-### Setting up the Google App Script Frontend
+- A Google Sheet that collates data from all Assessment Records into a single place, allowing for further analysis and visualisation.
 
-This section focuses on the things that a Head of Department will need to set up in advance of their team using the tool. This process involves:
+---
 
- 1. Generating the assessment records for each class.
- 2. Configuring the Google Slides Assessor so that it can find the backend.
- 3. Setting up the overview sheet so that it can analyse all the data.
+## 🚀 The Setup Process
 
-#### [Creating the assessment records](settingUpAssessmentRecords.md)
+Follow these steps to set up the system.
 
-Most of your assessing will happen from these assessment records, with one being created for each class. This tutorial tells you how to set that all up with a minimum (but still a fair bit of) fuss.
+---
 
-#### [Configuring Google Slides AI Assessor](TODO: add later)
+### 🌐 Setting up the Langflow Backend
 
-Please complete
+#### ⚡ The Easy Way (For Testing)
 
-#### [Setting up the overview sheet] (TODO: add in later)
+- Use the [Langflow Cloud Service](https://www.datastax.com/products/langflow) for quick setup.
+- **Important:** This method is suitable for **testing only**, as it may not comply with GDPR or other privacy regulations. Use cautiously.
 
-Please complete
+#### ✅ The GDPR-Compliant Way (For Production)
 
-#### Tagging your resources for automated assessment.
+- Setting up Langflow on **Google Cloud Run** is highly recommended for production use. This approach provides the following benefits:
 
-Google Slides Assessor needs you to tag the parts of your task that you want assessed. This section shows you how!
+1. **💡 High Resource Requirements:** Langflow requires at least 1vCPU and 2GB of RAM per worker. Running it on a VPS can quickly become expensive.
+2. **📈 Bursty Usage:** Langflow is rarely used continuously but must handle high demand during assessment periods. A serverless solution like Google Cloud Run scales up automatically when needed and scales back down to zero when idle, reducing costs.
+3. **💰 Cost Efficiency:** For typical usage, the free tier of Google Cloud Run is sufficient, so you are unlikely to incur significant charges.
+4. **📂 Ephemeral File Storage:** Following the guide will set up a shared `ramdisk` `.cache` folder. This ensures:
+   - All uploaded images are available to all instances during an assessment.
+   - Files are automatically deleted when the assessment run completes, as the instance shuts down.
+
+- Follow [this detailed guide](https://github.com/h-arnold/googleSlidesAssessor/blob/main/docs/setup/langfllowDeployment/langflowDeployment.md) to set up your own Google Cloud Run instance.
+
+---
+
+### 🖥️ Setting up the Google Apps Script Frontend
+
+This section is primarily for Heads of Department or administrators responsible for initial setup. Once configured, the system is straightforward for others to use.
+
+#### 1️⃣ Creating the Assessment Records
+
+- Most assessment work takes place within these records, with one created per class. They serve as the main tool for day-to-day use. [Follow this guide](settingUpAssessmentRecords.md) to set them up with minimal fuss.
+
+#### 2️⃣ Configuring Google Slides Assessor
+
+- This step links the frontend (Google Apps Script) to the backend (Langflow instance). It ensures the system knows where to send and receive data during assessments. *(Guide: Coming soon!)*
+
+#### 3️⃣ Setting up the Overview Sheet
+
+- The Overview Sheet collects and collates data from all Assessment Records. This enables analysis at a glance, allowing you to monitor trends and performance across classes. *(Guide: Coming soon!)*
+
+#### 4️⃣ Tagging Your Resources for Automated Assessment
+
+- For the Assessor to work, you'll need to "tag" parts of your tasks that require automated assessment. This ensures the system knows what to evaluate. *(Guide: Included in full setup guide.)*
+
+---
+
+## 🌟 Final Thoughts
+
+- 🔒 Always prioritise GDPR compliance when working with sensitive student data.
+- 🛠️ Centralised updates and configurations reduce workload and ensure consistency across your organisation.
+- 🚦 Thoroughly test the system before introducing it into your live environment.
+
+Once everything is set up, your Google Slides Assessor will be ready to take on the hard work of assessing, leaving you free to focus on more important tasks. 🎉

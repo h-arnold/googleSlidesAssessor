@@ -1,13 +1,6 @@
 # Deploying Langflow Server
 
-Langflow provides the LLM backend to the Google Slides Assessor. There are lots of deployment options, [including a fully hosted option with DataStax](https://www.datastax.com/products/langflow) which is fine for testing, but not, as far as I can tell, GDPR compliant.
-
-Below are the instructions for deploying Langflow to a Google Cloud Run instance. I recommend using a serverless option like Google Cloud run because:
-
- - **High resource usage**: Langflow requires at least 1vCPU and 2GBs of RAM per worker. Running this on a VPS is relatively expensive.
- - **Bursty usage**: Once set up, Langflow will not be needed most of the time, but when it is needed, you will want multiple instances to get results in a timely manner. Serverless usage means you can quickly scale up for the burst and then scale back down to zero.
- - **Generous Free Tier**: For 24/7 usage, Google Cloud Run is very expensive. For the my usage though, I rarely need to pay extra.
-
+**IMPORTANT**: I highly recommend setting your region one closest to where you work. This will minimise the chances of falling foul of privacy laws such as GDPR.
 ### **Prerequisites**
 
 1. **Google Cloud Project**:
@@ -27,7 +20,7 @@ Below are the instructions for deploying Langflow to a Google Cloud Run instance
      ```
 
 4. **PostgreSQL Database**:
-   - A PostgreSQL database is required for this deployment. Supabase offers free PostgreSQL databases with GDPR-compliant data centres in Europe, making it a suitable choice. 
+   - A PostgreSQL database is required for this deployment. [Supabase](https://supabase.com/) offers free PostgreSQL databases with GDPR-compliant data centres in Europe, making it a suitable choice. 
 
 5. **Setup Necessary Resources**:
    - **Service Account**:
