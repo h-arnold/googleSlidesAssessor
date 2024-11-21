@@ -91,6 +91,8 @@ class LLMRequestManager extends BaseRequestManager {
    * @return {Object[]} - An array of request objects ready to be sent via UrlFetchApp.fetchAll().
    */
   generateRequestObjects(assignment) {
+
+    //console.log(`Assignment object just before request objects generated: \n ${JSON.stringify(assignment)}`)
     const requests = [];
 
     assignment.studentTasks.forEach(studentTask => {
@@ -109,16 +111,17 @@ class LLMRequestManager extends BaseRequestManager {
 
         // Enhanced Error Handling: Validate task.taskReference and task.Content
         if (!task.taskReference) {
-          const errorMessage = `Missing taskReference for task key: ${taskKey} in assignment: ${assignment.id}`;
+          const errorMessage = `Missing taskReference for task key: ${taskKey} in assignment: ${assignment.assignmentId}`;
           console.error(errorMessage);
           Utils.toastMessage(errorMessage, "Task Reference Error", 5);
           throw new Error(errorMessage);
         }
 
-        if (!task.emptyContent) {
-          const errorMessage = `Missing emptyContent for task key: ${taskKey} in assignment: ${assignment.id}`;
+        if (task.emptyContent === null || task.emptyContent === undefined) { //Can't use a falsey operator here as the empty content could be an empty string for text type content.
+          const errorMessage = `Missing emptyContent for task key: ${taskKey} in assignment: ${assignment.assignmentId}`;
           console.error(errorMessage);
           Utils.toastMessage(errorMessage, "Empty Task Error", 5);
+          //console.log(`Task Object: \n ${JSON.stringify(assignment.tasks)}`)
           throw new Error(errorMessage);
         }
 
