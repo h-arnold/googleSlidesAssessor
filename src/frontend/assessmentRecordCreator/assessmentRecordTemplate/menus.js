@@ -1,5 +1,3 @@
-// SUPER IMPORTANT! Remeber to add the Slides Assessor Library as a library to this template before you push out the copies for each class.
-
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Classroom')
@@ -18,7 +16,7 @@ function createAssignmentDropdownHtml(assignments) {
 }
 
 function openReferenceSlideModal(assignmentId) {
-  AIAssess.openReferenceSlideModal(assignmentId)
+  return AIAssess.openReferenceSlideModal(assignmentId)
 }
 
 function getAssignments(courseId) {
@@ -26,11 +24,57 @@ function getAssignments(courseId) {
 }
 
 function createReferenceSlideModalHtml(assignmentId, referenceSlideId) {
-  AIAssess.createReferenceSlideModalHtml(assignmentId, referenceSlideId)
+  return AIAssess.createReferenceSlideModalHtml(assignmentId, referenceSlideId) 
 }
 
 function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
   return AIAssess.processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
+}
+
+function requestStatus() {
+  return AIAssess.requestStatus();
+}
+
+function removeTrigger(functionName){
+  AIAssess.removeTrigger(functionName);
+
+}
+
+function triggerProcessSelectedAssignment() {
+  AIAssess.triggerProcessSelectedAssignment();
+}
+
+/**
+ * Opens the progress modal dialog.
+ */
+function showProgressModal() {
+  AIAssess.showProgressModal();
+}
+
+/**
+ * Initiates the processing of an assignment asynchronously by setting up a trigger.
+ *
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
+ * @returns {string} The unique process ID.
+ */
+function startProcessing(assignmentId, referenceSlideId, emptySlideId) {
+  return AIAssess.startProcessing(assignmentId, referenceSlideId, emptySlideId);
+}
+
+/**
+ * Initiates the processing of an assignment asynchronously by setting up a trigger
+ * and opens the progress modal.
+ *
+ * @param {string} assignmentTitle - The title of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
+ */
+function saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
+  AIAssess.saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId);
 }
 
 function saveSlideIdsForAssignment(assignmentId, slideIds) {
