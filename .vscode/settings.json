@@ -5,9 +5,7 @@
     "spellright.documentTypes": [
         "markdown",
         "latex",
-        "plaintext"
-    ],
-    "files.associations": {
-        "*.yaml": "home-assistant"
-    }
+        "plaintext",
+        "javascript"
+    ]
 }

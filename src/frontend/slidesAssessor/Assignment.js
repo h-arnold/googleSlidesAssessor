@@ -22,62 +22,24 @@ class Assignment {
   }
 
   /**
-  * Processes image Blobs in tasks and student responses, uploads them, and replaces them with URLs.
-  */
-  processImageBlobs() {
-    const imageRequestManager = new ImageRequestManager();
+       * Processes all images in tasks and student responses by fetching and uploading them.
+       */
+  processImages() {
+    const imageManager = new ImageManager();
 
-    // Process tasks
-    Object.values(this.tasks).forEach(task => {
-      if (task.taskType === 'Image') {
-        // Process taskReference
-        if (task.taskReference) {
-          if (Array.isArray(task.taskReference)) {
-            task.taskReference = task.taskReference.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else {
-            // Single Blob
-            const url = imageRequestManager.uploadImage(task.taskReference);
-            task.taskReference = url;
-          }
-        }
-        // Process emptyContent
-        if (task.emptyContent) {
-          if (Array.isArray(task.emptyContent)) {
-            task.emptyContent = task.emptyContent.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else {
-            const url = imageRequestManager.uploadImage(task.emptyContent);
-            task.emptyContent = url;
-          }
-        }
-      }
-    });
+    // Collect all slide URLs
+    const slideUrls = imageManager.collectAllSlideUrls(this);
 
-    // Process student responses
-    this.studentTasks.forEach(studentTask => {
-      Object.keys(studentTask.responses).forEach(taskKey => {
-        const responseObj = studentTask.responses[taskKey];
-        if (responseObj && responseObj.response) {
-          if (Array.isArray(responseObj.response)) {
-            // It's an array of Blobs
-            responseObj.response = responseObj.response.map(blob => {
-              const url = imageRequestManager.uploadImage(blob);
-              return url;
-            });
-          } else if (typeof responseObj.response.getBytes === 'function') {
-            // Single Blob
-            const url = imageRequestManager.uploadImage(responseObj.response);
-            responseObj.response = url;
-          }
-          // Else, it's a string or null, no action needed
-        }
-      });
-    });
+    // Fetch images
+    const imageBlobs = imageManager.batchFetchImages(slideUrls);
+
+    // Upload images
+    const urlMappings = imageManager.batchUploadImages(imageBlobs);
+
+    // Update assignment with uploaded image URLs
+    imageManager.updateAssignmentWithImageUrls(this, urlMappings);
+
+    console.log("All images have been processed and URLs have been updated.");
   }
 
   /**
@@ -101,12 +63,12 @@ class Assignment {
    * Combines reference and empty content based on task keys.
    */
   populateTasksFromSlides() {
-    const slideExtractor = new SlideExtractor();
+    const slideContentManager = new SlideContentManager();
 
     // Extract reference tasks
-    const referenceTasks = slideExtractor.extractTasksFromSlides(this.referenceDocumentId, "reference");
+    const referenceTasks = slideContentManager.extractTasksFromSlides(this.referenceDocumentId, "reference");
     // Extract empty tasks
-    const emptyTasks = slideExtractor.extractTasksFromSlides(this.emptyDocumentId, "empty");
+    const emptyTasks = slideContentManager.extractTasksFromSlides(this.emptyDocumentId, "empty");
 
     // Create a map of tasks from referenceTasks
     const tasksMap = {};
@@ -203,14 +165,14 @@ class Assignment {
   }
 
   /**
-   * Processes all student submissions by extracting responses.
-   */
+    * Processes all student submissions by extracting responses.
+    */
   processAllSubmissions() {
-    const slideExtractor = new SlideExtractor();
+    const slideContentManager = new SlideContentManager();
 
     this.studentTasks.forEach(studentTask => {
       if (studentTask.documentId) {
-        studentTask.extractAndAssignResponses(slideExtractor, this.tasks);
+        studentTask.extractAndAssignResponses(slideContentManager, this.tasks);
       } else {
         console.warn(`No document ID for student: ${studentTask.student.email}. Skipping response extraction.`);
       }
@@ -232,6 +194,7 @@ class Assignment {
    */
   assessResponses() {
     // Utilize the singleton instance of LLMRequestManager
+    const llmRequestManager = new LLMRequestManager();
 
     // Warm up LLM
     llmRequestManager.warmUpLLM();
