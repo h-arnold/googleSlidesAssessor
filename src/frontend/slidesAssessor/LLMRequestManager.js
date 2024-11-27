@@ -7,6 +7,8 @@
 class LLMRequestManager extends BaseRequestManager {
   constructor() {
     super();
+    // Access the singleton instance of ProgressTracker
+    this.progressTracker = ProgressTracker.getInstance();
     this.retryAttempts = {}; // Tracks retry attempts for each UID
     this.maxValidationRetries = 3; // Maximum retries for data validation
   }
@@ -222,9 +224,16 @@ class LLMRequestManager extends BaseRequestManager {
    * @param {Assignment} assignment - The Assignment instance containing StudentTasks.
    */
   processResponses(responses, requests, assignment) {
+    //Get and increment the step number before entering the loop
+    let step = this.progressTracker.getStepAsNumber();
+    step ++
+
     responses.forEach((response, index) => {
       const request = requests[index];
       const uid = request.uid;
+
+
+      this.progressTracker.updateProgress(step, `Double-checking all assessments.`)
 
       if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
         try {
@@ -262,6 +271,7 @@ class LLMRequestManager extends BaseRequestManager {
           }
         } catch (e) {
           console.error(`Error parsing response for UID: ${uid} - ${e.message}`);
+          this.progressTracker(step, `There was an issue with a student response, retrying...`)
           this.handleValidationFailure(uid, request, assignment);
         }
       } else {
@@ -269,7 +279,7 @@ class LLMRequestManager extends BaseRequestManager {
         if (response) {
           console.log(`Response text is: ${response.getContentText()}`);
         }
-        Utils.toastMessage(`Failed to process assessment for UID: ${uid}`, "Error", 5);
+        this.progressTracker.updateProgress(null, `Failed to process assessment for UID: ${uid}`);
       }
     });
   }
@@ -354,8 +364,7 @@ class LLMRequestManager extends BaseRequestManager {
       console.log("No requests to send.");
       return;
     }
-
-    console.log(`Processing requests in batches of ${this.configManager.getBatchSize()}.`);
+    console.log(`Sending student responses in batches of ${this.configManager.getBatchSize()}.`)
 
     // Use BaseRequestManager's sendRequestsInBatches method
     const responses = this.sendRequestsInBatches(requests);

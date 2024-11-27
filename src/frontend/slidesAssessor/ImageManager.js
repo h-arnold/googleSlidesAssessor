@@ -3,6 +3,8 @@ class ImageManager extends BaseRequestManager {
         super();
         this.uploadUrl = this.configManager.getImageUploadUrl();
         this.apiKey = this.configManager.getImageUploaderApiKey();
+        this.progressTracker = ProgressTracker.getInstance();
+  
     }
 
     /**
@@ -101,7 +103,10 @@ class ImageManager extends BaseRequestManager {
 
         const imageBlobs = [];  // Array to hold { uid, blob }
 
+        const currentProgress = this.progressTracker.getCurrentProgress();
+
         batches.forEach((batch, batchIndex) => {
+            this.progressTracker.updateProgress(currentProgress.step, `Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`)
             console.log(`Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`);
             const requests = batch.map(slide => {
                 return {
@@ -151,10 +156,14 @@ class ImageManager extends BaseRequestManager {
 
         const urlMappings = {};  // Mapping of UIDs to uploaded image URLs
 
-        batches.forEach((batch, batchIndex) => {
-            console.log(`Uploading batch ${batchIndex + 1} of ${batches.length}`);
+        // Incrementing the step number and updating the message.
 
-            const requests = batch.map(imageBlobObj => {
+        let stepNo = this.progressTracker.getStepAsNumber();
+        const newStep = `${++stepNo}: Uploading Slide Images`
+
+        batches.forEach((batch, batchIndex) => {
+            this.progressTracker.updateProgress(newStep, `Uploading batch ${batchIndex + 1} of ${batches.length}`);
+              const requests = batch.map(imageBlobObj => {
                 const boundary = '---GoogleAppScriptBoundary';
                 const imageBytes = imageBlobObj.blob.getBytes();
                 const imageFileName = imageBlobObj.blob.getName();

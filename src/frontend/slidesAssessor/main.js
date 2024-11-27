@@ -1,92 +1,108 @@
 // Main.gs
-//This file holds the global functions needed to start the assessment process and handle other functions like managing configurations.
 
-//This is the main function that starts the assessment process.
+// This file contains the global functions needed to for various GUI and Trigger based elements of the code to be executed.
 
-function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
-    const lock = LockService.getScriptLock();
-
-    if (!lock.tryLock(5000)) {
-        console.log("Script is already running.");
-        Utils.toastMessage("Script is already running. Please wait a while and try again.","Notice", 2);
-        return;
-    }
-
-    try {
-        Utils.toastMessage("Assessment run starting...");
-
-        const courseId = Utils.getCourseId();
-        console.log('Assignment Id: ' + assignmentId);
-
-        // Create an Assignment instance
-        const assignment = new Assignment(courseId, assignmentId, referenceSlideId, emptySlideId);
-
-        // Fetch all students and add them to the assignment
-        const students = Student.fetchAllStudents(courseId);
-        students.forEach(student => assignment.addStudent(student));
-
-        // Process the assignment
-        Utils.toastMessage("Getting the tasks from the reference slides.", "Processing", 2);
-        assignment.populateTasksFromSlides();
-        
-        Utils.toastMessage("Getting all the student work together.", "Processing", 2);
-        assignment.fetchSubmittedSlides();
-        assignment.processAllSubmissions();
-
-        Utils.toastMessage("Uploading any images.", "Processing", 2);
-        // Process images
-        assignment.processImages();
-
-        Utils.toastMessage("Uploading any images.", "Assessing", 2);
-        // Assess responses
-        assignment.assessResponses();
-
-        Utils.toastMessage("Processing and updating all the data.", "Analysing", 2);
-        // Create the analysis sheet
-        const analysisSheetManager = new AnalysisSheetManager(assignment);
-        analysisSheetManager.createAnalysisSheet();
-
-        // Update the overview sheet
-        const overviewSheetManager = new OverviewSheetManager();
-        overviewSheetManager.createOverviewSheet();
-
-    } finally {
-        lock.releaseLock();
-    }
+/**
+ * Initiates the processing of an assignment asynchronously by setting up a trigger
+ * and opens the progress modal.
+ *
+ * @param {string} assignmentTitle - The title of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
+ */
+function saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
+  mainController.saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId);
 }
 
+/**
+ * Initiates the processing of an assignment asynchronously by setting up a trigger.
+ *
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
+ * @returns {string} The unique process ID.
+ */
+function startProcessing(assignmentId, referenceSlideId, emptySlideId) {
+  return mainController.startProcessing(assignmentId, referenceSlideId, emptySlideId);
+}
 
+/**
+ * Opens the progress modal dialog.
+ */
+function showProgressModal() {
+  mainController.showProgressModal();
+}
 
+/**
+ * Processes the selected assignment by retrieving parameters and executing the workflow.
+ */
+function triggerProcessSelectedAssignment() {
+  mainController.processSelectedAssignment();
+}
 
+/**
+ * Removes a specific trigger by function name.
+ *
+ * @param {string} functionName - The name of the function whose triggers are to be removed.
+ */
+function removeTrigger(functionName) {
+  mainController.triggerController.removeTriggers(functionName);
+}
+
+/**
+ * Adds custom menus when the spreadsheet is opened.
+ */
 function onOpen() {
-  const uiManager = new UIManager();
-  uiManager.addCustomMenus();
+  mainController.onOpen();
 }
 
+/**
+ * Shows the configuration dialog modal.
+ */
 function showConfigurationDialog() {
-  const uiManager = new UIManager();
-  uiManager.showConfigurationDialog();
+  mainController.showConfigurationDialog();
 }
 
+/**
+ * Shows the assignment dropdown modal.
+ */
 function showAssignmentDropdown() {
-  const uiManager = new UIManager();
-  uiManager.showAssignmentDropdown();
+  mainController.showAssignmentDropdown();
 }
 
-
-
+/**
+ * Opens the reference slide modal with assignment data.
+ *
+ * @param {string} assignmentData - The JSON string containing assignment data.
+ */
 function openReferenceSlideModal(assignmentData) {
-  const uiManager = new UIManager();
-  uiManager.openSlideIdsModal(assignmentData);
-
-
+  mainController.openReferenceSlideModal(assignmentData);
 }
 
 /**
  * Saves slide IDs for a specific assignment.
+ *
  * @param {string} assignmentId - The ID of the assignment.
  * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
  */
 function saveSlideIdsForAssignment(assignmentId, slideIds) {
-  AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
+  mainController.saveSlideIdsForAssignment(assignmentId, slideIds);
+}
+
+/**
+ * Retrieves the current progress status.
+ *
+ * @returns {Object} The current progress data.
+ */
+function requestStatus() {
+  return mainController.requestStatus();
+}
+
+/**
+ * Test workflow function for debugging purposes.
+ */
+function testWorkflow() {
+  mainController.testWorkflow();
 }
