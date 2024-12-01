@@ -189,7 +189,7 @@ class Utils {
       // Hostname
       '(?:(?:[a-zA-Z\\d]-*)*[a-zA-Z\\d]+)' +
       // Domain name
-      '(?:\\.(?:[a-zA-Z\\d]-*)*[a-zA-Z\\d]+)*' +
+      '(?:\\.[a-zA-Z\\d]+(?:-[a-zA-Z\\d]+)*)*' +
       // TLD identifier
       '(?:\\.(?:[a-zA-Z]{2,}))' +
       ')' +
