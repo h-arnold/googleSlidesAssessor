@@ -37,9 +37,7 @@ class Assignment {
     const urlMappings = imageManager.batchUploadImages(imageBlobs);
 
     // Update assignment with uploaded image URLs
-    imageManager.updateAssignmentWithImageUrls(this, urlMappings);
-
-    console.log("All images have been processed and URLs have been updated.");
+    imageManager.updateAssignmentWithImageUrls(this, urlMappings, imageBlobs);
   }
 
   /**
@@ -141,7 +139,7 @@ class Assignment {
                   const studentTask = this.studentTasks.find(st => st.student.id === studentId);
                   if (studentTask) {
                     studentTask.documentId = documentId;
-                    console.log(`Assigned Document ID ${documentId} to student ${studentTask.student.name} (${studentTask.student.email})`);
+                    // console.log(`Assigned Document ID ${documentId} to student ${studentTask.student.name} (${studentTask.student.email})`);
                   } else {
                     console.log(`No matching student found for student ID: ${studentId}`);
                   }

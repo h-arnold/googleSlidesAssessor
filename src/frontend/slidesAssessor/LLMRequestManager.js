@@ -79,6 +79,8 @@ class LLMRequestManager extends BaseRequestManager {
 
         const contentHashReference = task.contentHash;
 
+        console.log(`Reference Content Hash: ${contentHashReference} \n Student Content Hash${contentHashResponse}`)
+
         // Use CacheManager to check for cached assessments
         const cachedAssessment = this.cacheManager.getCachedAssessment(contentHashReference, contentHashResponse);
         if (cachedAssessment) {

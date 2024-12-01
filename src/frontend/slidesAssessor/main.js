@@ -1,7 +1,5 @@
 // Main.gs
 
-// This file contains the global functions needed to for various GUI and Trigger based elements of the code to be executed.
-
 /**
  * Initiates the processing of an assignment asynchronously by setting up a trigger
  * and opens the progress modal.
@@ -106,3 +104,66 @@ function requestStatus() {
 function testWorkflow() {
   mainController.testWorkflow();
 }
+
+function showConfigurationDialog() {
+  mainController.showConfigurationDialog()
+};
+
+function saveConfiguration(formData) {
+  return AIAssess.saveConfiguration(formData);
+}
+
+/**
+ * Saves the provided configuration properties.
+ * @param {Object} config - An object containing key-value pairs of configurations.
+ */
+function saveConfiguration(config) {
+  try {
+    // Map the incoming config to the ConfigurationManager setters
+    if (config.batchSize !== undefined) {
+      configurationManager.setBatchSize(config.batchSize);
+    }
+    if (config.langflowApiKey !== undefined) {
+      configurationManager.setLangflowApiKey(config.langflowApiKey);
+    }
+    if (config.langflowUrl !== undefined) {
+      configurationManager.setLangflowUrl(config.langflowUrl);
+    }
+
+    // Handle Tweak IDs
+    if (config.textAssessmentTweakId !== undefined) {
+      configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
+    }
+    if (config.tableAssessmentTweakId !== undefined) {
+      configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
+    }
+    if (config.imageAssessmentTweakId !== undefined) {
+      configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+    }
+
+    // Handle New Configuration Parameters
+    if (config.imageUploadUrl !== undefined) {
+      configurationManager.setImageUploadUrl(config.imageUploadUrl);
+    }
+    if (config.imageUploaderApiKey !== undefined) {
+      configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
+    }
+
+    Utils.toastMessage("Configuration saved successfully.", "Success", 5);
+  } catch (error) {
+    console.error("Error saving configuration:", error);
+    Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
+    throw new Error("Failed to save configuration. Please check the inputs.");
+  }
+}
+
+function clearAllCacheKeys() {
+  // Get the cache service
+  var cache = CacheService.getScriptCache();
+
+  // Retrieve all keys stored in the cache
+  cache.removeAll(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+}
+
+
+

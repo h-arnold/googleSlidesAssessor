@@ -6,75 +6,75 @@
  * Handles all user interface interactions, including menus and modal dialogs.
  */
 class UIManager {
-  constructor() {
-    this.ui = SpreadsheetApp.getUi();
-  }
+    constructor() {
+        this.ui = SpreadsheetApp.getUi();
+    }
 
-  /**
-   * Adds custom menus to the Google Sheets UI when the spreadsheet is opened.
-   */
-  addCustomMenus() {
-    this.ui.createMenu('Classroom')
-      .addItem('Configure Script Properties', 'showConfigurationDialog')
-      .addItem('Update Existing Assignment', 'showAssignmentDropdown')
-      .addToUi();
-    console.log('Custom menus added to the UI.');
-  }
+    /**
+     * Adds custom menus to the Google Sheets UI when the spreadsheet is opened.
+     */
+    addCustomMenus() {
+        this.ui.createMenu('Classroom')
+            .addItem('Configure Script Properties', 'showConfigurationDialog')
+            .addItem('Update Existing Assignment', 'showAssignmentDropdown')
+            .addToUi();
+        console.log('Custom menus added to the UI.');
+    }
 
-  /**
-   * Shows the configuration dialog modal.
-   */
-  showConfigurationDialog() {
-    const html = HtmlService.createHtmlOutputFromFile('ConfigurationManager')
-      .setWidth(500)
-      .setHeight(600); // Adjust the size as needed
+    /**
+     * Shows the configuration dialog modal.
+     */
+    showConfigurationDialog() {
+        const html = HtmlService.createHtmlOutputFromFile('ConfigurationDialog')
+            .setWidth(500)
+            .setHeight(600); // Adjust the size as needed
 
-    this.ui.showModalDialog(html, 'Configure Script Properties');
-    console.log('Configuration dialog displayed.');
-  }
+        this.ui.showModalDialog(html, 'Configure Script Properties');
+        console.log('Configuration dialog displayed.');
+    }
 
-  /**
-   * Shows a modal dialog with a dropdown of assignments to choose from.
-   */
-  showAssignmentDropdown() {
-    const courseId = Utils.getCourseId();
-    const assignments = Utils.getAssignments(courseId);
-    const maxTitleLength = this.getMaxTitleLength(assignments);
-    const modalWidth = Math.max(300, maxTitleLength * 10); // Minimum width 300px, 10px per character
+    /**
+     * Shows a modal dialog with a dropdown of assignments to choose from.
+     */
+    showAssignmentDropdown() {
+        const courseId = Utils.getCourseId();
+        const assignments = Utils.getAssignments(courseId);
+        const maxTitleLength = this.getMaxTitleLength(assignments);
+        const modalWidth = Math.max(300, maxTitleLength * 10); // Minimum width 300px, 10px per character
 
-    const htmlContent = this.createAssignmentDropdownHtml(assignments);
-    const html = HtmlService.createHtmlOutput(htmlContent)
-      .setWidth(modalWidth)
-      .setHeight(250); // Increased height to accommodate buttons
+        const htmlContent = this.createAssignmentDropdownHtml(assignments);
+        const html = HtmlService.createHtmlOutput(htmlContent)
+            .setWidth(modalWidth)
+            .setHeight(250); // Increased height to accommodate buttons
 
-    this.ui.showModalDialog(html, 'Select Assignment');
-    console.log('Assignment dropdown modal displayed.');
-  }
+        this.ui.showModalDialog(html, 'Select Assignment');
+        console.log('Assignment dropdown modal displayed.');
+    }
 
-  /**
-   * Gets the maximum length of assignment titles.
-   *
-   * @param {Object[]} assignments - The list of assignments.
-   * @returns {number} The maximum length of assignment titles.
-   */
-  getMaxTitleLength(assignments) {
-    let maxLength = 0;
-    assignments.forEach(assignment => {
-      if (assignment.title.length > maxLength) {
-        maxLength = assignment.title.length;
-      }
-    });
-    return maxLength;
-  }
+    /**
+     * Gets the maximum length of assignment titles.
+     *
+     * @param {Object[]} assignments - The list of assignments.
+     * @returns {number} The maximum length of assignment titles.
+     */
+    getMaxTitleLength(assignments) {
+        let maxLength = 0;
+        assignments.forEach(assignment => {
+            if (assignment.title.length > maxLength) {
+                maxLength = assignment.title.length;
+            }
+        });
+        return maxLength;
+    }
 
-  /**
-   * Creates the HTML for the assignment dropdown modal.
-   *
-   * @param {Object[]} assignments - The list of assignments.
-   * @returns {string} The HTML string for the modal.
-   */
-  createAssignmentDropdownHtml(assignments) {
-    let html = `
+    /**
+     * Creates the HTML for the assignment dropdown modal.
+     *
+     * @param {Object[]} assignments - The list of assignments.
+     * @returns {string} The HTML string for the modal.
+     */
+    createAssignmentDropdownHtml(assignments) {
+        let html = `
     <html>
     <head>
         <base target="_top">
@@ -132,40 +132,40 @@ class UIManager {
     </body>
     </html>
     `;
-    return html;
-  }
+        return html;
+    }
 
-  /**
-   * Opens a modal dialog to get the reference and empty slide IDs.
-   *
-   * @param {string} assignmentData - The assignment data.
-   */
-  openReferenceSlideModal(assignmentData) {
-    const assignmentDataObj = JSON.parse(assignmentData);
-    const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentDataObj.name);
-    const htmlContent = this.createSlideIdsModalHtml(assignmentDataObj, savedSlideIds);
-    const html = HtmlService.createHtmlOutput(htmlContent)
-      .setWidth(400)
-      .setHeight(350);
+    /**
+     * Opens a modal dialog to get the reference and empty slide IDs.
+     *
+     * @param {string} assignmentData - The assignment data.
+     */
+    openReferenceSlideModal(assignmentData) {
+        const assignmentDataObj = JSON.parse(assignmentData);
+        const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentDataObj.name);
+        const htmlContent = this.createSlideIdsModalHtml(assignmentDataObj, savedSlideIds);
+        const html = HtmlService.createHtmlOutput(htmlContent)
+            .setWidth(400)
+            .setHeight(350);
 
-    this.ui.showModalDialog(html, 'Enter Slide IDs');
-    console.log('Reference slide IDs modal displayed.');
-  }
+        this.ui.showModalDialog(html, 'Enter Slide IDs');
+        console.log('Reference slide IDs modal displayed.');
+    }
 
-  /**
-   * Creates the HTML for the slide IDs modal.
-   *
-   * @param {Object} assignmentData - The assignment data.
-   * @param {Object} savedSlideIds - The saved slide IDs for the assignment, if any.
-   * @returns {string} The HTML string for the modal.
-   */
-  createSlideIdsModalHtml(assignmentData, savedSlideIds = {}) {
-    const referenceSlideId = savedSlideIds.referenceSlideId || '';
-    const emptySlideId = savedSlideIds.emptySlideId || '';
-    const assignmentTitle = assignmentData.name;
-    const assignmentId = assignmentData.id;
+    /**
+     * Creates the HTML for the slide IDs modal.
+     *
+     * @param {Object} assignmentData - The assignment data.
+     * @param {Object} savedSlideIds - The saved slide IDs for the assignment, if any.
+     * @returns {string} The HTML string for the modal.
+     */
+    createSlideIdsModalHtml(assignmentData, savedSlideIds = {}) {
+        const referenceSlideId = savedSlideIds.referenceSlideId || '';
+        const emptySlideId = savedSlideIds.emptySlideId || '';
+        const assignmentTitle = assignmentData.name;
+        const assignmentId = assignmentData.id;
 
-    let html = `
+        let html = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -249,17 +249,17 @@ class UIManager {
         </body>
         </html>
     `;
-    return html;
-  }
+        return html;
+    }
 
-  /**
-   * Opens the progress modal.
-   */
-  showProgressModal() {
-    const html = HtmlService.createHtmlOutputFromFile('ProgressModal')
-      .setWidth(400)
-      .setHeight(200);
-    this.ui.showModalDialog(html, 'Progress');
-    console.log('Progress modal displayed.');
-  }
+    /**
+     * Opens the progress modal.
+     */
+    showProgressModal() {
+        const html = HtmlService.createHtmlOutputFromFile('ProgressModal')
+            .setWidth(400)
+            .setHeight(200);
+        this.ui.showModalDialog(html, 'Progress');
+        console.log('Progress modal displayed.');
+    }
 }
