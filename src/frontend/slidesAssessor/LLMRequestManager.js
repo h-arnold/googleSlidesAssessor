@@ -221,11 +221,13 @@ processResponses(responses, requests, assignment) {
   let step = this.progressTracker.getStepAsNumber();
   step++;
 
+  this.progressTracker.updateProgress(step, `Double-checking all assessments.`);
+
   responses.forEach((response, index) => {
     const request = requests[index];
     const uid = request.uid;
 
-    this.progressTracker.updateProgress(step, `Double-checking all assessments.`);
+
 
     if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
       try {
