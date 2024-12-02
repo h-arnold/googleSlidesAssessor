@@ -205,7 +205,7 @@ class SlideContentManager {
         const cell = table.getCell(i, j);
         const text = cell.getText().asString().trim();
         // Escape pipe characters in Markdown
-        const escapedText = text.replace(/\|/g, '\\|');
+        const escapedText = text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
         row.push(escapedText);
       }
       rows.push(row);
