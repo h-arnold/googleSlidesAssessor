@@ -20,7 +20,7 @@ class CacheManager {
         }
 
         //Hashing the hashes to ensure they stay within the character limit
-        return Utils.generateHash(contentHashReference + contentHashResponse);
+        return contentHashReference + contentHashResponse;
     }
 
     /**
