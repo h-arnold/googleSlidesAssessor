@@ -80,6 +80,7 @@ class Assignment {
       const key = emptyTask.taskTitle;
       if (tasksMap[key]) {
         tasksMap[key].emptyContent = emptyTask.emptyContent;
+        tasksMap[key].emptyContentHash = emptyTask.emptyContentHash;
       } else {
         console.warn(`No matching reference task for empty task with key: ${key}`);
         // Optionally, you can decide to add this task or handle it differently

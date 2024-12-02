@@ -260,6 +260,7 @@ class ImageManager extends BaseRequestManager {
                     const uidEmpty = task.uid + '-empty';
                     const imageUrl = urlMappings[uidEmpty];
                     task.emptyContent = imageUrl;
+                    task.emptyContentHash = contentHashMapping[uidEmpty];
                     // Assign contentHash if needed
                 }
             }

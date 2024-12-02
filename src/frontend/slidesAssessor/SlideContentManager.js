@@ -132,12 +132,14 @@ class SlideContentManager {
     let emptyContent = null;
     let taskNotes = null;
     let contentHash = null;
+    let emptyContentHash = null;
 
     if (contentType === "reference") {
       taskReference = content;
       contentHash = Utils.generateHash(content);
     } else if (contentType === "empty") {
       emptyContent = content;
+      emptyContentHash = Utils.generateHash(content);
     } else {
       taskReference = content;
       contentHash = Utils.generateHash(content);
@@ -151,7 +153,8 @@ class SlideContentManager {
       taskReference,
       taskNotes,     // Will be assigned separately if present
       emptyContent,
-      contentHash
+      contentHash,
+      emptyContentHash
     );
   }
 
