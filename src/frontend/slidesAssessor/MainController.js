@@ -93,11 +93,11 @@ class MainController {
    * Processes the selected assignment by retrieving parameters and executing the workflow.
    */
   processSelectedAssignment() {
-    const lock = LockService.getScriptLock();
+    // Check that the script isn't already running for the given document.
+    const lock = LockService.getDocumentLock();
 
     if (!lock.tryLock(5000)) {
-      console.log("Script is already running.");
-      this.utils.toastMessage("Script is already running. Please wait a while and try again.", "Notice", 2);
+      this.progressTracker.logError(`Script is already running. Please try again later.`)
       return;
     }
 
@@ -108,7 +108,7 @@ class MainController {
       const referenceSlideId = properties.getProperty('referenceSlideId');
       const emptySlideId = properties.getProperty('emptySlideId');
       const processId = properties.getProperty('processId');
-      let step = 1;
+      let step = 1; 
 
       if (!assignmentId || !referenceSlideId || !emptySlideId || !processId) {
         throw new Error("Missing parameters for processing.");
@@ -149,12 +149,12 @@ class MainController {
       this.progressTracker.updateProgress(++step, "Extracting student work from slides.");
       assignment.processAllSubmissions();
       this.progressTracker.updateProgress(null, "All student work extracted.");
-      // Process images
-      this.progressTracker.updateProgress(++step, "Processing Images");
+   // Process images
+      this.progressTracker.updateProgress(++step, "Processing Images");   
       assignment.processImages();
       this.progressTracker.updateProgress(null, "Images uploaded.");
 
-
+         
       // Assess responses
       this.progressTracker.updateProgress(++step, "Assessing student responses");
       assignment.assessResponses();
