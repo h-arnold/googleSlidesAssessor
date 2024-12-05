@@ -50,7 +50,6 @@ class LLMRequestManager extends BaseRequestManager {
    * @return {boolean} - Returns true if an empty assessment was assigned, false otherwise.
    */
   handleEmptyResponse(uid, emptyContentHash, studentResponseHash, assignment) {
-    console.log(`Checking for non-attempted task. \n Empty Content Hash: ${emptyContentHash} \n Student Response Hash: ${studentResponseHash}`)
     if (emptyContentHash === studentResponseHash) {
       console.log(`Found student work unattempted for UID: ${uid}. Awarding 0 for all parts.`)
       const emptyAssessment = {

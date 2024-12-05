@@ -1,4 +1,4 @@
-// Main.gs
+// z_main.gs This file needs to be prefixed with a Z so that when clasp uploads the script files, this is the last one in the list. Otherwise you'll get lots of 'xx class is undefined errors'.
 
 /**
  * Initiates the processing of an assignment asynchronously by setting up a trigger
