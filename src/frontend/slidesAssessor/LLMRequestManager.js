@@ -13,6 +13,7 @@ class LLMRequestManager extends BaseRequestManager {
   }
 
   /**
+   * DEPRECATED - shouldn't be needed any more.
  * Wakes up the LLM backend to ensure it's ready for processing.
  */
   warmUpLLM() {

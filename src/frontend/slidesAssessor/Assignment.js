@@ -195,8 +195,8 @@ class Assignment {
     // Utilize the singleton instance of LLMRequestManager
     const llmRequestManager = new LLMRequestManager();
 
-    // Warm up LLM
-    llmRequestManager.warmUpLLM();
+    // Warm up LLM - Deprecated as the LLM is usually warmed up by the image uploader now anyway.
+    //llmRequestManager.warmUpLLM();
 
     // Generate LLM Requests
     const requests = llmRequestManager.generateRequestObjects(this);
