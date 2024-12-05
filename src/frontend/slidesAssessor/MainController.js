@@ -108,7 +108,7 @@ class MainController {
       const referenceSlideId = properties.getProperty('referenceSlideId');
       const emptySlideId = properties.getProperty('emptySlideId');
       const processId = properties.getProperty('processId');
-      let step = 1; 
+      let step = 1;
 
       if (!assignmentId || !referenceSlideId || !emptySlideId || !processId) {
         throw new Error("Missing parameters for processing.");
@@ -149,12 +149,12 @@ class MainController {
       this.progressTracker.updateProgress(++step, "Extracting student work from slides.");
       assignment.processAllSubmissions();
       this.progressTracker.updateProgress(null, "All student work extracted.");
-   // Process images
-      this.progressTracker.updateProgress(++step, "Processing Images");   
+      // Process images
+      this.progressTracker.updateProgress(++step, "Processing Images");
       assignment.processImages();
       this.progressTracker.updateProgress(null, "Images uploaded.");
 
-         
+
       // Assess responses
       this.progressTracker.updateProgress(++step, "Assessing student responses");
       assignment.assessResponses();
@@ -247,6 +247,10 @@ class MainController {
    */
   requestStatus() {
     return this.progressTracker.getStatus();
+  }
+
+  getAssignments(courseId) {
+    return Utils.getAssignments(courseId);
   }
 
   /**

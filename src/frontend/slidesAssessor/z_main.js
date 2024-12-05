@@ -169,6 +169,10 @@ function saveClassroom(courseName, courseId) {
   }
 }
 
+function getAssignments(courseId) {
+  return mainController.getAssignments(courseId);
+}
+
 /**
  * ======== Utility Functions ========
  */
