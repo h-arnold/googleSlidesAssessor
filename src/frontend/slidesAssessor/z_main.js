@@ -169,6 +169,11 @@ function saveClassroom(courseName, courseId) {
   }
 }
 
+/**
+ * Gets the Google Classroom assignments for a given class.
+ * @param {string} courseId 
+ * @returns {object}
+ */
 function getAssignments(courseId) {
   return mainController.getAssignments(courseId);
 }
