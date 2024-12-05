@@ -37,9 +37,7 @@ class Assignment {
     const urlMappings = imageManager.batchUploadImages(imageBlobs);
 
     // Update assignment with uploaded image URLs
-    imageManager.updateAssignmentWithImageUrls(this, urlMappings);
-
-    console.log("All images have been processed and URLs have been updated.");
+    imageManager.updateAssignmentWithImageUrls(this, urlMappings, imageBlobs);
   }
 
   /**
@@ -82,6 +80,7 @@ class Assignment {
       const key = emptyTask.taskTitle;
       if (tasksMap[key]) {
         tasksMap[key].emptyContent = emptyTask.emptyContent;
+        tasksMap[key].emptyContentHash = emptyTask.emptyContentHash;
       } else {
         console.warn(`No matching reference task for empty task with key: ${key}`);
         // Optionally, you can decide to add this task or handle it differently
@@ -141,7 +140,7 @@ class Assignment {
                   const studentTask = this.studentTasks.find(st => st.student.id === studentId);
                   if (studentTask) {
                     studentTask.documentId = documentId;
-                    console.log(`Assigned Document ID ${documentId} to student ${studentTask.student.name} (${studentTask.student.email})`);
+                    // console.log(`Assigned Document ID ${documentId} to student ${studentTask.student.name} (${studentTask.student.email})`);
                   } else {
                     console.log(`No matching student found for student ID: ${studentId}`);
                   }
@@ -196,8 +195,8 @@ class Assignment {
     // Utilize the singleton instance of LLMRequestManager
     const llmRequestManager = new LLMRequestManager();
 
-    // Warm up LLM
-    llmRequestManager.warmUpLLM();
+    // Warm up LLM - Deprecated as the LLM is usually warmed up by the image uploader now anyway.
+    //llmRequestManager.warmUpLLM();
 
     // Generate LLM Requests
     const requests = llmRequestManager.generateRequestObjects(this);

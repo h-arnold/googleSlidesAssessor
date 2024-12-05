@@ -22,7 +22,14 @@ class SlideContentManager {
    * @return {string} - The URL to export the slide as an image.
    */
   generateSlideImageUrl(documentId, slideId) {
-    return `https://docs.google.com/presentation/d/${documentId}/export/png?id=${documentId}&pageid=${slideId}`;
+
+    const url = `https://docs.google.com/presentation/d/${documentId}/export/png?id=${documentId}&pageid=${slideId}`;
+
+    if (Utils.isValidUrl(url)) {
+      return url;
+    } else {
+      throw new Error(`Invalid URL produced.`)
+    }
   }
 
   /**
@@ -112,35 +119,42 @@ class SlideContentManager {
   }
 
   /**
-   * Parses raw task content to create a Task instance.
-   * @param {string} key - The task key extracted from the slide.
-   * @param {string} content - The raw content of the task (string or URL).
-   * @param {string} slideId - The ID of the slide where the task is located.
-   * @param {string} taskType - The type of the task: "Text", "Table", "Image", or "SlideImage".
-   * @param {string|null} contentType - Type of content: "reference", "empty", or null for default.
-   * @return {Task|null} - The Task instance or null if parsing fails.
-   */
+  * Parses raw task content to create a Task instance.
+  * @param {string} key - The task key extracted from the slide.
+  * @param {string} content - The raw content of the task (string or URL).
+  * @param {string} slideId - The ID of the slide where the task is located.
+  * @param {string} taskType - The type of the task: "Text", "Table", "Image".
+  * @param {string|null} contentType - Type of content: "reference", "empty", or null for default.
+  * @return {Task|null} - The Task instance or null if parsing fails.
+  */
   parseTask(key, content, slideId, taskType, contentType) {
     let taskReference = null;
     let emptyContent = null;
     let taskNotes = null;
+    let contentHash = null;
+    let emptyContentHash = null;
 
     if (contentType === "reference") {
       taskReference = content;
+      contentHash = Utils.generateHash(content);
     } else if (contentType === "empty") {
       emptyContent = content;
+      emptyContentHash = Utils.generateHash(content);
     } else {
       taskReference = content;
+      contentHash = Utils.generateHash(content);
     }
 
     return new Task(
       key,
       taskType,
       slideId,
-      null,       // imageCategory
+      null,          // imageCategory
       taskReference,
-      taskNotes,  // Will be assigned separately if present
-      emptyContent
+      taskNotes,     // Will be assigned separately if present
+      emptyContent,
+      contentHash,
+      emptyContentHash
     );
   }
 
@@ -191,7 +205,7 @@ class SlideContentManager {
         const cell = table.getCell(i, j);
         const text = cell.getText().asString().trim();
         // Escape pipe characters in Markdown
-        const escapedText = text.replace(/\|/g, '\\|');
+        const escapedText = text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
         row.push(escapedText);
       }
       rows.push(row);

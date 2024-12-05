@@ -1,6 +1,6 @@
 /**
  * StudentTask Class
- * 
+ *
  * Represents a student's submission for an assignment, containing responses to each task.
  */
 class StudentTask {
@@ -14,7 +14,7 @@ class StudentTask {
     this.student = student;           // Student: Associated student
     this.assignmentId = assignmentId; // string: ID of the assignment
     this.documentId = documentId;     // string: Document ID of the student's submission
-    this.responses = {};              // Object: Mapping of taskIndex to { uid, slideId, response, assessments }
+    this.responses = {};              // Object: Mapping of taskIndex to { uid, slideId, response, contentHash, assessments }
   }
 
   /**
@@ -23,13 +23,15 @@ class StudentTask {
    * @param {string} uid - The unique ID of this response.
    * @param {string} slideId - The ID of the slide where the task is located.
    * @param {string|string[]} response - The student's response to the task (string or array of URLs).
+   * @param {string|null} contentHash - Hash of the response content for caching purposes.
    */
-  addResponse(taskIndex, uid, slideId, response) {
+  addResponse(taskIndex, uid, slideId, response, contentHash = null) {
     this.responses[taskIndex] = {
       uid: uid,
       slideId: slideId,
-      response: response, // String for Text/Table, array of URLs for Image
-      assessments: null   // To be filled after LLM assessment
+      response: response,       // String for Text/Table, array of URLs for Image
+      contentHash: contentHash, // New property
+      assessments: null         // To be filled after LLM assessment
     };
   }
 
@@ -88,6 +90,7 @@ class StudentTask {
             uid: value.uid,
             slideId: value.slideId,
             response: value.response,
+            contentHash: value.contentHash, // Include contentHash
             assessments: value.assessments ? value.assessments : null
           }
         ])
@@ -109,6 +112,7 @@ class StudentTask {
         uid: responseObj.uid,
         slideId: responseObj.slideId,
         response: responseObj.response,
+        contentHash: responseObj.contentHash, // Include contentHash
         assessments: responseObj.assessments ? responseObj.assessments : null
       };
     }
@@ -152,7 +156,15 @@ class StudentTask {
       if (submissionMap.hasOwnProperty(taskTitle)) {
         const { slideId, response } = submissionMap[taskTitle];
         const uid = StudentTask.generateUID(slideId);
-        this.addResponse(taskKey, uid, slideId, response);
+
+        let contentHash = null;
+        if (task.taskType.toLowerCase() === 'text' || task.taskType.toLowerCase() === 'table') {
+          // Generate contentHash for Text and Table tasks
+          contentHash = Utils.generateHash(response);
+        }
+        // For Image tasks, contentHash will be assigned after image fetching
+
+        this.addResponse(taskKey, uid, slideId, response, contentHash);
       } else {
         this.addResponse(taskKey, null, null, null);
       }

@@ -4,7 +4,7 @@ class ImageManager extends BaseRequestManager {
         this.uploadUrl = this.configManager.getImageUploadUrl();
         this.apiKey = this.configManager.getImageUploaderApiKey();
         this.progressTracker = ProgressTracker.getInstance();
-  
+
     }
 
     /**
@@ -45,7 +45,8 @@ class ImageManager extends BaseRequestManager {
                     const response = studentTask.responses[taskKey];
                     const task = assignment.tasks[taskKey];
 
-                    if (task.taskType === 'Image' && response.response) {
+                    if (task.taskType === 'Image' && Utils.isValidUrl(response.response)) {
+
                         slideUrls.push({
                             documentId: studentTask.documentId,
                             slideURL: response.response,
@@ -54,7 +55,8 @@ class ImageManager extends BaseRequestManager {
                     }
                 }
             } else {
-                console.warn(`No document ID for student: ${studentTask.student.email}. Skipping slide URL collection.`);
+                console.warn(`Invalid task data for: ${studentTask.student.email}. Skipping slide URL collection.`)
+                console.error(`Task detail is as follows: \n ${JSON.stringify(studentTask)}`);
             }
         }
 
@@ -64,7 +66,7 @@ class ImageManager extends BaseRequestManager {
     /**
      * Fetches images from the given slide URLs in batches, optimizing to avoid rate limits.
      * @param {Object[]} slideUrls - An array of objects containing documentId, slideURL, and uid.
-     * @return {Object[]} - An array of objects containing uid and image Blob.
+     * @return {Object[]} - An array of objects containing uid, blob, and contentHash.
      */
     batchFetchImages(slideUrls) {
         const batches = [];
@@ -101,13 +103,17 @@ class ImageManager extends BaseRequestManager {
 
         // Now we have batches, where each batch contains slides from different documents
 
-        const imageBlobs = [];  // Array to hold { uid, blob }
+        const imageBlobs = [];  // Array to hold { uid, blob, contentHash }
 
         const currentProgress = this.progressTracker.getCurrentProgress();
 
         batches.forEach((batch, batchIndex) => {
-            this.progressTracker.updateProgress(currentProgress.step, `Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`)
+            this.progressTracker.updateProgress(
+                currentProgress.step,
+                `Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`
+            );
             console.log(`Fetching Slide Image Batch ${batchIndex + 1} of ${batches.length}`);
+
             const requests = batch.map(slide => {
                 return {
                     url: slide.slideURL,
@@ -126,19 +132,28 @@ class ImageManager extends BaseRequestManager {
                 const slide = batch[index];
                 if (response && response.getResponseCode() === 200) {
                     const blob = response.getBlob().setName(`Slide_${slide.uid}.png`);
+                    const contentHash = Utils.generateHash(blob.getBytes());
                     imageBlobs.push({
                         uid: slide.uid,
-                        blob: blob
+                        blob: blob,
+                        contentHash: contentHash
                     });
+
+                    // Assign contentHash to Task or StudentTask response if needed
+                    // Note: Since this method may not have access to the assignment object,
+                    // you might need to handle contentHash assignment elsewhere.
                 } else {
+                    google
                     console.warn(`Failed to fetch image for UID: ${slide.uid}`);
                     // Handle failures as needed
                 }
             });
         });
 
+        // Return the collected image blobs after all batches are processed
         return imageBlobs;
     }
+
 
     /**
      * Uploads image Blobs to the image service in batches.
@@ -163,7 +178,7 @@ class ImageManager extends BaseRequestManager {
 
         batches.forEach((batch, batchIndex) => {
             this.progressTracker.updateProgress(newStep, `Uploading batch ${batchIndex + 1} of ${batches.length}`);
-              const requests = batch.map(imageBlobObj => {
+            const requests = batch.map(imageBlobObj => {
                 const boundary = '---GoogleAppScriptBoundary';
                 const imageBytes = imageBlobObj.blob.getBytes();
                 const imageFileName = imageBlobObj.blob.getName();
@@ -224,28 +239,29 @@ class ImageManager extends BaseRequestManager {
      * @param {Assignment} assignment - The Assignment instance.
      * @param {Object} urlMappings - A mapping of UIDs to uploaded image URLs.
      */
-    updateAssignmentWithImageUrls(assignment, urlMappings) {
+    updateAssignmentWithImageUrls(assignment, urlMappings, imageBlobs) {
+        // Create a mapping from uid to contentHash
+        const contentHashMapping = {};
+        imageBlobs.forEach(imageBlob => {
+            contentHashMapping[imageBlob.uid] = imageBlob.contentHash;
+        });
+
         // Update tasks
         for (const taskKey in assignment.tasks) {
             const task = assignment.tasks[taskKey];
             if (task.taskType === 'Image') {
-                // Update taskReference
                 if (task.taskReference) {
-                    const uid = task.uid + '-reference';
-                    if (urlMappings[uid]) {
-                        task.taskReference = urlMappings[uid];
-                    } else {
-                        console.warn(`No uploaded URL found for taskReference UID: ${uid}`);
-                    }
+                    const uidReference = task.uid + '-reference';
+                    const imageUrl = urlMappings[uidReference];
+                    task.taskReference = imageUrl;
+                    task.contentHash = contentHashMapping[uidReference]; // Assign contentHash
                 }
-                // Update emptyContent
                 if (task.emptyContent) {
-                    const uid = task.uid + '-empty';
-                    if (urlMappings[uid]) {
-                        task.emptyContent = urlMappings[uid];
-                    } else {
-                        console.warn(`No uploaded URL found for emptyContent UID: ${uid}`);
-                    }
+                    const uidEmpty = task.uid + '-empty';
+                    const imageUrl = urlMappings[uidEmpty];
+                    task.emptyContent = imageUrl;
+                    task.emptyContentHash = contentHashMapping[uidEmpty];
+                    // Assign contentHash if needed
                 }
             }
         }
@@ -255,13 +271,12 @@ class ImageManager extends BaseRequestManager {
             for (const taskKey in studentTask.responses) {
                 const response = studentTask.responses[taskKey];
                 const task = assignment.tasks[taskKey];
+
                 if (task.taskType === 'Image' && response.response) {
                     const uid = response.uid;
-                    if (urlMappings[uid]) {
-                        response.response = urlMappings[uid];
-                    } else {
-                        console.warn(`No uploaded URL found for response UID: ${uid}`);
-                    }
+                    const imageUrl = urlMappings[uid];
+                    response.response = imageUrl;
+                    response.contentHash = contentHashMapping[uid]; // Assign contentHash
                 }
             }
         }

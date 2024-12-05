@@ -1,5 +1,3 @@
-// Utils.gs
-
 /**
  * Utils Class
  *
@@ -7,26 +5,25 @@
  */
 class Utils {
   /**
-   * Generates a SHA-256 hash for a given string.
+   * Generates a SHA-256 hash for a given input.
    *
-   * @param {string} inputString - The string to be hashed.
-   * @return {string} - The SHA-256 hash of the input string.
+   * @param {string|Uint8Array} input - The string or byte array to be hashed.
+   * @return {string} - The SHA-256 hash of the input.
    */
-  static generateHash(inputString) {
-    const rawHash = Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      inputString
-    );
-    const hash = rawHash
-      .map((e) => {
-        // Convert each byte to a hexadecimal string
-        const hex = (e < 0 ? e + 256 : e).toString(16);
-        // Ensure each byte is represented by two hex digits
-        return hex.length === 1 ? "0" + hex : hex;
-      })
-      .join("");
+  static generateHash(input) {
+    let inputBytes;
+    if (typeof input === 'string') {
+      inputBytes = Utilities.newBlob(input).getBytes();
+    } else {
+      inputBytes = input; // Assume input is a byte array
+    }
 
-    // Added to identify why some hashes are coming up as null.
+    const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, inputBytes);
+    const hash = rawHash.map(e => {
+      const hex = (e < 0 ? e + 256 : e).toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    }).join("");
+
     if (hash == null) {
       console.error("Hash is null. Please check debugger to find out why.");
       throw new Error("Hash is null. Please check debugger to find out why.");
@@ -34,7 +31,6 @@ class Utils {
       return hash;
     }
   }
-
   /**
    * Converts a column index to its corresponding letter.
    *
@@ -169,6 +165,51 @@ class Utils {
     const docProperties = PropertiesService.getDocumentProperties();
     docProperties.deleteAllProperties();
   }
+
+  static isValidUrl(url) {
+    if (typeof url !== 'string') {
+      return false;
+    }
+    const urlPattern = new RegExp(
+      '^' +
+      // Protocol identifier (required)
+      '(?:(?:https?|ftp)://)' +
+      // User:Pass authentication (optional)
+      '(?:\\S+(?::\\S*)?@)?' +
+      '(?:' +
+      // IP address exclusion (private & local networks)
+      '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
+      '(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})' +
+      '(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})' +
+      // IP address dotted notation octets
+      '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' +
+      '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' +
+      '(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-5]))' +
+      '|' +
+      // Hostname
+      '(?:(?:[a-zA-Z\\d]-*)*[a-zA-Z\\d]+)' +
+      // Domain name
+      '(?:\\.[a-zA-Z\\d]+(?:-[a-zA-Z\\d]+)*)*' +
+      // TLD identifier
+      '(?:\\.(?:[a-zA-Z]{2,}))' +
+      ')' +
+      // Port number (optional)
+      '(?::\\d{2,5})?' +
+      // Resource path (optional)
+      '(?:/\\S*)?' +
+      '$', 'i'
+    );
+
+    const result = urlPattern.test(url);
+
+    if (!result) {
+      console.error(`Invalid slide URL found: ${url}`)
+    }
+
+    return result; //True or False
+  }
+
+
 }
 
 // Ensure singleton instance (if needed)

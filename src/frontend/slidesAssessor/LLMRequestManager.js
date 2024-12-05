@@ -1,21 +1,21 @@
 /**
  * LLMRequestManager Class
- * 
+ *
  * Manages the creation, caching, and sending of request objects to the LLM.
- * Inherits from BaseRequestManager for generic request handling.
  */
 class LLMRequestManager extends BaseRequestManager {
   constructor() {
     super();
-    // Access the singleton instance of ProgressTracker
     this.progressTracker = ProgressTracker.getInstance();
     this.retryAttempts = {}; // Tracks retry attempts for each UID
     this.maxValidationRetries = 3; // Maximum retries for data validation
+    this.cacheManager = new CacheManager(); // Use the CacheManager
   }
 
   /**
-   * Wakes up the LLM backend to ensure it's ready for processing.
-   */
+   * DEPRECATED - shouldn't be needed any more.
+ * Wakes up the LLM backend to ensure it's ready for processing.
+ */
   warmUpLLM() {
     const payload = { "input_value": "Wake Up!" };
     const request = {
@@ -42,48 +42,37 @@ class LLMRequestManager extends BaseRequestManager {
     }
   }
 
-  /**
-   * Generates a unique cache key based on referenceContent and studentResponse.
-   * @param {string} referenceContent - The reference content from the task.
-   * @param {string} studentResponse - The student's response.
-   * @return {string} - A SHA-256 hash serving as the cache key.
-   */
-  generateCacheKey(referenceContent, studentResponse) {
-    const keyString = JSON.stringify(referenceContent) + JSON.stringify(studentResponse);
-    return Utils.generateHash(keyString);
-  }
 
   /**
-   * Retrieves cached assessment data if available.
-   * @param {string} referenceContent - The reference content from the task.
-   * @param {string} studentResponse - The student's response.
-   * @return {Object|null} - The cached assessment data or null if not found.
+   * Handles empty responses by assigning a predefined empty assessment.
+   * @param {string} uid - The unique identifier of the response.
+   * @param {Object} task - The Task instance.
+   * @param {Assignment} assignment - The Assignment instance.
+   * @return {boolean} - Returns true if an empty assessment was assigned, false otherwise.
    */
-  getCachedAssessment(referenceContent, studentResponse) {
-    const cacheKey = this.generateCacheKey(referenceContent, studentResponse);
-    const cached = this.cache.get(cacheKey);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (e) {
-        console.error("Error parsing cached assessment data:", e);
-        return null;
-      }
+  handleEmptyResponse(uid, emptyContentHash, studentResponseHash, assignment) {
+    if (emptyContentHash === studentResponseHash) {
+      console.log(`Found student work unattempted for UID: ${uid}. Awarding 0 for all parts.`)
+      const emptyAssessment = {
+        "completeness": {
+          "score": 0,
+          "reasoning": "Task not attempted."
+        },
+        "accuracy": {
+          "score": 0,
+          "reasoning": "Task not attempted."
+        },
+        "spag": {
+          "score": 0,
+          "reasoning": "Task not attempted."
+        }
+      };
+
+      this.assignAssessmentToStudentTask(uid, emptyAssessment, assignment);
+      console.log(`Empty response detected for UID: ${uid}. Assigned empty assessment.`);
+      return true; // Indicate that an empty assessment was assigned
     }
-    return null;
-  }
-
-  /**
-   * Stores assessment data in the cache.
-   * @param {string} referenceContent - The reference content from the task.
-   * @param {string} studentResponse - The student's response.
-   * @param {Object} assessmentData - The assessment data to cache.
-   */
-  setCachedAssessment(referenceContent, studentResponse, assessmentData) {
-    const cacheKey = this.generateCacheKey(referenceContent, studentResponse);
-    const serialized = JSON.stringify(assessmentData);
-    const cacheExpirationInSeconds = 6 * 60 * 60; // 6 hours
-    this.cache.put(cacheKey, serialized, cacheExpirationInSeconds);
+    return false; // No empty assessment was assigned
   }
 
   /**
@@ -93,16 +82,13 @@ class LLMRequestManager extends BaseRequestManager {
    * @return {Object[]} - An array of request objects ready to be sent via UrlFetchApp.fetchAll().
    */
   generateRequestObjects(assignment) {
-
-    //console.log(`Assignment object just before request objects generated: \n ${JSON.stringify(assignment)}`)
     const requests = [];
 
     assignment.studentTasks.forEach(studentTask => {
       Object.keys(studentTask.responses).forEach(taskKey => {
         const response = studentTask.responses[taskKey];
-        const { uid, slideId, response: rawStudentResponse } = response;
+        const { uid, slideId, response: rawStudentResponse, contentHash: studentContentHash } = response;
 
-        // Use nullish coalescing to assign default if null or undefined
         const studentResponse = rawStudentResponse ?? '';
 
         const task = assignment.tasks[taskKey];
@@ -111,7 +97,6 @@ class LLMRequestManager extends BaseRequestManager {
           return;
         }
 
-        // Enhanced Error Handling: Validate task.taskReference and task.Content
         if (!task.taskReference) {
           const errorMessage = `Missing taskReference for task key: ${taskKey} in assignment: ${assignment.assignmentId}`;
           console.error(errorMessage);
@@ -119,15 +104,22 @@ class LLMRequestManager extends BaseRequestManager {
           throw new Error(errorMessage);
         }
 
-        if (task.emptyContent === null || task.emptyContent === undefined) { //Can't use a falsey operator here as the empty content could be an empty string for text type content.
+        if (task.emptyContent === null || task.emptyContent === undefined) {
           const errorMessage = `Missing emptyContent for task key: ${taskKey} in assignment: ${assignment.assignmentId}`;
           console.error(errorMessage);
           Utils.toastMessage(errorMessage, "Empty Task Error", 5);
-          //console.log(`Task Object: \n ${JSON.stringify(assignment.tasks)}`)
           throw new Error(errorMessage);
         }
 
-        const cachedAssessment = this.getCachedAssessment(task.taskReference, studentResponse);
+        //Checks if the student task matches the empty content. If it does, no work has been attempted and we can skip adding this to the request object.
+
+        const emptyAssigned = this.handleEmptyResponse(uid, task.emptyContentHash, studentContentHash, assignment);
+        if (emptyAssigned) {
+          return; // Skip adding to requests since assessment is already assigned
+        }
+
+        // Use CacheManager to check for cached assessments
+        const cachedAssessment = this.cacheManager.getCachedAssessment(task.contentHash, studentContentHash);
         if (cachedAssessment) {
           // Assign assessment directly from cache
           this.assignAssessmentToStudentTask(uid, cachedAssessment, assignment);
@@ -216,6 +208,7 @@ class LLMRequestManager extends BaseRequestManager {
     return requests;
   }
 
+
   /**
    * Processes the responses from the LLM and assigns assessments to StudentTasks.
    * Also caches successful assessments.
@@ -224,28 +217,25 @@ class LLMRequestManager extends BaseRequestManager {
    * @param {Assignment} assignment - The Assignment instance containing StudentTasks.
    */
   processResponses(responses, requests, assignment) {
-    //Get and increment the step number before entering the loop
     let step = this.progressTracker.getStepAsNumber();
-    step ++
+    step++;
+
+    this.progressTracker.updateProgress(step, `Double-checking all assessments.`);
 
     responses.forEach((response, index) => {
       const request = requests[index];
       const uid = request.uid;
 
 
-      this.progressTracker.updateProgress(step, `Double-checking all assessments.`)
 
       if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
         try {
           const responseData = JSON.parse(response.getContentText());
 
-          // Adjust parsing based on actual response structure
           const assessmentDataRaw = JSON.parse(responseData.outputs[0].outputs[0].messages[0].message);
 
-          // Normalise keys to lowercase using the utility method
           const assessmentData = Utils.normaliseKeysToLowerCase(assessmentDataRaw);
 
-          // Validate the assessment data structure
           if (this.validateAssessmentData(assessmentData)) {
             const assessment = this.createAssessmentFromData(assessmentData);
 
@@ -258,9 +248,9 @@ class LLMRequestManager extends BaseRequestManager {
               const taskKey = this.findTaskKeyByUid(uid, studentTask);
               const task = assignment.tasks[taskKey];
               if (task) {
-                const studentResponse = studentTask.responses[taskKey].response;
-                this.setCachedAssessment(task.taskReference, studentResponse, assessmentData);
-                //console.log(`Cached assessment for UID: ${uid}.`); Uncomment for debug purposes
+                const contentHashReference = task.contentHash;
+                const contentHashResponse = studentTask.responses[taskKey].contentHash;
+                this.cacheManager.setCachedAssessment(contentHashReference, contentHashResponse, assessmentData);
               }
             }
 
@@ -271,7 +261,6 @@ class LLMRequestManager extends BaseRequestManager {
           }
         } catch (e) {
           console.error(`Error parsing response for UID: ${uid} - ${e.message}`);
-          this.progressTracker(step, `There was an issue with a student response, retrying...`)
           this.handleValidationFailure(uid, request, assignment);
         }
       } else {

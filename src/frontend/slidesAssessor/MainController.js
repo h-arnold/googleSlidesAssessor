@@ -93,11 +93,11 @@ class MainController {
    * Processes the selected assignment by retrieving parameters and executing the workflow.
    */
   processSelectedAssignment() {
-    const lock = LockService.getScriptLock();
+    // Check that the script isn't already running for the given document.
+    const lock = LockService.getDocumentLock();
 
     if (!lock.tryLock(5000)) {
-      console.log("Script is already running.");
-      this.utils.toastMessage("Script is already running. Please wait a while and try again.", "Notice", 2);
+      this.progressTracker.logError(`Script is already running. Please try again later.`)
       return;
     }
 

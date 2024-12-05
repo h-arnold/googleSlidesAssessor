@@ -105,7 +105,7 @@ class ProgressTracker {
   getCurrentProgress() {
     const progressJson = this.properties.getProperty(this.propertyKey);
     if (progressJson) {
-      console.log('Current progress retrieved.');
+      //console.log('Current progress retrieved.'); //Uncomment to debug
       return JSON.parse(progressJson);
     }
     console.log('No progress data found.');
