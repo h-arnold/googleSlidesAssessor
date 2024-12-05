@@ -1,10 +1,5 @@
 // UIManager.gs
 
-/**
- * UIManager Class
- *
- * Handles all user interface interactions, including menus and modal dialogs.
- */
 class UIManager {
     constructor() {
         this.ui = SpreadsheetApp.getUi();
@@ -17,10 +12,10 @@ class UIManager {
         this.ui.createMenu('Classroom')
             .addItem('Configure Script Properties', 'showConfigurationDialog')
             .addItem('Update Existing Assignment', 'showAssignmentDropdown')
+            .addItem('Select Classroom', 'showClassroomDropdown') // New menu item
             .addToUi();
         console.log('Custom menus added to the UI.');
     }
-
     /**
      * Shows the configuration dialog modal.
      */
@@ -250,6 +245,35 @@ class UIManager {
         </html>
     `;
         return html;
+    }
+
+      /**
+     * Shows a modal dialog with a dropdown list of active Google Classroom courses.
+     */
+      showClassroomDropdown() {
+        try {
+            // Retrieve active classrooms
+            const classrooms = Utils.getActiveClassrooms();
+
+            // Sort classrooms alphabetically by name
+            classrooms.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Create a template from the HTML file and pass the classrooms data
+            const htmlTemplate = HtmlService.createTemplateFromFile('ClassroomDropdown');
+            htmlTemplate.classrooms = classrooms; // Pass data to the template
+
+            // Evaluate the template to HTML
+            const htmlOutput = htmlTemplate.evaluate()
+                .setWidth(500)
+                .setHeight(300);
+
+            // Display the modal dialog
+            this.ui.showModalDialog(htmlOutput, 'Select Classroom');
+            console.log('Classroom dropdown modal displayed.');
+        } catch (error) {
+            console.error('Error displaying classroom dropdown modal:', error);
+            Utils.toastMessage('Failed to load classrooms: ' + error.message, 'Error', 5);
+        }
     }
 
     /**
