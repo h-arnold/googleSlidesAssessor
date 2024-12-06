@@ -99,12 +99,12 @@ class Utils {
           return {
             id: assignment.id,
             title: assignment.title,
-            creationTime: new Date(assignment.creationTime),
+            updateTime: new Date(assignment.updateTime),
           };
         });
 
-        // Sort assignments by creation time in descending order
-        assignments.sort((a, b) => b.creationTime - a.creationTime);
+        // Sort assignments by update time in descending order
+        assignments.sort((a, b) => b.updateTime - a.updateTime);
       }
 
       console.log(
