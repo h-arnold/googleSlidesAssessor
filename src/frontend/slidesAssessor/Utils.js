@@ -209,7 +209,7 @@ class Utils {
     return result; //True or False
   }
 
-  
+
   /**
       * Retrieves all active Google Classroom courses available to the user.
       *

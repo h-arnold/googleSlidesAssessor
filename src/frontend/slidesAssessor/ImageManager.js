@@ -143,9 +143,7 @@ class ImageManager extends BaseRequestManager {
                     // Note: Since this method may not have access to the assignment object,
                     // you might need to handle contentHash assignment elsewhere.
                 } else {
-                    google
                     console.warn(`Failed to fetch image for UID: ${slide.uid}`);
-                    // Handle failures as needed
                 }
             });
         });
