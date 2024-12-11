@@ -1,4 +1,10 @@
-// z_main.gs This file needs to be prefixed with a Z so that when clasp uploads the script files, this is the last one in the list. Otherwise you'll get lots of 'xx class is undefined errors'.
+// z_main.gs
+// This file needs to be prefixed with a Z so that when clasp uploads the script files, this is the last one in the list. 
+// Otherwise, you'll get lots of 'xx class is undefined' errors.
+
+/**
+ * ======== Assignment Management ========
+ */
 
 /**
  * Initiates the processing of an assignment asynchronously by setting up a trigger
@@ -27,13 +33,6 @@ function startProcessing(assignmentId, referenceSlideId, emptySlideId) {
 }
 
 /**
- * Opens the progress modal dialog.
- */
-function showProgressModal() {
-  mainController.showProgressModal();
-}
-
-/**
  * Processes the selected assignment by retrieving parameters and executing the workflow.
  */
 function triggerProcessSelectedAssignment() {
@@ -41,19 +40,33 @@ function triggerProcessSelectedAssignment() {
 }
 
 /**
- * Removes a specific trigger by function name.
+ * Saves slide IDs for a specific assignment.
  *
- * @param {string} functionName - The name of the function whose triggers are to be removed.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
  */
-function removeTrigger(functionName) {
-  mainController.triggerController.removeTriggers(functionName);
+function saveSlideIdsForAssignment(assignmentId, slideIds) {
+  mainController.saveSlideIdsForAssignment(assignmentId, slideIds);
 }
 
 /**
- * Adds custom menus when the spreadsheet is opened.
+ * Opens the reference slide modal with assignment data.
+ *
+ * @param {string} assignmentData - The JSON string containing assignment data.
  */
-function onOpen() {
-  mainController.onOpen();
+function openReferenceSlideModal(assignmentData) {
+  mainController.openReferenceSlideModal(assignmentData);
+}
+
+/**
+ * ======== Modal and UI Management ========
+ */
+
+/**
+ * Opens the progress modal dialog.
+ */
+function showProgressModal() {
+  mainController.showProgressModal();
 }
 
 /**
@@ -71,50 +84,19 @@ function showAssignmentDropdown() {
 }
 
 /**
- * Opens the reference slide modal with assignment data.
- *
- * @param {string} assignmentData - The JSON string containing assignment data.
+ * Shows the classroom dropdown modal.
  */
-function openReferenceSlideModal(assignmentData) {
-  mainController.openReferenceSlideModal(assignmentData);
+function showClassroomDropdown() {
+  mainController.showClassroomDropdown();
 }
 
 /**
- * Saves slide IDs for a specific assignment.
- *
- * @param {string} assignmentId - The ID of the assignment.
- * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ * ======== Configuration Management ========
  */
-function saveSlideIdsForAssignment(assignmentId, slideIds) {
-  mainController.saveSlideIdsForAssignment(assignmentId, slideIds);
-}
-
-/**
- * Retrieves the current progress status.
- *
- * @returns {Object} The current progress data.
- */
-function requestStatus() {
-  return mainController.requestStatus();
-}
-
-/**
- * Test workflow function for debugging purposes.
- */
-function testWorkflow() {
-  mainController.testWorkflow();
-}
-
-function showConfigurationDialog() {
-  mainController.showConfigurationDialog()
-};
-
-function saveConfiguration(formData) {
-  return AIAssess.saveConfiguration(formData);
-}
 
 /**
  * Saves the provided configuration properties.
+ *
  * @param {Object} config - An object containing key-value pairs of configurations.
  */
 function saveConfiguration(config) {
@@ -129,8 +111,6 @@ function saveConfiguration(config) {
     if (config.langflowUrl !== undefined) {
       configurationManager.setLangflowUrl(config.langflowUrl);
     }
-
-    // Handle Tweak IDs
     if (config.textAssessmentTweakId !== undefined) {
       configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
     }
@@ -140,15 +120,12 @@ function saveConfiguration(config) {
     if (config.imageAssessmentTweakId !== undefined) {
       configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
     }
-
-    // Handle New Configuration Parameters
     if (config.imageUploadUrl !== undefined) {
       configurationManager.setImageUploadUrl(config.imageUploadUrl);
     }
     if (config.imageUploaderApiKey !== undefined) {
       configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
     }
-
     Utils.toastMessage("Configuration saved successfully.", "Success", 5);
   } catch (error) {
     console.error("Error saving configuration:", error);
@@ -157,13 +134,90 @@ function saveConfiguration(config) {
   }
 }
 
-function clearAllCacheKeys() {
-  // Get the cache service
-  var cache = CacheService.getScriptCache();
+/**
+ * ======== Classroom Management ========
+ */
 
-  // Retrieve all keys stored in the cache
-  cache.removeAll(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+/**
+ * Saves the selected classroom's name and ID to the 'ClassInfo' sheet.
+ *
+ * @param {string} courseName - The name of the selected classroom.
+ * @param {string} courseId - The ID of the selected classroom.
+ */
+function saveClassroom(courseName, courseId) {
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = spreadsheet.getSheetByName('ClassInfo');
+
+    // If 'ClassInfo' sheet doesn't exist, create it
+    if (!sheet) {
+      sheet = spreadsheet.insertSheet('ClassInfo');
+    }
+
+    // Set headers in A1 and B1
+    sheet.getRange('A1').setValue('Class Name');
+    sheet.getRange('A2').setValue('Course ID');
+
+    // Write the selected classroom's name and ID to A2 and B2
+    sheet.getRange('B1').setValue(courseName);
+    sheet.getRange('B2').setValue(courseId);
+
+    console.log(`Classroom saved: ${courseName} (${courseId})`);
+  } catch (error) {
+    console.error('Error saving classroom:', error);
+    throw new Error('Failed to save classroom. Please try again.');
+  }
 }
 
+/**
+ * Gets the Google Classroom assignments for a given class.
+ * @param {string} courseId 
+ * @returns {object}
+ */
+function getAssignments(courseId) {
+  return mainController.getAssignments(courseId);
+}
 
+/**
+ * ======== Utility Functions ========
+ */
 
+/**
+ * Removes a specific trigger by function name.
+ *
+ * @param {string} functionName - The name of the function whose triggers are to be removed.
+ */
+function removeTrigger(functionName) {
+  mainController.triggerController.removeTriggers(functionName);
+}
+
+/**
+ * Retrieves the current progress status.
+ *
+ * @returns {Object} The current progress data.
+ */
+function requestStatus() {
+  return mainController.requestStatus();
+}
+
+/**
+ * Clears all cache keys from the script cache.
+ */
+function clearAllCacheKeys() {
+  const cache = CacheService.getScriptCache();
+  cache.removeAll(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+}
+
+/**
+ * Adds custom menus when the spreadsheet is opened.
+ */
+function onOpen() {
+  mainController.onOpen();
+}
+
+/**
+ * Test workflow function for debugging purposes.
+ */
+function testWorkflow() {
+  mainController.testWorkflow();
+}

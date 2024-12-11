@@ -99,12 +99,12 @@ class Utils {
           return {
             id: assignment.id,
             title: assignment.title,
-            creationTime: new Date(assignment.creationTime),
+            updateTime: new Date(assignment.updateTime),
           };
         });
 
-        // Sort assignments by creation time in descending order
-        assignments.sort((a, b) => b.creationTime - a.creationTime);
+        // Sort assignments by update time in descending order
+        assignments.sort((a, b) => b.updateTime - a.updateTime);
       }
 
       console.log(
@@ -209,6 +209,38 @@ class Utils {
     return result; //True or False
   }
 
+
+  /**
+      * Retrieves all active Google Classroom courses available to the user.
+      *
+      * @return {Object[]} An array of objects containing course IDs and names.
+      */
+  static getActiveClassrooms() {
+    try {
+      let courses = [];
+      let pageToken;
+      do {
+        const response = Classroom.Courses.list({
+          pageToken: pageToken,
+          courseStates: ['ACTIVE']
+        });
+        if (response.courses && response.courses.length > 0) {
+          const activeCourses = response.courses.map(course => ({
+            id: course.id,
+            name: course.name
+          }));
+          courses = courses.concat(activeCourses);
+        }
+        pageToken = response.nextPageToken;
+      } while (pageToken);
+
+      console.log(`${courses.length} active classrooms retrieved.`);
+      return courses;
+    } catch (error) {
+      console.error('Error fetching active classrooms:', error);
+      throw new Error('Failed to retrieve active classrooms. Please ensure that the Classroom API is enabled and you have the necessary permissions.');
+    }
+  }
 
 }
 
