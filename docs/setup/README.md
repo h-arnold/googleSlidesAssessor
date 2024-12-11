@@ -68,7 +68,7 @@ Follow these steps to set up the system.
 - Use the [Langflow Cloud Service](https://www.datastax.com/products/langflow) for quick setup.
 - **Important:** This method is suitable for **testing only**, as it may not comply with GDPR or other privacy regulations. Use cautiously.
 
-#### ✅ The GDPR-Compliant Way (For Production)
+#### [✅ The GDPR-Compliant Way (For Production)](./langflowDeployment/langflowDeployment.md)
 
 - Setting up Langflow on **Google Cloud Run** is highly recommended for production use. This approach provides the following benefits:
 
@@ -79,7 +79,7 @@ Follow these steps to set up the system.
    - All uploaded images are available to all instances during an assessment.
    - Files are automatically deleted when the assessment run completes, as the instance shuts down.
 
-- Follow [this detailed guide](https://github.com/h-arnold/googleSlidesAssessor/blob/main/docs/setup/langfllowDeployment/langflowDeployment.md) to set up your own Google Cloud Run instance.
+- Follow [this guide](./langflowDeployment/langflowDeployment.md) to set up your own Google Cloud Run instance.
 
 ---
 
@@ -87,7 +87,7 @@ Follow these steps to set up the system.
 
 This section is primarily for Heads of Department or administrators responsible for initial setup. Once configured, the system is straightforward for others to use.
 
-#### 1️⃣ Creating the Assessment Records
+#### [1️⃣ Creating the Assessment Records](./settingUpAssessmentRecords.md)
 
 - Most assessment work takes place within these records, with one created per class. They serve as the main tool for day-to-day use. [Follow this guide](settingUpAssessmentRecords.md) to set them up with minimal fuss.
 
