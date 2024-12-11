@@ -69,7 +69,6 @@ class LLMRequestManager extends BaseRequestManager {
       };
 
       this.assignAssessmentToStudentTask(uid, emptyAssessment, assignment);
-      console.log(`Empty response detected for UID: ${uid}. Assigned empty assessment.`);
       return true; // Indicate that an empty assessment was assigned
     }
     return false; // No empty assessment was assigned
