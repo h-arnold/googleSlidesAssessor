@@ -28,7 +28,9 @@ class TriggerController {
         .at(triggerTime)
         .create();
       console.log(`Trigger created for ${functionName} to run at ${triggerTime}.`);
-      return trigger.getUniqueId();
+      const triggerId = trigger.getUniqueId()
+      console.log(`Trigger Id is ${triggerId}`)
+      return triggerId;
     } catch (error) {
       console.error(`Error creating trigger for ${functionName}: ${error}`);
       throw error;
@@ -50,4 +52,20 @@ class TriggerController {
       }
     });
   }
+
+  /**
+   * Deletes the specific trigger that matches the trigger ID.
+   *
+   * @param {string} triggerId - The unique ID of the trigger to delete.
+   */
+  deleteTriggerById(triggerId) {
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+      if (trigger.getUniqueId() === triggerId) {
+        ScriptApp.deleteTrigger(trigger);
+        console.log(`Trigger with ID ${triggerId} deleted.`);
+      }
+    });
+  }
 }
+
