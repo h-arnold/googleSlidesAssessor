@@ -17,7 +17,7 @@ This guide will walk you through setting up the Google Slides Assessor, a tool d
       - [1️⃣ Creating the Assessment Records](#1️⃣-creating-the-assessment-records)
       - [2️⃣ Configuring Google Slides Assessor](#2️⃣-configuring-google-slides-assessor)
       - [3️⃣ Setting up the Overview Sheet](#3️⃣-setting-up-the-overview-sheet)
-      - [4️⃣ Tagging Your Resources for Automated Assessment](#4️⃣-tagging-your-resources-for-automated-assessment)
+      - [4️⃣ Getting started with your first assessment.](#4️⃣-getting-started-with-your-first-assessment)
   - [🌟 Final Thoughts](#-final-thoughts)
 
 ## 📝 Prerequisites
@@ -91,17 +91,17 @@ This section is primarily for Heads of Department or administrators responsible 
 
 - Most assessment work takes place within these records, with one created per class. They serve as the main tool for day-to-day use. [Follow this guide](settingUpAssessmentRecords.md) to set them up with minimal fuss.
 
-#### 2️⃣ Configuring Google Slides Assessor
+#### [2️⃣ Configuring Google Slides Assessor](./configuringGoogleSlidesAssessor.md)
 
-- This step links the frontend (Google Apps Script) to the backend (Langflow instance). It ensures the system knows where to send and receive data during assessments. *(Guide: Coming soon!)*
+- This step links the frontend (Google Apps Script) to the backend (Langflow instance). It ensures the system knows where to send and receive data during assessments. [Follow this guide](./configuringGoogleSlidesAssessor.md) to configure it.
 
-#### 3️⃣ Setting up the Overview Sheet
+#### [3️⃣ Setting up the Overview Sheet](./settingUpOverviewSheet.md)
 
-- The Overview Sheet collects and collates data from all Assessment Records. This enables analysis at a glance, allowing you to monitor trends and performance across classes. *(Guide: Coming soon!)*
+- The Overview Sheet collects and collates data from all Assessment Records. This enables analysis at a glance, allowing you to monitor trends and performance across classes. [Follow this guide](./settingUpOverviewSheet.md) to set it up.
 
-#### 4️⃣ Tagging Your Resources for Automated Assessment
+#### [4️⃣ Getting started with your first assessment.](/docs/howTos/README.md)
 
-- For the Assessor to work, you'll need to "tag" parts of your tasks that require automated assessment. This ensures the system knows what to evaluate. *(Guide: Included in full setup guide.)*
+- All the hard work has been done. Now you need to get assessing! [Check out the documentation for that here.](/docs/howTos/README.md)
 
 ---
 
