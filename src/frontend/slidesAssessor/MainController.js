@@ -173,35 +173,68 @@ class MainController {
         throw new Error("Missing parameters for processing.");
       }
 
+      // Initialize progress tracking
       this.progressTracker.startTracking();
       this.progressTracker.updateProgress(step, "Assessment run starting.");
+      //this.utils.toastMessage("Assessment run starting...");
 
       const courseId = this.utils.getCourseId();
+      console.log('Assignment Id: ' + assignmentId);
       this.progressTracker.updateProgress(++step, `Course ID retrieved: ${courseId}`);
 
+      // Create an Assignment instance
+      this.progressTracker.updateProgress(++step, "Creating Assignment instance.");
       const assignment = new Assignment(courseId, assignmentId, referenceSlideId, emptySlideId);
-      this.progressTracker.updateProgress(++step, "Assignment instance created.");
+      this.progressTracker.updateProgress(null, "Assignment instance created.");
 
+      // Fetch all students and add them to the assignment
+      this.progressTracker.updateProgress(++step, "Fetching all students.");
       const students = Student.fetchAllStudents(courseId);
-      this.progressTracker.updateProgress(++step, `${students.length} students fetched.`);
+      this.progressTracker.updateProgress(null, `${students.length} students fetched.`);
 
+      this.progressTracker.updateProgress(++step, "Adding students to the assignment.");
       students.forEach(student => assignment.addStudent(student));
       this.progressTracker.updateProgress(null, "All students added to the assignment.");
 
+      // Process the assignment
+      this.progressTracker.updateProgress(++step, "Getting the tasks from the reference slides.");
       assignment.populateTasksFromSlides();
-      assignment.fetchSubmittedSlides();
-      assignment.processAllSubmissions();
-      assignment.processImages();
-      assignment.assessResponses();
+      this.progressTracker.updateProgress(null, "Tasks populated from reference slides.");
 
+      this.progressTracker.updateProgress(++step, "Fetching submitted slides from students.");
+      assignment.fetchSubmittedSlides();
+      this.progressTracker.updateProgress(null, "Submitted slides fetched.");
+
+      this.progressTracker.updateProgress(++step, "Extracting student work from slides.");
+      assignment.processAllSubmissions();
+      this.progressTracker.updateProgress(null, "All student work extracted.");
+      // Process images
+      this.progressTracker.updateProgress(++step, "Processing Images");
+      assignment.processImages();
+      this.progressTracker.updateProgress(null, "Images uploaded.");
+
+
+      // Assess responses
+      this.progressTracker.updateProgress(++step, "Assessing student responses");
+      assignment.assessResponses();
+      this.progressTracker.updateProgress(null, "Responses assessed.");
+
+      this.progressTracker.updateProgress(++step, "Processing and updating all the data.");
+      // Create the analysis sheet
       const analysisSheetManager = new AnalysisSheetManager(assignment);
       analysisSheetManager.createAnalysisSheet();
+      this.progressTracker.updateProgress(null, "Analysis sheet created.");
 
+      this.progressTracker.updateProgress(++step, "Updating the overview sheet.");
+      // Update the overview sheet
       const overviewSheetManager = new OverviewSheetManager();
       overviewSheetManager.createOverviewSheet();
+      this.progressTracker.updateProgress(null, "Overview sheet updated.");
 
+      // Mark the task as complete
       this.progressTracker.updateProgress(null, "Assessment run completed successfully.");
       this.progressTracker.complete();
+      
     } catch (error) {
       this.progressTracker.logError(error.message);
       console.error("Error during assessment process:", error);
