@@ -108,7 +108,7 @@ class MainController {
    */
   saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
     this.saveSlideIdsForAssignment(assignmentTitle, slideIds);
-    const processId = this.startProcessing(assignmentId, referenceSlideId, emptySlideId);
+    this.startProcessing(assignmentId, referenceSlideId, emptySlideId);
     this.progressTracker.startTracking();
     this.showProgressModal();
   }
@@ -123,24 +123,22 @@ class MainController {
    */
   startProcessing(assignmentId, referenceSlideId, emptySlideId) {
     const properties = PropertiesService.getDocumentProperties();
-    const processId = `process_${new Date().getTime()}`;
-
-    properties.setProperty('assignmentId', assignmentId);
-    properties.setProperty('referenceSlideId', referenceSlideId);
-    properties.setProperty('emptySlideId', emptySlideId);
-    properties.setProperty('processId', processId);
-
-    console.log(`Starting processing with processId: ${processId}`);
+    let triggerId;
 
     try {
-      this.triggerController.createTimeBasedTrigger('triggerProcessSelectedAssignment', 1000); // 1 second delay
-      console.log(`Trigger created for triggerProcessSelectedAssignment with processId: ${processId}`);
+      triggerId = this.triggerController.createTimeBasedTrigger('triggerProcessSelectedAssignment', 1000); // 1 second delay
+      console.log(`Trigger created for triggerProcessSelectedAssignment with triggerId: ${triggerId}`);
     } catch (error) {
       console.error(`Error creating trigger: ${error}`);
       throw error;
     }
 
-    return processId;
+    properties.setProperty('assignmentId', assignmentId);
+    properties.setProperty('referenceSlideId', referenceSlideId);
+    properties.setProperty('emptySlideId', emptySlideId);
+    properties.setProperty('triggerId', triggerId);
+
+    return;
   }
 
   /**
@@ -166,12 +164,16 @@ class MainController {
       const assignmentId = properties.getProperty('assignmentId');
       const referenceSlideId = properties.getProperty('referenceSlideId');
       const emptySlideId = properties.getProperty('emptySlideId');
-      const processId = properties.getProperty('processId');
+      const triggerId = properties.getProperty('triggerId');
       let step = 1;
 
-      if (!assignmentId || !referenceSlideId || !emptySlideId || !processId) {
+      if (!assignmentId || !referenceSlideId || !emptySlideId || !triggerId) {
+        //Clean up triggers so that we don't end up filling our allocation with disabled triggers.
+        this.triggerController.removeTriggers('triggerProcessSelectedAssignment');
         throw new Error("Missing parameters for processing.");
       }
+
+      this.triggerController.deleteTriggerById(triggerId);
 
       // Initialize progress tracking
       this.progressTracker.startTracking();
@@ -208,6 +210,7 @@ class MainController {
       this.progressTracker.updateProgress(++step, "Extracting student work from slides.");
       assignment.processAllSubmissions();
       this.progressTracker.updateProgress(null, "All student work extracted.");
+      
       // Process images
       this.progressTracker.updateProgress(++step, "Processing Images");
       assignment.processImages();
@@ -242,13 +245,15 @@ class MainController {
       throw error;
     } finally {
       lock.releaseLock();
+
+      //Clean up document properties.
+      
       const properties = PropertiesService.getDocumentProperties();
       properties.deleteProperty('assignmentId');
       properties.deleteProperty('referenceSlideId');
       properties.deleteProperty('emptySlideId');
       properties.deleteProperty('processId');
 
-      this.triggerController.removeTriggers('processSelectedAssignment');
     }
   }
 

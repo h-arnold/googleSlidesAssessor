@@ -53,7 +53,6 @@ class LLMRequestManager extends BaseRequestManager {
    */
   handleEmptyResponse(uid, emptyContentHash, studentResponseHash, assignment) {
     if (emptyContentHash === studentResponseHash) {
-      console.log(`Found student work unattempted for UID: ${uid}. Awarding 0 for all parts.`)
       const emptyAssessment = {
         "completeness": {
           "score": 0,
@@ -70,7 +69,6 @@ class LLMRequestManager extends BaseRequestManager {
       };
 
       this.assignAssessmentToStudentTask(uid, emptyAssessment, assignment);
-      console.log(`Empty response detected for UID: ${uid}. Assigned empty assessment.`);
       return true; // Indicate that an empty assessment was assigned
     }
     return false; // No empty assessment was assigned

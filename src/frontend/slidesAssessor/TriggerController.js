@@ -28,13 +28,21 @@ class TriggerController {
         .at(triggerTime)
         .create();
       console.log(`Trigger created for ${functionName} to run at ${triggerTime}.`);
-      return trigger.getUniqueId();
+      const triggerId = trigger.getUniqueId()
+      console.log(`Trigger Id is ${triggerId}`)
+      return triggerId;
     } catch (error) {
-      console.error(`Error creating trigger for ${functionName}: ${error}`);
-      throw error;
+      if (error.message.includes("This script has too many triggers")) {
+        console.warn(`Too many triggers error occurred: ${error.message}`);
+        this.removeTriggers("triggerProcessSelectedAssignment");
+        console.log("Removed all triggers for 'triggerProcessSelectedAssignment'. Retrying trigger creation...");
+        return this.createTimeBasedTrigger(functionName);
+      } else {
+        console.error(`Error creating trigger for ${functionName}: ${error}`);
+        throw error;
+      }
     }
   }
-
 
   /**
    * Removes all triggers associated with the specified function name.
@@ -47,6 +55,21 @@ class TriggerController {
       if (trigger.getHandlerFunction() === functionName) {
         ScriptApp.deleteTrigger(trigger);
         console.log(`Trigger for ${functionName} deleted.`);
+      }
+    });
+  }
+
+  /**
+   * Deletes the specific trigger that matches the trigger ID.
+   *
+   * @param {string} triggerId - The unique ID of the trigger to delete.
+   */
+  deleteTriggerById(triggerId) {
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+      if (trigger.getUniqueId() === triggerId) {
+        ScriptApp.deleteTrigger(trigger);
+        console.log(`Trigger with ID ${triggerId} deleted.`);
       }
     });
   }
