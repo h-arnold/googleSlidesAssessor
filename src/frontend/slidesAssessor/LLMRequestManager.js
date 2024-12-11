@@ -42,40 +42,6 @@ class LLMRequestManager extends BaseRequestManager {
     }
   }
 
-<<<<<<< HEAD
-
-  /**
-   * Handles empty responses by assigning a predefined empty assessment.
-   * @param {string} uid - The unique identifier of the response.
-   * @param {Object} task - The Task instance.
-   * @param {Assignment} assignment - The Assignment instance.
-   * @return {boolean} - Returns true if an empty assessment was assigned, false otherwise.
-   */
-  handleEmptyResponse(uid, emptyContentHash, studentResponseHash, assignment) {
-    if (emptyContentHash === studentResponseHash) {
-      const emptyAssessment = {
-        "completeness": {
-          "score": 0,
-          "reasoning": "Task not attempted."
-        },
-        "accuracy": {
-          "score": 0,
-          "reasoning": "Task not attempted."
-        },
-        "spag": {
-          "score": 0,
-          "reasoning": "Task not attempted."
-        }
-      };
-
-      this.assignAssessmentToStudentTask(uid, emptyAssessment, assignment);
-      return true; // Indicate that an empty assessment was assigned
-    }
-    return false; // No empty assessment was assigned
-  }
-
-=======
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
   /**
    * Generates an array of request objects based on the Assignment instance.
    * Utilizes caching to avoid redundant requests.
@@ -88,11 +54,7 @@ class LLMRequestManager extends BaseRequestManager {
     assignment.studentTasks.forEach(studentTask => {
       Object.keys(studentTask.responses).forEach(taskKey => {
         const response = studentTask.responses[taskKey];
-<<<<<<< HEAD
-        const { uid, slideId, response: rawStudentResponse, contentHash: studentContentHash } = response;
-=======
         const { uid, slideId, response: rawStudentResponse, contentHash: contentHashResponse } = response;
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
 
         const studentResponse = rawStudentResponse ?? '';
 
@@ -116,22 +78,10 @@ class LLMRequestManager extends BaseRequestManager {
           throw new Error(errorMessage);
         }
 
-<<<<<<< HEAD
-        //Checks if the student task matches the empty content. If it does, no work has been attempted and we can skip adding this to the request object.
-
-        const emptyAssigned = this.handleEmptyResponse(uid, task.emptyContentHash, studentContentHash, assignment);
-        if (emptyAssigned) {
-          return; // Skip adding to requests since assessment is already assigned
-        }
-
-        // Use CacheManager to check for cached assessments
-        const cachedAssessment = this.cacheManager.getCachedAssessment(task.contentHash, studentContentHash);
-=======
         const contentHashReference = task.contentHash;
 
         // Use CacheManager to check for cached assessments
         const cachedAssessment = this.cacheManager.getCachedAssessment(contentHashReference, contentHashResponse);
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
         if (cachedAssessment) {
           // Assign assessment directly from cache
           this.assignAssessmentToStudentTask(uid, cachedAssessment, assignment);
@@ -221,10 +171,6 @@ class LLMRequestManager extends BaseRequestManager {
   }
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
   /**
    * Processes the responses from the LLM and assigns assessments to StudentTasks.
    * Also caches successful assessments.
@@ -235,21 +181,12 @@ class LLMRequestManager extends BaseRequestManager {
   processResponses(responses, requests, assignment) {
     let step = this.progressTracker.getStepAsNumber();
     step++;
-<<<<<<< HEAD
-
-    this.progressTracker.updateProgress(step, `Double-checking all assessments.`);
-=======
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
 
     responses.forEach((response, index) => {
       const request = requests[index];
       const uid = request.uid;
 
-<<<<<<< HEAD
-
-=======
       this.progressTracker.updateProgress(step, `Double-checking all assessments.`);
->>>>>>> ed97078 (Fixed bug where text and table assessments were being cached incorrectly.)
 
       if (response && (response.getResponseCode() === 200 || response.getResponseCode() === 201)) {
         try {
