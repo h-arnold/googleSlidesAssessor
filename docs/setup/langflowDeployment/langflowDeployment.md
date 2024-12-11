@@ -21,7 +21,9 @@
   ```
 
 ### ▪️ PostgreSQL Database
-- A PostgreSQL database is required for this deployment. [Supabase](https://supabase.com/) offers free PostgreSQL databases with GDPR-compliant data centres in Europe, making it a suitable choice.
+- A PostgreSQL database is required for this deployment. [Supabase](https://supabase.com/) offers free PostgreSQL databases with GDPR-compliant data centres in Europe, making it a suitable choice. 
+
+ **💡 Tip:** Use the `Transaction Pooler` option for connecting to your database. Using direct connections will cause you lots of issues if you go over 2 concurrent connections with Langflow.
 
 ### ▪️ Setup Necessary Resources
 
