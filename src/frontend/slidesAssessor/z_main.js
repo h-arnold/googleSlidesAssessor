@@ -96,7 +96,6 @@ function showClassroomDropdown() {
 
 /**
  * Saves the provided configuration properties.
- *
  * @param {Object} config - An object containing key-value pairs of configurations.
  */
 function saveConfiguration(config) {
@@ -111,6 +110,11 @@ function saveConfiguration(config) {
     if (config.langflowUrl !== undefined) {
       configurationManager.setLangflowUrl(config.langflowUrl);
     }
+    if (config.imageFlowUid !== undefined) {
+      configurationManager.setImageFlowUid(config.imageFlowUid);
+    }
+
+    // Handle Tweak IDs
     if (config.textAssessmentTweakId !== undefined) {
       configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
     }
@@ -120,12 +124,7 @@ function saveConfiguration(config) {
     if (config.imageAssessmentTweakId !== undefined) {
       configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
     }
-    if (config.imageUploadUrl !== undefined) {
-      configurationManager.setImageUploadUrl(config.imageUploadUrl);
-    }
-    if (config.imageUploaderApiKey !== undefined) {
-      configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
-    }
+
     Utils.toastMessage("Configuration saved successfully.", "Success", 5);
   } catch (error) {
     console.error("Error saving configuration:", error);
@@ -133,6 +132,7 @@ function saveConfiguration(config) {
     throw new Error("Failed to save configuration. Please check the inputs.");
   }
 }
+
 
 /**
  * ======== Classroom Management ========

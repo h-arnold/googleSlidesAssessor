@@ -1,8 +1,3 @@
-/**
- * ConfigurationManager Class
- * 
- * Manages script properties with getter and setter methods.
- */
 class ConfigurationManager {
     static get CONFIG_KEYS() {
         return {
@@ -12,8 +7,7 @@ class ConfigurationManager {
             TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
             IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
-            IMAGE_UPLOAD_URL: 'imageUploadUrl',
-            IMAGE_UPLOADER_API_KEY: 'imageUploaderApiKey'
+            IMAGE_FLOW_UID: 'imageFlowUid'
         };
     }
 
@@ -41,6 +35,16 @@ class ConfigurationManager {
     }
 
     /**
+     * Checks if a configuration property exists.
+     * @param {string} key - The configuration key.
+     * @return {boolean} - True if the property exists, false otherwise.
+     */
+    hasProperty(key) {
+        this.getAllConfigurations();
+        return this.configCache.hasOwnProperty(key);
+    }
+
+    /**
      * Retrieves a single configuration property.
      * @param {string} key - The configuration key.
      * @return {string} - The value of the configuration property.
@@ -65,40 +69,34 @@ class ConfigurationManager {
                     throw new Error("Batch Size must be a positive integer.");
                 }
                 break;
+            case ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY:
+                if (typeof value !== 'string' || !this.isValidApiKey(value)) {
+                    throw new Error("LangFlow API Key must be a valid string starting with 'sk-' followed by alphanumeric characters and hyphens, without leading/trailing hyphens or consecutive hyphens.");
+                }
+                break;
             case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
-            case ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL:
                 if (typeof value !== 'string' || !this.isValidUrl(value)) {
                     throw new Error(`${this.toReadableKey(key)} must be a valid URL string.`);
+                }
+                break;
+            case ConfigurationManager.CONFIG_KEYS.IMAGE_FLOW_UID:
+                if (typeof value !== 'string' || value.trim() === '') {
+                    throw new Error("Image Flow UID must be a non-empty string.");
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID:
-            case ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY:
                 if (typeof value !== 'string' || value.trim() === '') {
                     throw new Error(`${this.toReadableKey(key)} must be a non-empty string.`);
                 }
                 break;
-            // Add more validations as needed
             default:
                 // No specific validation
                 break;
         }
 
         this.scriptProperties.setProperty(key, value.toString());
-        this.configCache = null; // Invalidate cache
-    }
-
-    /**
-     * Sets multiple configuration properties.
-     * @param {Object} config - An object containing key-value pairs of configurations.
-     */
-    setProperties(config) {
-        Object.entries(config).forEach(([key, value]) => {
-            // No longer handling JSON tweaks; only Tweak IDs and base URL
-            this.setProperty(key, value);
-        });
-
         this.configCache = null; // Invalidate cache
     }
 
@@ -118,6 +116,16 @@ class ConfigurationManager {
             '(\\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
         return urlPattern.test(url);
     }
+    /**
+     * Validates if a string is a valid LangFlow API key.
+     * @param {string} apiKey - The API key string to validate.
+     * @return {boolean} - True if valid, false otherwise.
+     */
+    isValidApiKey(apiKey) {
+        const apiKeyPattern = /^sk-(?!-)([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)$/;
+        return apiKeyPattern.test(apiKey.trim());
+
+    }
 
     /**
      * Converts a configuration key to a more readable format for error messages.
@@ -127,7 +135,7 @@ class ConfigurationManager {
     toReadableKey(key) {
         // Convert camelCase or PascalCase to Regular Text
         return key.replace(/([A-Z])/g, ' $1')
-                  .replace(/^./, str => str.toUpperCase());
+            .replace(/^./, str => str.toUpperCase());
     }
 
     /**
@@ -135,7 +143,7 @@ class ConfigurationManager {
      */
     getBatchSize() {
         const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE), 10);
-        return isNaN(value) ? 20 : value; // Default batch size is 20. In my testing this seems to be the sweet spot. If you go much higher you tend to start getting more errors, especially when fetching the slide images. Any lower and you delay things by increasing the amount of network IO needed.
+        return isNaN(value) ? 20 : value;
     }
 
     getLangflowApiKey() {
@@ -146,45 +154,10 @@ class ConfigurationManager {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL);
     }
 
-    /**
-     * Dynamically constructs the Warm-Up URL based on the base Langflow URL.
-     * @return {string} - The constructed Warm-Up URL.
-     */
-    getWarmUpUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/warmUp?stream=false`;
+    getImageFlowUid() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_FLOW_UID);
     }
 
-    /**
-     * Dynamically constructs the Text Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Text Assessment URL.
-     */
-    getTextAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
-    }
-
-    /**
-     * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Table Assessment URL.
-     */
-    getTableAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/tableAssessment?stream=false`;
-    }
-
-    /**
-     * Dynamically constructs the Image Assessment URL based on the base Langflow URL.
-     * @return {string} - The constructed Image Assessment URL.
-     */
-    getImageAssessmentUrl() {
-        const baseUrl = this.getLangflowUrl();
-        return `${baseUrl}/api/v1/run/imageAssessment?stream=false`;
-    }
-
-    /**
-     * Getter Methods for Tweak IDs
-     */
     getTextAssessmentTweakId() {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID);
     }
@@ -198,14 +171,19 @@ class ConfigurationManager {
     }
 
     /**
-     * Getter Methods for New Configuration Parameters
+     * Constructs the full Image Upload URL based on the Langflow URL and Flow UID.
+     * @return {string} - The full Image Upload URL.
      */
     getImageUploadUrl() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL);
-    }
-
-    getImageUploaderApiKey() {
-        return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY);
+        const baseUrl = this.getLangflowUrl();
+        const flowUid = this.getImageFlowUid();
+        if (!baseUrl) {
+            throw new Error("LangFlow URL is not set.");
+        }
+        if (!flowUid) {
+            throw new Error("Image Flow UID is not set.");
+        }
+        return `${baseUrl}/api/v1/upload/${flowUid}`;
     }
 
     /**
@@ -219,35 +197,14 @@ class ConfigurationManager {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY, apiKey);
     }
 
-    /**
-     * Sets the base Langflow URL.
-     * All assessment URLs are derived from this base URL.
-     * @param {string} url - The base Langflow URL.
-     */
     setLangflowUrl(url) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL, url);
     }
 
-    /**
-     * Setter Methods for Assessment URLs.
-     * Since URLs are derived from the base Langflow URL, these setters throw an error if used.
-     * To update assessment URLs, update the Langflow URL instead.
-     */
-    setTextAssessmentUrl(url) {
-        throw new Error("Text Assessment URL is derived from the Langflow URL and cannot be set directly.");
+    setImageFlowUid(uid) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_FLOW_UID, uid);
     }
 
-    setTableAssessmentUrl(url) {
-        throw new Error("Table Assessment URL is derived from the Langflow URL and cannot be set directly.");
-    }
-
-    setImageAssessmentUrl(url) {
-        throw new Error("Image Assessment URL is derived from the Langflow URL and cannot be set directly.");
-    }
-
-    /**
-     * Setter Methods for Tweak IDs
-     */
     setTextAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID, tweakId);
     }
@@ -258,17 +215,6 @@ class ConfigurationManager {
 
     setImageAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID, tweakId);
-    }
-
-    /**
-     * Setter Methods for New Configuration Parameters
-     */
-    setImageUploadUrl(url) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOAD_URL, url);
-    }
-
-    setImageUploaderApiKey(apiKey) {
-        this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_UPLOADER_API_KEY, apiKey);
     }
 }
 
@@ -282,4 +228,3 @@ const configurationManager = new ConfigurationManager();
 function getConfiguration() {
     return configurationManager.getAllConfigurations();
 }
-
