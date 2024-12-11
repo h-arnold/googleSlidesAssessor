@@ -135,7 +135,7 @@ class ConfigurationManager {
      */
     getBatchSize() {
         const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.BATCH_SIZE), 10);
-        return isNaN(value) ? 5 : value; // Default batch size is 5
+        return isNaN(value) ? 20 : value; // Default batch size is 20. In my testing this seems to be the sweet spot. If you go much higher you tend to start getting more errors, especially when fetching the slide images. Any lower and you delay things by increasing the amount of network IO needed.
     }
 
     getLangflowApiKey() {
@@ -281,49 +281,5 @@ const configurationManager = new ConfigurationManager();
  */
 function getConfiguration() {
     return configurationManager.getAllConfigurations();
-}
-
-/**
- * Saves the provided configuration properties.
- * @param {Object} config - An object containing key-value pairs of configurations.
- */
-function saveConfiguration(config) {
-    try {
-        // Map the incoming config to the ConfigurationManager setters
-        if (config.batchSize !== undefined) {
-            configurationManager.setBatchSize(config.batchSize);
-        }
-        if (config.langflowApiKey !== undefined) {
-            configurationManager.setLangflowApiKey(config.langflowApiKey);
-        }
-        if (config.langflowUrl !== undefined) {
-            configurationManager.setLangflowUrl(config.langflowUrl);
-        }
-
-        // Handle Tweak IDs
-        if (config.textAssessmentTweakId !== undefined) {
-            configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
-        }
-        if (config.tableAssessmentTweakId !== undefined) {
-            configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
-        }
-        if (config.imageAssessmentTweakId !== undefined) {
-            configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
-        }
-
-        // Handle New Configuration Parameters
-        if (config.imageUploadUrl !== undefined) {
-            configurationManager.setImageUploadUrl(config.imageUploadUrl);
-        }
-        if (config.imageUploaderApiKey !== undefined) {
-            configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
-        }
-
-        Utils.toastMessage("Configuration saved successfully.", "Success", 5);
-    } catch (error) {
-        console.error("Error saving configuration:", error);
-        Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
-        throw new Error("Failed to save configuration. Please check the inputs.");
-    }
 }
 
