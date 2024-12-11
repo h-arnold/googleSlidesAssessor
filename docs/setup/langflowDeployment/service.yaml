@@ -6,7 +6,7 @@ metadata:
   labels:
     cloud.googleapis.com/location: europe-west1
   annotations:
-    autoscaling.knative.dev/maxScale: '10'
+    autoscaling.knative.dev/maxScale: '5' # 5 instances seems to be the limit the free supabase postgres instance can cope with
     run.googleapis.com/execution-environment: gen2
     run.googleapis.com/sessionAffinity: 'true'
 
@@ -20,12 +20,14 @@ spec:
       labels:
         run.googleapis.com/startupProbeType: Default
     spec:
-      containerConcurrency: 20
+      containerConcurrency: 25
       timeoutSeconds: 240
       serviceAccountName: <SERVICE_ACCOUNT_NAME> # Create a service account with sufficient permissions to run a Cloud Run instance.
       containers:
       - name: langflow-backend
-        image: eu.gcr.io/assessment-bot-8axvxh/langflow-backend:latest # This docker image is tweaked slightly from the official langflow one so that it runs as root, avoiding issues with in-memory volume mounts on Google Cloud Run.
+      # Note: This docker image is a slightly modified version of the official Langflow one that runs as root to ensure compatability with Google Cloud Run's in-memory volumes.
+      # You can see the dockerfile here: https://github.com/h-arnold/langflow/blob/main/docker/build_and_push.Dockerfile
+        image: eu.gcr.io/assessment-bot-8axvxh/langflow-backend:latest 
         ports:
         - name: http1
           containerPort: 7860
