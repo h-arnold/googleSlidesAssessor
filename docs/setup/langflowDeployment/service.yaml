@@ -6,7 +6,7 @@ metadata:
   labels:
     cloud.googleapis.com/location: europe-west1
   annotations:
-    autoscaling.knative.dev/maxScale: '5' # 5 instances seems to be the limit the free supabase postgres instance can cope with
+    autoscaling.knative.dev/maxScale: '1' # Concurrent instances with shared in-memory volumes don't work terribly well atm. If you want to improve speed, up the number of workers and core count instead. 
     run.googleapis.com/execution-environment: gen2
     run.googleapis.com/sessionAffinity: 'true'
 
@@ -20,7 +20,7 @@ spec:
       labels:
         run.googleapis.com/startupProbeType: Default
     spec:
-      containerConcurrency: 25
+      containerConcurrency: 160
       timeoutSeconds: 240
       serviceAccountName: <SERVICE_ACCOUNT_NAME> # Create a service account with sufficient permissions to run a Cloud Run instance.
       containers:
@@ -39,7 +39,7 @@ spec:
         - name: LANGFLOW_SUPERUSER
           value: <SUPERUSER> 
         - name: LANGFLOW_WORKERS
-          value: '1'
+          value: '4' # Any more than 4 workers creates too many requests for the free Supabase postgres instance to handle. Feel free in increase if you're using something different.
         - name: LANGFLOW_SAVE_DB_IN_CONFIG_DIR
           value: 'FALSE'
         - name: LANGFLOW_STORE_ENVIRONMENT_VARIABLES
@@ -58,8 +58,8 @@ spec:
               key: latest
         resources:
           limits:
-            cpu: 1000m
-            memory: 2Gi
+            cpu: 4000m # As a general rule of thumb, each Langflow worker needs 1CPU and 1GB or RAM.
+            memory: 4Gi
         volumeMounts:
         - name: cockroachRootCert
           mountPath: /app/data/.postgres
@@ -81,6 +81,6 @@ spec:
       - name: data
         emptyDir:
           medium: Memory
-          sizeLimit: 512Mi
+          sizeLimit: 256Mi - # A 10 slide activity with a class of 32 students will take around 48Mb so this is enough for 4 of those.
   traffic:
   - percent: 100
