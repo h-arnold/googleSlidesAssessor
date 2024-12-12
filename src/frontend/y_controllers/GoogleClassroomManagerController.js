@@ -1,6 +1,6 @@
 // GoogleClassroomManagerController.js
 /**
- * Coordinates operations between DriveManager, SpreadsheetManager, and ClassroomManager.
+ * Coordinates operations between DriveManager, ClassroomSheetManager, and ClassroomManager.
  */
 class GoogleClassroomManagerController {
     /**
@@ -20,15 +20,15 @@ class GoogleClassroomManagerController {
             classroomsSheet.appendRow(['Classroom ID', 'Name', 'Teacher 1', 'Teacher 2', 'Teacher 3', 'Teacher 4', 'Enrollment Code']);
         }
 
-        this.spreadsheetManager = new SpreadsheetManager(classroomsSheet);
+        this.ClassroomSheetManager = new ClassroomSheetManager(classroomsSheet.getName());
     }
 
     /**
      * Copies the template sheet for all active courses and shares the destination folder with teachers.
      */
     copyTemplateForActiveCourses() {
-        const courses = this.spreadsheetManager.getActiveCourses();
-        const teacherEmails = this.spreadsheetManager.getTeacherEmails();
+        const courses = this.ClassroomSheetManager.getActiveCourses();
+        const teacherEmails = this.ClassroomSheetManager.getTeacherEmails();
 
         courses.forEach(course => {
             try {
@@ -40,7 +40,7 @@ class GoogleClassroomManagerController {
                 console.log(`Copied and renamed template sheet for course: ${course.name}`);
 
                 // Append class info to the copied sheet
-                this.spreadsheetManager.appendClassInfo(copiedSheet.getId(), course.name, course.id);
+                this.ClassroomSheetManager.appendClassInfo(copiedSheet.getId(), course.name, course.id);
             } catch (error) {
                 console.error(`Failed to copy template for course '${course.name}': ${error.message}`);
             }
@@ -54,7 +54,7 @@ class GoogleClassroomManagerController {
      * Creates Google Classrooms based on active courses in the sheet.
      */
     createGoogleClassrooms() {
-        const courses = this.spreadsheetManager.getActiveCourses();
+        const courses = this.ClassroomSheetManager.getActiveCourses();
         const classroomsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Classrooms');
         const data = classroomsSheet.getDataRange().getValues();
 
@@ -82,7 +82,7 @@ class GoogleClassroomManagerController {
      * Updates existing Google Classrooms based on data in the sheet.
      */
     updateGoogleClassrooms() {
-        const courses = this.spreadsheetManager.getActiveCourses();
+        const courses = this.ClassroomSheetManager.getActiveCourses();
         const classroomsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Classrooms');
         const data = classroomsSheet.getDataRange().getValues();
 

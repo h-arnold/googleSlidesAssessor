@@ -42,7 +42,7 @@ class GoogleClassroomManager {
                         this.destinationFolderId,
                         classroom.name
                     );
-                    SpreadsheetManager.appendClassInfoValues(
+                    ClassroomSheetManager.appendClassInfoValues(
                         copiedSheetFile.getId(),
                         classroom.name,
                         classroom.id
@@ -54,7 +54,7 @@ class GoogleClassroomManager {
         });
 
         // Share folder with all teacher emails
-        const teacherEmails = SpreadsheetManager.getTeacherEmails(this.sheet);
+        const teacherEmails = ClassroomSheetManager.getTeacherEmails(this.sheet);
         DriveManager.shareFolder(this.destinationFolderId, teacherEmails);
     }
 }

@@ -1,5 +1,5 @@
 // 0BaseSheetManager.gs
-//Note - BaseSheetManager needs a leading 0 in the filename to ensure that you don't get a reference error as AnalysisSheetManager depends on it. It appears that Google App Script concatenates all the script files before execution so the order in which the files are shown matters.
+// Note - BaseSheetManager needs a leading 0 in the filename to ensure that you don't get a reference error as AnalysisSheetManager depends on it. It appears that Google App Script concatenates all the script files before execution so the order in which the files are shown matters.
 
 /**
  * BaseSheetManager Class
@@ -166,9 +166,17 @@ class BaseSheetManager {
      * Executes all batchUpdate requests collected.
      */
     executeBatchUpdate() {
+        if (this.requests.length === 0) {
+            console.log("No batch requests to execute.");
+            return;
+        }
+
         const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
         try {
             Sheets.Spreadsheets.batchUpdate({ requests: this.requests }, spreadsheetId);
+            console.log("Batch update executed successfully.");
+            // Clear requests after successful execution
+            this.requests = [];
         } catch (e) {
             console.error("Error executing batch update:", e);
             throw new Error(`Error applying batch update. ${e.message}`);
