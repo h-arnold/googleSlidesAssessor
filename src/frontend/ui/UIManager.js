@@ -1,8 +1,9 @@
 // UIManager.gs
 
 class UIManager {
-    constructor() {
+    constructor(sheet) {
         this.ui = SpreadsheetApp.getUi();
+        this.classroomManager = new GoogleClassroomManager(sheet);
     }
 
     /**
@@ -16,6 +17,7 @@ class UIManager {
             .addToUi();
         console.log('Custom menus added to the UI.');
     }
+
     /**
      * Shows the configuration dialog modal.
      */
@@ -32,18 +34,23 @@ class UIManager {
      * Shows a modal dialog with a dropdown of assignments to choose from.
      */
     showAssignmentDropdown() {
-        const courseId = Utils.getCourseId();
-        const assignments = Utils.getAssignments(courseId);
-        const maxTitleLength = this.getMaxTitleLength(assignments);
-        const modalWidth = Math.max(300, maxTitleLength * 10); // Minimum width 300px, 10px per character
+        try {
+            const courseId = this.classroomManager.getCourseId();
+            const assignments = this.classroomManager.getAssignments(courseId);
+            const maxTitleLength = this.getMaxTitleLength(assignments);
+            const modalWidth = Math.max(300, maxTitleLength * 10); // Minimum width 300px, 10px per character
 
-        const htmlContent = this.createAssignmentDropdownHtml(assignments);
-        const html = HtmlService.createHtmlOutput(htmlContent)
-            .setWidth(modalWidth)
-            .setHeight(250); // Increased height to accommodate buttons
+            const htmlContent = this.createAssignmentDropdownHtml(assignments);
+            const html = HtmlService.createHtmlOutput(htmlContent)
+                .setWidth(modalWidth)
+                .setHeight(250); // Increased height to accommodate buttons
 
-        this.ui.showModalDialog(html, 'Select Assignment');
-        console.log('Assignment dropdown modal displayed.');
+            this.ui.showModalDialog(html, 'Select Assignment');
+            console.log('Assignment dropdown modal displayed.');
+        } catch (error) {
+            console.error('Error showing assignment dropdown:', error);
+            Utils.toastMessage('Failed to load assignments: ' + error.message, 'Error', 5);
+        }
     }
 
     /**
@@ -136,15 +143,20 @@ class UIManager {
      * @param {string} assignmentData - The assignment data.
      */
     openReferenceSlideModal(assignmentData) {
-        const assignmentDataObj = JSON.parse(assignmentData);
-        const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentDataObj.name);
-        const htmlContent = this.createSlideIdsModalHtml(assignmentDataObj, savedSlideIds);
-        const html = HtmlService.createHtmlOutput(htmlContent)
-            .setWidth(400)
-            .setHeight(350);
+        try {
+            const assignmentDataObj = JSON.parse(assignmentData);
+            const savedSlideIds = AssignmentPropertiesManager.getSlideIdsForAssignment(assignmentDataObj.name);
+            const htmlContent = this.createSlideIdsModalHtml(assignmentDataObj, savedSlideIds);
+            const html = HtmlService.createHtmlOutput(htmlContent)
+                .setWidth(400)
+                .setHeight(350);
 
-        this.ui.showModalDialog(html, 'Enter Slide IDs');
-        console.log('Reference slide IDs modal displayed.');
+            this.ui.showModalDialog(html, 'Enter Slide IDs');
+            console.log('Reference slide IDs modal displayed.');
+        } catch (error) {
+            console.error('Error opening reference slide modal:', error);
+            Utils.toastMessage('Failed to open slide IDs modal: ' + error.message, 'Error', 5);
+        }
     }
 
     /**
@@ -247,13 +259,13 @@ class UIManager {
         return html;
     }
 
-      /**
+    /**
      * Shows a modal dialog with a dropdown list of active Google Classroom courses.
      */
-      showClassroomDropdown() {
+    showClassroomDropdown() {
         try {
-            // Retrieve active classrooms
-            const classrooms = Utils.getActiveClassrooms();
+            // Retrieve active classrooms using GoogleClassroomManager
+            const classrooms = this.classroomManager.getActiveClassrooms();
 
             // Sort classrooms alphabetically by name
             classrooms.sort((a, b) => a.name.localeCompare(b.name));

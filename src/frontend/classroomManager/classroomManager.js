@@ -2,13 +2,14 @@
  * Manages Google Classroom operations and associated tasks.
  */
 class GoogleClassroomManager {
-    constructor(sheet, templateSheetId, destinationFolderId) {
+    constructor(sheet) {
         this.sheet = sheet;
         this.classrooms = [];
-        this.templateSheetId = templateSheetId;
-        this.destinationFolderId = destinationFolderId;
+        this.templateSheetId; //Get this via the configuration manager at some point
+        this.destinationFolderId; //Get this via the configuration manager at some point
         this.progressTracker = ProgressTracker.getInstance();
     }
+
 
     /**
      * Fetches Google Classroom courses where the user is a teacher.
@@ -56,5 +57,93 @@ class GoogleClassroomManager {
         // Share folder with all teacher emails
         const teacherEmails = ClassroomSheetManager.getTeacherEmails(this.sheet);
         DriveManager.shareFolder(this.destinationFolderId, teacherEmails);
+    }
+
+    /**
+     * Retrieves assignments for a given course.
+     *
+     * @param {string} courseId - The ID of the course.
+     * @returns {Object[]} The list of assignments.
+     */
+    getAssignments(courseId) {
+        try {
+            const courseWork = Classroom.Courses.CourseWork.list(courseId);
+            let assignments = [];
+
+            if (courseWork.courseWork && courseWork.courseWork.length > 0) {
+                assignments = courseWork.courseWork.map((assignment) => {
+                    return {
+                        id: assignment.id,
+                        title: assignment.title,
+                        updateTime: new Date(assignment.updateTime),
+                    };
+                });
+
+                // Sort assignments by update time in descending order
+                assignments.sort((a, b) => b.updateTime - a.updateTime);
+            }
+
+            console.log(
+                `${assignments.length} assignments retrieved for courseId: ${courseId}`
+            );
+            return assignments;
+        } catch (error) {
+            console.error(
+                `Error retrieving assignments for courseId ${courseId}: ${error}`
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Retrieves all active Google Classroom courses available to the user.
+     *
+     * @return {Object[]} An array of objects containing course IDs and names.
+     */
+    getActiveClassrooms() {
+        try {
+            let courses = [];
+            let pageToken;
+            do {
+                const response = Classroom.Courses.list({
+                    pageToken: pageToken,
+                    courseStates: ['ACTIVE']
+                });
+                if (response.courses && response.courses.length > 0) {
+                    const activeCourses = response.courses.map(course => ({
+                        id: course.id,
+                        name: course.name
+                    }));
+                    courses = courses.concat(activeCourses);
+                }
+                pageToken = response.nextPageToken;
+            } while (pageToken);
+
+            console.log(`${courses.length} active classrooms retrieved.`);
+            return courses;
+        } catch (error) {
+            console.error('Error fetching active classrooms:', error);
+            throw new Error('Failed to retrieve active classrooms. Please ensure that the Classroom API is enabled and you have the necessary permissions.');
+        }
+    }
+
+    /**
+     * Retrieves the course ID from the 'ClassInfo' sheet.
+     *
+     * @returns {string} The course ID.
+     */
+    getCourseId() {
+        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = spreadsheet.getSheetByName("ClassInfo");
+        if (!sheet) {
+            console.error("ClassInfo sheet not found.");
+            throw new Error("ClassInfo sheet not found.");
+        }
+        const courseId = sheet.getRange("B2").getValue();
+        if (!courseId) {
+            console.error("Course ID not found in ClassInfo sheet.");
+            throw new Error("Course ID not found in ClassInfo sheet.");
+        }
+        return courseId.toString();
     }
 }

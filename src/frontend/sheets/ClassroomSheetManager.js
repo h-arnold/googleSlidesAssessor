@@ -16,7 +16,8 @@ class ClassroomSheetManager extends BaseSheetManager {
 
     /**
      * Retrieves all data from the sheet.
-     * @returns {Array<Array>} The data in the sheet.
+     * @returns {Array<Array>} The data in the sheet.Error: Failed to save classroom. Please try again.
+    at saveClassroom(z_main:181:11)
      */
     getData() {
         return this.sheet.getDataRange().getValues();

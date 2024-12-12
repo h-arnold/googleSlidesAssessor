@@ -100,74 +100,109 @@ function showClassroomDropdown() {
  */
 function saveConfiguration(config) {
   try {
-    // Map the incoming config to the ConfigurationManager setters
-    if (config.batchSize !== undefined) {
-      configurationManager.setBatchSize(config.batchSize);
-    }
-    if (config.langflowApiKey !== undefined) {
-      configurationManager.setLangflowApiKey(config.langflowApiKey);
-    }
-    if (config.langflowUrl !== undefined) {
-      configurationManager.setLangflowUrl(config.langflowUrl);
-    }
-    if (config.imageFlowUid !== undefined) {
-      configurationManager.setImageFlowUid(config.imageFlowUid);
-    }
-
-    // Handle Tweak IDs
-    if (config.textAssessmentTweakId !== undefined) {
-      configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
-    }
-    if (config.tableAssessmentTweakId !== undefined) {
-      configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
-    }
-    if (config.imageAssessmentTweakId !== undefined) {
-      configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
-    }
-
-    Utils.toastMessage("Configuration saved successfully.", "Success", 5);
+    // Delegate configuration saving to MainController
+    mainController.saveConfiguration(config);
   } catch (error) {
     console.error("Error saving configuration:", error);
-    Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
+    mainController.utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
     throw new Error("Failed to save configuration. Please check the inputs.");
   }
 }
-
 
 /**
  * ======== Classroom Management ========
  */
 
+/**
+ * Handler functions to bridge menu items to MainController methods.
+ */
 
 /**
- * Handler functions to bridge menu items to GoogleClassroomManagerController methods.
+ * Fetches Google Classrooms and populates them as needed.
  */
 function handleFetchGoogleClassrooms() {
-  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
-  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
-  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
-  controller.fetchGoogleClassrooms();
+  try {
+    mainController.fetchGoogleClassrooms();
+  } catch (error) {
+    console.error("Error fetching Google Classrooms:", error);
+    mainController.utils.toastMessage("Failed to fetch classrooms: " + error.message, "Error", 5);
+  }
 }
 
+/**
+ * Creates Google Classrooms based on provided data.
+ */
 function handleCreateGoogleClassrooms() {
-  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
-  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
-  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
-  controller.createGoogleClassrooms();
+  try {
+    mainController.createGoogleClassrooms();
+  } catch (error) {
+    console.error("Error creating Google Classrooms:", error);
+    mainController.utils.toastMessage("Failed to create classrooms: " + error.message, "Error", 5);
+  }
 }
 
+/**
+ * Updates existing Google Classrooms as needed.
+ */
 function handleUpdateGoogleClassrooms() {
-  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
-  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
-  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
-  controller.updateGoogleClassrooms();
+  try {
+    mainController.updateGoogleClassrooms();
+  } catch (error) {
+    console.error("Error updating Google Classrooms:", error);
+    mainController.utils.toastMessage("Failed to update classrooms: " + error.message, "Error", 5);
+  }
 }
 
+/**
+ * Sets up assessment documents in Google Classrooms.
+ */
 function handleSetupAssessmentDocs() {
-  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
-  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
-  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
-  controller.setupAssessmentDocs();
+  try {
+    mainController.setupAssessmentDocs();
+  } catch (error) {
+    console.error("Error setting up assessment documents:", error);
+    mainController.utils.toastMessage("Failed to set up assessment documents: " + error.message, "Error", 5);
+  }
+}
+
+/**
+ * Saves the selected classroom's name and ID to the 'ClassInfo' sheet.
+ *
+ * @param {string} courseName - The name of the selected classroom.
+ * @param {string} courseId - The ID of the selected classroom.
+ */
+function saveClassroom(courseName, courseId) {
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = spreadsheet.getSheetByName('ClassInfo');
+
+    // If 'ClassInfo' sheet doesn't exist, create it
+    if (!sheet) {
+      sheet = spreadsheet.insertSheet('ClassInfo');
+    }
+
+    // Set headers in A1 and B1
+    sheet.getRange('A1').setValue('Class Name');
+    sheet.getRange('A2').setValue('Course ID');
+
+    // Write the selected classroom's name and ID to A2 and B2
+    sheet.getRange('B1').setValue(courseName);
+    sheet.getRange('B2').setValue(courseId);
+
+    console.log(`Classroom saved: ${courseName} (${courseId})`);
+  } catch (error) {
+    console.error('Error saving classroom:', error);
+    throw new Error('Failed to save classroom. Please try again.');
+  }
+}
+
+/**
+ * Gets the Google Classroom assignments for a given class.
+ * @param {string} courseId 
+ * @returns {object}
+ */
+function getAssignments(courseId) {
+  return mainController.getAssignments(courseId);
 }
 
 /**
@@ -199,7 +234,6 @@ function clearAllCacheKeys() {
   const cache = CacheService.getScriptCache();
   cache.removeAll(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 }
-
 
 /**
  * Adds custom menus when the spreadsheet is opened.
