@@ -179,6 +179,65 @@ function getAssignments(courseId) {
 }
 
 /**
+ * ====== Google Classroom Management Functions ======
+ */
+/**
+ * Fetches all Google Classrooms where the user is a teacher
+ * and writes their details to the active sheet.
+ */
+function fetchGoogleClassrooms() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const manager = new GoogleClassroomManager(sheet);
+
+    // Fetch classrooms and write to sheet
+    manager.fetchClassrooms();
+    manager.writeClassroomsToSheet();
+
+    Logger.log('Classrooms fetched and written to sheet successfully.');
+  } catch (error) {
+    Logger.log(`Failed to fetch Google Classrooms: ${error.message}`);
+  }
+}
+
+/**
+ * Creates new Google Classrooms based on data in the active sheet.
+ */
+function createGoogleClassrooms() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const manager = new GoogleClassroomManager(sheet);
+
+    // Create classrooms from sheet data
+    manager.createClassroomsFromSheet();
+
+    Logger.log('Google Classrooms created successfully.');
+  } catch (error) {
+    Logger.log(`Failed to create Google Classrooms: ${error.message}`);
+  }
+}
+
+/**
+ * Updates existing Google Classrooms based on data in the active sheet.
+ */
+function updateGoogleClassrooms() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const manager = new GoogleClassroomManager(sheet);
+
+    // Fetch classrooms to ensure current data is available
+    manager.fetchClassrooms();
+
+    // Update classrooms from sheet data
+    manager.updateClassroomsFromSheet();
+
+    Logger.log('Google Classrooms updated successfully.');
+  } catch (error) {
+    Logger.log(`Failed to update Google Classrooms: ${error.message}`);
+  }
+}
+
+/**
  * ======== Utility Functions ========
  */
 
@@ -207,6 +266,7 @@ function clearAllCacheKeys() {
   const cache = CacheService.getScriptCache();
   cache.removeAll(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 }
+
 
 /**
  * Adds custom menus when the spreadsheet is opened.
