@@ -12,11 +12,15 @@ class GoogleClassroomManagerController {
         this.templateSheetId = templateSheetId;
         this.destinationFolderId = destinationFolderId;
         const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-        const activeCoursesSheet = spreadsheet.getSheetByName('Active Courses');
-        if (!activeCoursesSheet) {
-            throw new Error('Active Courses sheet not found.');
+        let classroomsSheet = spreadsheet.getSheetByName('Classrooms');
+
+        if (!classroomsSheet) {
+            console.log('Classrooms sheet not found. Creating a new one.');
+            classroomsSheet = spreadsheet.insertSheet('Classrooms');
+            classroomsSheet.appendRow(['Classroom ID', 'Name', 'Teacher 1', 'Teacher 2', 'Teacher 3', 'Teacher 4', 'Enrollment Code']);
         }
-        this.spreadsheetManager = new SpreadsheetManager(activeCoursesSheet);
+
+        this.spreadsheetManager = new SpreadsheetManager(classroomsSheet);
     }
 
     /**
@@ -51,8 +55,8 @@ class GoogleClassroomManagerController {
      */
     createGoogleClassrooms() {
         const courses = this.spreadsheetManager.getActiveCourses();
-        const activeCoursesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Active Courses');
-        const data = activeCoursesSheet.getDataRange().getValues();
+        const classroomsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Classrooms');
+        const data = classroomsSheet.getDataRange().getValues();
 
         courses.forEach((course, index) => {
             const row = data[index + 1]; // Adjust for header row
@@ -66,8 +70,8 @@ class GoogleClassroomManagerController {
             try {
                 const newCourse = ClassroomManager.createClassroom(course.name, ownerId, teacherEmails);
                 // Update sheet with new course ID and enrollment code
-                activeCoursesSheet.getRange(index + 2, 1).setValue(newCourse.id); // Column A
-                activeCoursesSheet.getRange(index + 2, 7).setValue(newCourse.enrollmentCode || ''); // Column G
+                classroomsSheet.getRange(index + 2, 1).setValue(newCourse.id); // Column A
+                classroomsSheet.getRange(index + 2, 7).setValue(newCourse.enrollmentCode || ''); // Column G
             } catch (error) {
                 console.error(`Failed to create classroom for course '${course.name}': ${error.message}`);
             }
@@ -79,8 +83,8 @@ class GoogleClassroomManagerController {
      */
     updateGoogleClassrooms() {
         const courses = this.spreadsheetManager.getActiveCourses();
-        const activeCoursesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Active Courses');
-        const data = activeCoursesSheet.getDataRange().getValues();
+        const classroomsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Classrooms');
+        const data = classroomsSheet.getDataRange().getValues();
 
         courses.forEach((course, index) => {
             const row = data[index + 1]; // Adjust for header row
@@ -109,7 +113,7 @@ class GoogleClassroomManagerController {
         try {
             const classrooms = ClassroomManager.fetchClassrooms();
             const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-            const sheet = spreadsheet.getSheetByName('Active Courses') || spreadsheet.getActiveSheet();
+            const sheet = spreadsheet.getSheetByName('Classrooms') || spreadsheet.getActiveSheet();
 
             // Clear existing data and set headers
             sheet.clear();
