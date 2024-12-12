@@ -20,7 +20,7 @@ class UIManager {
      * Shows the configuration dialog modal.
      */
     showConfigurationDialog() {
-        const html = HtmlService.createHtmlOutputFromFile('ConfigurationDialog')
+        const html = HtmlService.createHtmlOutputFromFile('ui/ConfigurationDialog')
             .setWidth(500)
             .setHeight(600); // Adjust the size as needed
 
@@ -259,7 +259,7 @@ class UIManager {
             classrooms.sort((a, b) => a.name.localeCompare(b.name));
 
             // Create a template from the HTML file and pass the classrooms data
-            const htmlTemplate = HtmlService.createTemplateFromFile('ClassroomDropdown');
+            const htmlTemplate = HtmlService.createTemplateFromFile('ui/ClassroomDropdown');
             htmlTemplate.classrooms = classrooms; // Pass data to the template
 
             // Evaluate the template to HTML
@@ -280,7 +280,7 @@ class UIManager {
      * Opens the progress modal.
      */
     showProgressModal() {
-        const html = HtmlService.createHtmlOutputFromFile('ProgressModal')
+        const html = HtmlService.createHtmlOutputFromFile('ui/ProgressModal')
             .setWidth(400)
             .setHeight(200);
         this.ui.showModalDialog(html, 'Progress');

@@ -77,8 +77,19 @@ class MainController {
    * @returns {Array} List of assignments.
    */
   getAssignments(courseId) {
+
     return Utils.getAssignments(courseId);
   }
+
+  /**
+   * Shows the Google Classroom Selection Dropdown
+   */
+  showClassroomDropdown() {
+    this.uiManager.showClassroomDropdown();
+
+  }
+
+
 
   /**
  * Saves slide IDs for a specific assignment.
@@ -210,7 +221,7 @@ class MainController {
       this.progressTracker.updateProgress(++step, "Extracting student work from slides.");
       assignment.processAllSubmissions();
       this.progressTracker.updateProgress(null, "All student work extracted.");
-      
+
       // Process images
       this.progressTracker.updateProgress(++step, "Processing Images");
       assignment.processImages();
@@ -237,7 +248,7 @@ class MainController {
       // Mark the task as complete
       this.progressTracker.updateProgress(null, "Assessment run completed successfully.");
       this.progressTracker.complete();
-      
+
     } catch (error) {
       this.progressTracker.logError(error.message);
       console.error("Error during assessment process:", error);
@@ -247,7 +258,7 @@ class MainController {
       lock.releaseLock();
 
       //Clean up document properties.
-      
+
       const properties = PropertiesService.getDocumentProperties();
       properties.deleteProperty('assignmentId');
       properties.deleteProperty('referenceSlideId');
