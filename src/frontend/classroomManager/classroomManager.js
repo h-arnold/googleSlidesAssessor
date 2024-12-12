@@ -24,7 +24,7 @@ class GoogleClassroomManager {
      * Creates classrooms based on sheet data and copies templates.
      */
     createClassroomsAndTemplates() {
-        const data = SpreadsheetHandler.getData(this.sheet);
+        const data = ClassroomSheetManager.getData(this.sheet);
         data.forEach((row, index) => {
             if (!row[0]) { // Only process rows without Classroom IDs
                 try {
