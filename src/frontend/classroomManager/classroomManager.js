@@ -1,17 +1,13 @@
-// Classroom Manager.gs
-
 /**
- * Manages Google Classroom operations.
+ * Manages Google Classroom operations and associated tasks.
  */
 class GoogleClassroomManager {
-    /**
-     * Constructor for GoogleClassroomManager.
-     * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The active Google Sheet.
-     */
-    constructor(sheet) {
+    constructor(sheet, templateSheetId, destinationFolderId) {
         this.sheet = sheet;
         this.classrooms = [];
-        this.progressTracker = ProgressTracker.getInstance(); // User-facing error handling
+        this.templateSheetId = templateSheetId;
+        this.destinationFolderId = destinationFolderId;
+        this.progressTracker = ProgressTracker.getInstance();
     }
 
     /**
@@ -25,57 +21,40 @@ class GoogleClassroomManager {
     }
 
     /**
-     * Creates classrooms from sheet data.
+     * Creates classrooms based on sheet data and copies templates.
      */
-    createClassroomsFromSheet() {
+    createClassroomsAndTemplates() {
         const data = SpreadsheetHandler.getData(this.sheet);
         data.forEach((row, index) => {
-            if (!row[0]) { // Skip rows with existing course IDs
+            if (!row[0]) { // Only process rows without Classroom IDs
                 try {
                     const classroom = new GoogleClassroom({
                         name: row[1],
                         ownerId: row[2],
-                        teachers: row.slice(2, 6).filter(email => email) // Collect teacher emails
+                        teachers: row.slice(2, 6).filter(email => email) // Teacher emails
                     });
                     classroom.create();
-                    this.progressTracker.logInfo(`Created classroom: ${row[1]}`);
+                    this.progressTracker.logInfo(`Classroom created: ${row[1]}`);
+
+                    // Copy template for the new classroom
+                    const copiedSheetFile = DriveManager.copyTemplateSheet(
+                        this.templateSheetId,
+                        this.destinationFolderId,
+                        classroom.name
+                    );
+                    SpreadsheetManager.appendClassInfoValues(
+                        copiedSheetFile.getId(),
+                        classroom.name,
+                        classroom.id
+                    );
                 } catch (error) {
-                    this.progressTracker.logError(`Failed to create classroom for row ${index + 1}: ${error.message}`);
+                    this.progressTracker.logError(`Failed to create classroom or template for row ${index + 1}: ${error.message}`);
                 }
             }
         });
-    }
 
-    /**
-     * Updates classrooms from sheet data.
-     */
-    updateClassroomsFromSheet() {
-        const data = SpreadsheetHandler.getData(this.sheet);
-        data.forEach((row, index) => {
-            if (row[0]) { // Only update rows with existing course IDs
-                try {
-                    const classroom = this.classrooms.find(c => c.id === row[0]);
-                    if (classroom) {
-                        classroom.update(row[1], row[2], row.slice(2, 6).filter(email => email));
-                        this.progressTracker.logInfo(`Updated classroom: ${row[1]}`);
-                    }
-                } catch (error) {
-                    this.progressTracker.logError(`Failed to update classroom for row ${index + 1}: ${error.message}`);
-                }
-            }
-        });
-    }
-
-    /**
-     * Writes Google Classroom data to the active sheet.
-     */
-    writeClassroomsToSheet() {
-        SpreadsheetHandler.clearSheet(this.sheet);
-        SpreadsheetHandler.writeHeaders(this.sheet, ['Classroom ID', 'Name', 'Teacher 1', 'Teacher 2', 'Teacher 3', 'Teacher 4', 'Enrollment Code']);
-        this.classrooms.forEach(classroom => {
-            SpreadsheetHandler.appendRow(this.sheet, classroom.toRow());
-        });
+        // Share folder with all teacher emails
+        const teacherEmails = SpreadsheetManager.getTeacherEmails(this.sheet);
+        DriveManager.shareFolder(this.destinationFolderId, teacherEmails);
     }
 }
-
-

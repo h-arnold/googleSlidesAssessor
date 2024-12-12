@@ -138,103 +138,36 @@ function saveConfiguration(config) {
  * ======== Classroom Management ========
  */
 
+
 /**
- * Saves the selected classroom's name and ID to the 'ClassInfo' sheet.
- *
- * @param {string} courseName - The name of the selected classroom.
- * @param {string} courseId - The ID of the selected classroom.
+ * Handler functions to bridge menu items to GoogleClassroomManagerController methods.
  */
-function saveClassroom(courseName, courseId) {
-  try {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = spreadsheet.getSheetByName('ClassInfo');
-
-    // If 'ClassInfo' sheet doesn't exist, create it
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet('ClassInfo');
-    }
-
-    // Set headers in A1 and B1
-    sheet.getRange('A1').setValue('Class Name');
-    sheet.getRange('A2').setValue('Course ID');
-
-    // Write the selected classroom's name and ID to A2 and B2
-    sheet.getRange('B1').setValue(courseName);
-    sheet.getRange('B2').setValue(courseId);
-
-    console.log(`Classroom saved: ${courseName} (${courseId})`);
-  } catch (error) {
-    console.error('Error saving classroom:', error);
-    throw new Error('Failed to save classroom. Please try again.');
-  }
+function handleFetchGoogleClassrooms() {
+  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
+  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
+  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
+  controller.fetchGoogleClassrooms();
 }
 
-/**
- * Gets the Google Classroom assignments for a given class.
- * @param {string} courseId 
- * @returns {object}
- */
-function getAssignments(courseId) {
-  return mainController.getAssignments(courseId);
+function handleCreateGoogleClassrooms() {
+  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
+  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
+  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
+  controller.createGoogleClassrooms();
 }
 
-/**
- * ====== Google Classroom Management Functions ======
- */
-/**
- * Fetches all Google Classrooms where the user is a teacher
- * and writes their details to the active sheet.
- */
-function fetchGoogleClassrooms() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const manager = new GoogleClassroomManager(sheet);
-
-    // Fetch classrooms and write to sheet
-    manager.fetchClassrooms();
-    manager.writeClassroomsToSheet();
-
-    Logger.log('Classrooms fetched and written to sheet successfully.');
-  } catch (error) {
-    Logger.log(`Failed to fetch Google Classrooms: ${error.message}`);
-  }
+function handleUpdateGoogleClassrooms() {
+  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
+  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
+  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
+  controller.updateGoogleClassrooms();
 }
 
-/**
- * Creates new Google Classrooms based on data in the active sheet.
- */
-function createGoogleClassrooms() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const manager = new GoogleClassroomManager(sheet);
-
-    // Create classrooms from sheet data
-    manager.createClassroomsFromSheet();
-
-    Logger.log('Google Classrooms created successfully.');
-  } catch (error) {
-    Logger.log(`Failed to create Google Classrooms: ${error.message}`);
-  }
-}
-
-/**
- * Updates existing Google Classrooms based on data in the active sheet.
- */
-function updateGoogleClassrooms() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const manager = new GoogleClassroomManager(sheet);
-
-    // Fetch classrooms to ensure current data is available
-    manager.fetchClassrooms();
-
-    // Update classrooms from sheet data
-    manager.updateClassroomsFromSheet();
-
-    Logger.log('Google Classrooms updated successfully.');
-  } catch (error) {
-    Logger.log(`Failed to update Google Classrooms: ${error.message}`);
-  }
+function handleSetupAssessmentDocs() {
+  const templateSheetId = 'YOUR_TEMPLATE_SHEET_ID'; // Replace with your Template Sheet ID
+  const destinationFolderId = 'YOUR_DESTINATION_FOLDER_ID'; // Replace with your Destination Folder ID
+  const controller = new GoogleClassroomManagerController(templateSheetId, destinationFolderId);
+  controller.setupAssessmentDocs();
 }
 
 /**

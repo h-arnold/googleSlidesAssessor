@@ -1,111 +1,114 @@
-// Google Classroom.gs
-
+// ClassroomManager.js
 /**
- * Represents a single Google Classroom.
+ * Handles operations related to Google Classroom entities.
  */
-class GoogleClassroom {
-    /**
-     * Constructor for GoogleClassroom.
-     * @param {Object} courseData - Data representing the Google Classroom.
-     */
-    constructor(courseData) {
-        this.id = courseData.id || null;
-        this.name = courseData.name || '';
-        this.ownerId = courseData.ownerId || '';
-        this.teachers = courseData.teachers || [];
-        this.enrollmentCode = courseData.enrollmentCode || '';
-    }
-
+class ClassroomManager {
     /**
      * Creates a new Google Classroom.
+     * @param {string} name - The name of the classroom.
+     * @param {string} ownerId - The email of the owner teacher.
+     * @param {Array<string>} teacherEmails - The emails of additional teachers.
+     * @returns {GoogleAppsScript.Classroom.Schema.Course} The created course object.
      */
-    create() {
-        const course = {
-            name: this.name,
-            ownerId: this.ownerId,
-            courseState: 'ACTIVE'
-        };
-        const newCourse = Classroom.Courses.create(course);
-        this.id = newCourse.id;
-        this.enrollmentCode = newCourse.enrollmentCode;
-
-        // Invite teachers except the owner
-        this.teachers.forEach((email, index) => {
-            if (index > 0) this.inviteTeacher(email); // Skip the first teacher (owner)
-        });
-    }
-
-    /**
-                this.inviteTeacher(email);
-            }
-        });
-    }
-
-    /**
-     * Sends an invitation to a teacher.
-     * @param {string} email - Email of the teacher to invite.
-     */
-    inviteTeacher(email) {
+    static createClassroom(name, ownerId, teacherEmails = []) {
         try {
-            Classroom.Invitations.create({ courseId: this.id, role: 'TEACHER', userId: email });
+            const course = {
+                name: name,
+                ownerId: ownerId,
+                courseState: 'ACTIVE'
+            };
+            const newCourse = Classroom.Courses.create(course);
+            console.log(`Created Classroom: ${name} (${newCourse.id})`);
+
+            // Invite additional teachers
+            teacherEmails.forEach(email => {
+                if (email !== ownerId) { // Avoid inviting the owner again
+                    this.inviteTeacher(newCourse.id, email);
+                }
+            });
+
+            return newCourse;
         } catch (error) {
-            console.log(`Failed to invite teacher: ${email} to course: ${this.id}. Error: ${error.message}`);
+            console.error(`Failed to create classroom '${name}': ${error.message}`);
+            throw error;
         }
     }
 
     /**
-     * Converts the Google Classroom data to a row for the sheet.
-     * @return {Array} Row data for the Google Sheet.
+     * Sends an invitation to a teacher to join a classroom.
+     * @param {string} courseId - The ID of the classroom.
+     * @param {string} teacherEmail - The email of the teacher to invite.
      */
-    toRow() {
-        const teachers = this.teachers.slice(0, 4);
-        return [this.id, this.name, ...teachers, this.enrollmentCode];
-    }
-}
-  * Updates the Google Classroom with new details.
-     * @param {string} name - The updated name of the classroom.
-     * @param {string} ownerId - The updated owner ID.
-     * @param {Array<string>} teachers - Updated list of teachers' emails.
-     */
-    update(name, ownerId, teachers) {
-        this.name = name;
-        this.ownerId = ownerId;
-        this.teachers = teachers;
-
-        const existingCourse = Classroom.Courses.get(this.id);
-        if (existingCourse.name !== this.name || existingCourse.ownerId !== this.ownerId) {
-            Classroom.Courses.update({ name: this.name, ownerId: this.ownerId }, this.id);
-        }
-
-        // Add missing teachers
-        const currentTeachers = Classroom.Courses.Teachers.list(this.id).teachers || [];
-        const currentEmails = currentTeachers.map(t => t.profile.emailAddress);
-
-        this.teachers.forEach(email => {
-            if (!currentEmails.includes(email)) {
-                this.inviteTeacher(email);
-            }
-        });
-    }
-
-    /**
-     * Sends an invitation to a teacher.
-     * @param {string} email - Email of the teacher to invite.
-     */
-    inviteTeacher(email) {
+    static inviteTeacher(courseId, teacherEmail) {
         try {
-            Classroom.Invitations.create({ courseId: this.id, role: 'TEACHER', userId: email });
+            const invitation = {
+                courseId: courseId,
+                role: 'TEACHER',
+                userId: teacherEmail
+            };
+            Classroom.Invitations.create(invitation);
+            console.log(`Sent invitation to teacher: ${teacherEmail} for course: ${courseId}`);
         } catch (error) {
-            console.log(`Failed to invite teacher: ${email} to course: ${this.id}. Error: ${error.message}`);
+            console.error(`Failed to invite teacher (${teacherEmail}) to course (${courseId}): ${error.message}`);
         }
     }
 
     /**
-     * Converts the Google Classroom data to a row for the sheet.
-     * @return {Array} Row data for the Google Sheet.
+     * Updates an existing Google Classroom based on provided data.
+     * @param {string} courseId - The ID of the classroom to update.
+     * @param {string} newName - The new name for the classroom.
+     * @param {string} newOwnerId - The new owner email, if changing owner.
+     * @param {Array<string>} newTeacherEmails - The updated list of teacher emails.
      */
-    toRow() {
-        const teachers = this.teachers.slice(0, 4);
-        return [this.id, this.name, ...teachers, this.enrollmentCode];
+    static updateClassroom(courseId, newName, newOwnerId, newTeacherEmails = []) {
+        try {
+            const course = Classroom.Courses.get(courseId);
+
+            // Update course name if changed
+            if (course.name !== newName) {
+                course.name = newName;
+                Classroom.Courses.update(course, courseId);
+                console.log(`Updated course name to '${newName}' for course ID: ${courseId}`);
+            }
+
+            // Update owner if changed
+            if (newOwnerId && course.ownerId !== newOwnerId) {
+                course.ownerId = newOwnerId;
+                Classroom.Courses.update(course, courseId);
+                console.log(`Updated course owner to '${newOwnerId}' for course ID: ${courseId}`);
+            }
+
+            // Get existing teachers
+            const existingTeachers = Classroom.Courses.Teachers.list(courseId).teachers || [];
+            const existingTeacherEmails = existingTeachers.map(teacher => teacher.profile.emailAddress);
+
+            // Invite new teachers who are not already teachers
+            newTeacherEmails.forEach(email => {
+                if (email !== newOwnerId && !existingTeacherEmails.includes(email)) {
+                    this.inviteTeacher(courseId, email);
+                }
+            });
+
+            console.log(`Updated classroom (${courseId}) successfully.`);
+        } catch (error) {
+            console.error(`Failed to update classroom (${courseId}): ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Fetches all classrooms where the user is a teacher.
+     * @returns {Array<GoogleAppsScript.Classroom.Schema.Course>} An array of classroom objects.
+     */
+    static fetchClassrooms() {
+        try {
+            const response = Classroom.Courses.list({ teacherId: 'me', courseStates: ['ACTIVE'] });
+            const courses = response.courses || [];
+            console.log(`Fetched ${courses.length} classrooms.`);
+            return courses;
+        } catch (error) {
+            console.error(`Failed to fetch classrooms: ${error.message}`);
+            throw error;
+        }
     }
 }
