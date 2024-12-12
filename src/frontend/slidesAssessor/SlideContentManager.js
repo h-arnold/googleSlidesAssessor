@@ -11,8 +11,6 @@ class SlideContentManager {
    */
   constructor() {
     // Initialize any required properties here
-    // No need for requestManager since we're not fetching images here
-    this.rateLimitCounters = {};
   }
 
   /**
