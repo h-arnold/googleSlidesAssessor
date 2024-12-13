@@ -115,6 +115,28 @@ class MainController {
     }
   }
 
+  getClasroomData() {
+    if (this.uiManager) {
+      return this.uiManager.getClassroomData();
+    } else {
+      this.utils.toastMessage('Failed to get classroom data','Error', 5);
+      console.error("Failed to get classroom data");
+    }
+  }
+
+  saveClasroomData(rows) {
+    if (this.uiManager) {
+      this.uiManager.saveClassroomData(rows);
+    } else {
+      this.utils.toastMessage('Failed to get classroom data','Error', 5);
+      console.error("Failed to get classroom data");
+    }
+  }
+
+  showClassroomEditorModal() {
+    this.uiManager.showClassroomEditorModal();
+  }
+
 /**
  * === Configuration Management ===
  */
