@@ -7,7 +7,9 @@ class ConfigurationManager {
             TEXT_ASSESSMENT_TWEAK_ID: 'textAssessmentTweakId',
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
             IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
-            IMAGE_FLOW_UID: 'imageFlowUid'
+            IMAGE_FLOW_UID: 'imageFlowUid',
+            ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
+            ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder'
         };
     }
 
@@ -87,8 +89,20 @@ class ConfigurationManager {
             case ConfigurationManager.CONFIG_KEYS.TEXT_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.TABLE_ASSESSMENT_TWEAK_ID:
             case ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID:
+            case ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_TEMPLATE_ID:
                 if (typeof value !== 'string' || value.trim() === '') {
                     throw new Error(`${this.toReadableKey(key)} must be a non-empty string.`);
+                }
+                if (key === ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_TEMPLATE_ID && !this.isValidGoogleSheetId(value)) {
+                    throw new Error("Assessment Record Template ID must be a valid Google Sheet ID.");
+                }
+                break;
+            case ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER:
+                if (typeof value !== 'string' || value.trim() === '') {
+                    throw new Error(`${this.toReadableKey(key)} must be a non-empty string.`);
+                }
+                if (key === ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER && !this.isValidGoogleDriveFolderId(value)) {
+                    throw new Error("Assessment Record Destination Folder must be a valid Google Drive Folder ID.");
                 }
                 break;
             default:
@@ -106,16 +120,17 @@ class ConfigurationManager {
      * @return {boolean} - True if valid, false otherwise.
      */
     isValidUrl(url) {
-        const urlPattern = new RegExp('^(https?:\\/\\/)' + // protocol
+        const urlPattern = new RegExp('^(https?:\/\/)' + // protocol
             '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
-            '((\\[[0-9a-fA-F:.]+\\])|' + // IPv6
-            '(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}))' + // domain name
-            '(\\:[0-9]+)?' + // port
-            '(\\/[-a-zA-Z0-9%_.~+]*)*' + // path
-            '(\\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
-            '(\\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
+            '((\[[0-9a-fA-F:.]+\])|' + // IPv6
+            '(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}))' + // domain name
+            '(\:[0-9]+)?' + // port
+            '(\/[-a-zA-Z0-9%_.~+]*)*' + // path
+            '(\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
+            '(\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
         return urlPattern.test(url);
     }
+
     /**
      * Validates if a string is a valid LangFlow API key.
      * @param {string} apiKey - The API key string to validate.
@@ -124,7 +139,39 @@ class ConfigurationManager {
     isValidApiKey(apiKey) {
         const apiKeyPattern = /^sk-(?!-)([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)$/;
         return apiKeyPattern.test(apiKey.trim());
+    }
 
+    /**
+     * Validates if a string is a valid Google Sheet ID.
+     * @param {string} sheetId - The Google Sheet ID to validate.
+     * @return {boolean} - True if valid, false otherwise.
+     */
+    isValidGoogleSheetId(sheetId) {
+        try {
+            const file = DriveApp.getFileById(sheetId);
+            if (file && file.getMimeType() === MimeType.GOOGLE_SHEETS) {
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error(`Invalid Google Sheet ID: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * Validates if a string is a valid Google Drive Folder ID.
+     * @param {string} folderId - The Google Drive Folder ID to validate.
+     * @return {boolean} - True if valid, false otherwise.
+     */
+    isValidGoogleDriveFolderId(folderId) {
+        try {
+            const folder = DriveApp.getFolderById(folderId);
+            return folder !== null;
+        } catch (error) {
+            console.error(`Invalid Google Drive Folder ID: ${error.message}`);
+            return false;
+        }
     }
 
     /**
@@ -170,20 +217,12 @@ class ConfigurationManager {
         return this.getProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID);
     }
 
-    /**
-     * Constructs the full Image Upload URL based on the Langflow URL and Flow UID.
-     * @return {string} - The full Image Upload URL.
-     */
-    getImageUploadUrl() {
-        const baseUrl = this.getLangflowUrl();
-        const flowUid = this.getImageFlowUid();
-        if (!baseUrl) {
-            throw new Error("LangFlow URL is not set.");
-        }
-        if (!flowUid) {
-            throw new Error("Image Flow UID is not set.");
-        }
-        return `${baseUrl}/api/v1/upload/${flowUid}`;
+    getAssessmentRecordTemplateId() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_TEMPLATE_ID);
+    }
+
+    getAssessmentRecordDestinationFolder() {
+        return this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
     }
 
     /**
@@ -215,6 +254,14 @@ class ConfigurationManager {
 
     setImageAssessmentTweakId(tweakId) {
         this.setProperty(ConfigurationManager.CONFIG_KEYS.IMAGE_ASSESSMENT_TWEAK_ID, tweakId);
+    }
+
+    setAssessmentRecordTemplateId(templateId) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_TEMPLATE_ID, templateId);
+    }
+
+    setAssessmentRecordDestinationFolder(folderId) {
+        this.setProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER, folderId);
     }
 }
 
