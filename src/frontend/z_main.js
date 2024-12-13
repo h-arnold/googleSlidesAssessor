@@ -73,14 +73,14 @@ function showProgressModal() {
  * Shows the configuration dialog modal.
  */
 function showConfigurationDialog() {
-  mainController.showConfigurationDialog();
+  return mainController.showConfigurationDialog();
 }
 
 /**
  * Shows the assignment dropdown modal.
  */
 function showAssignmentDropdown() {
-  mainController.showAssignmentDropdown();
+  return mainController.showAssignmentDropdown();
 }
 
 /**
@@ -96,15 +96,40 @@ function showClassroomDropdown() {
 
 /**
  * Saves the provided configuration properties.
+ *
  * @param {Object} config - An object containing key-value pairs of configurations.
  */
 function saveConfiguration(config) {
   try {
-    // Delegate configuration saving to MainController
-    mainController.saveConfiguration(config);
+    // Map the incoming config to the ConfigurationManager setters
+    if (config.batchSize !== undefined) {
+      configurationManager.setBatchSize(config.batchSize);
+    }
+    if (config.langflowApiKey !== undefined) {
+      configurationManager.setLangflowApiKey(config.langflowApiKey);
+    }
+    if (config.langflowUrl !== undefined) {
+      configurationManager.setLangflowUrl(config.langflowUrl);
+    }
+    if (config.textAssessmentTweakId !== undefined) {
+      configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
+    }
+    if (config.tableAssessmentTweakId !== undefined) {
+      configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
+    }
+    if (config.imageAssessmentTweakId !== undefined) {
+      configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+    }
+    if (config.imageUploadUrl !== undefined) {
+      configurationManager.setImageUploadUrl(config.imageUploadUrl);
+    }
+    if (config.imageUploaderApiKey !== undefined) {
+      configurationManager.setImageUploaderApiKey(config.imageUploaderApiKey);
+    }
+    Utils.toastMessage("Configuration saved successfully.", "Success", 5);
   } catch (error) {
     console.error("Error saving configuration:", error);
-    mainController.utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
+    Utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
     throw new Error("Failed to save configuration. Please check the inputs.");
   }
 }
@@ -112,58 +137,6 @@ function saveConfiguration(config) {
 /**
  * ======== Classroom Management ========
  */
-
-/**
- * Handler functions to bridge menu items to MainController methods.
- */
-
-/**
- * Fetches Google Classrooms and populates them as needed.
- */
-function handleFetchGoogleClassrooms() {
-  try {
-    mainController.fetchGoogleClassrooms();
-  } catch (error) {
-    console.error("Error fetching Google Classrooms:", error);
-    mainController.utils.toastMessage("Failed to fetch classrooms: " + error.message, "Error", 5);
-  }
-}
-
-/**
- * Creates Google Classrooms based on provided data.
- */
-function handleCreateGoogleClassrooms() {
-  try {
-    mainController.createGoogleClassrooms();
-  } catch (error) {
-    console.error("Error creating Google Classrooms:", error);
-    mainController.utils.toastMessage("Failed to create classrooms: " + error.message, "Error", 5);
-  }
-}
-
-/**
- * Updates existing Google Classrooms as needed.
- */
-function handleUpdateGoogleClassrooms() {
-  try {
-    mainController.updateGoogleClassrooms();
-  } catch (error) {
-    console.error("Error updating Google Classrooms:", error);
-    mainController.utils.toastMessage("Failed to update classrooms: " + error.message, "Error", 5);
-  }
-}
-
-/**
- * Sets up assessment documents in Google Classrooms.
- */
-function handleSetupAssessmentDocs() {
-  try {
-    mainController.setupAssessmentDocs();
-  } catch (error) {
-    console.error("Error setting up assessment documents:", error);
-    mainController.utils.toastMessage("Failed to set up assessment documents: " + error.message, "Error", 5);
-  }
-}
 
 /**
  * Saves the selected classroom's name and ID to the 'ClassInfo' sheet.
