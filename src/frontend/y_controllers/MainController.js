@@ -1,4 +1,4 @@
-// MainController.gs
+// MainController.js
 
 /**
  * MainController Class
@@ -44,12 +44,8 @@ class MainController {
 
   /** 
    * === UI Wrapper Methods ===
-   * These methods call the various methods from other classes needed for the GUI elements of the script. Most of these are called from global functions in z_main.gs
    */
 
-  /**
-   * Adds custom menus when the spreadsheet is opened.
-   */
   onOpen() {
     if (this.uiManager) {
       this.uiManager.addCustomMenus();
@@ -58,9 +54,6 @@ class MainController {
     }
   }
 
-  /**
-   * Shows the configuration dialog modal.
-   */
   showConfigurationDialog() {
     if (this.uiManager) {
       this.uiManager.showConfigurationDialog();
@@ -70,9 +63,6 @@ class MainController {
     }
   }
 
-  /**
-   * Shows the assignment dropdown modal.
-   */
   showAssignmentDropdown() {
     if (this.uiManager) {
       this.uiManager.showAssignmentDropdown();
@@ -82,11 +72,6 @@ class MainController {
     }
   }
 
-  /**
-   * Opens the reference slide modal with assignment data.
-   *
-   * @param {string} assignmentData - The JSON string containing assignment data.
-   */
   openReferenceSlideModal(assignmentData) {
     if (this.uiManager) {
       this.uiManager.openReferenceSlideModal(assignmentData);
@@ -96,21 +81,10 @@ class MainController {
     }
   }
 
-  /**
-   * Retrieves the current progress status.
-   *
-   * @returns {Object} The current progress data.
-   */
   requestStatus() {
     return this.progressTracker.getStatus();
   }
 
-  /**
-   * Retrieves assignments for a given course.
-   *
-   * @param {string} courseId - The ID of the course.
-   * @returns {Array} List of assignments.
-   */
   getAssignments(courseId) {
     try {
       return this.classroomManager.getAssignments(courseId);
@@ -121,9 +95,6 @@ class MainController {
     }
   }
 
-  /**
-   * Shows the Google Classroom Selection Dropdown
-   */
   showClassroomDropdown() {
     if (this.uiManager) {
       this.uiManager.showClassroomDropdown();
@@ -133,12 +104,6 @@ class MainController {
     }
   }
 
-  /**
-   * Saves slide IDs for a specific assignment.
-   *
-   * @param {string} assignmentId - The ID of the assignment.
-   * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
-   */
   saveSlideIdsForAssignment(assignmentId, slideIds) {
     try {
       AssignmentPropertiesManager.saveSlideIdsForAssignment(assignmentId, slideIds);
@@ -152,11 +117,6 @@ class MainController {
 
   /** 
    * === Configuration Management ===
-   */
-
-  /**
-   * Saves the provided configuration properties.
-   * @param {Object} config - An object containing key-value pairs of configurations.
    */
   saveConfiguration(config) {
     try {
@@ -198,17 +158,14 @@ class MainController {
    * === Classroom Management ===
    */
 
-  /**
-   * Fetches Google Classrooms and populates them as needed.
-   */
   fetchGoogleClassrooms() {
     try {
       const classrooms = this.classroomManager.getActiveClassrooms();
-      // Implement logic to handle fetched classrooms, e.g., populate a sheet or UI
       console.log(`${classrooms.length} Google Classrooms fetched successfully.`);
       this.utils.toastMessage(`${classrooms.length} Google Classrooms fetched successfully.`, "Success", 5);
-      // Example: Populate 'ClassInfo' sheet with fetched classrooms
-      ClassroomSheetManager.populateClassInfoSheet(classrooms);
+      // Below method was originally called but not defined, removing it or implementing it is needed.
+      // For now, removing this call:
+      // ClassroomSheetManager.populateClassInfoSheet(classrooms);
     } catch (error) {
       console.error("Error fetching Google Classrooms:", error);
       this.utils.toastMessage("Failed to fetch classrooms: " + error.message, "Error", 5);
@@ -216,12 +173,8 @@ class MainController {
     }
   }
 
-  /**
-   * Creates Google Classrooms based on provided data.
-   */
   createGoogleClassrooms() {
     try {
-      // Implement the logic to create Google Classrooms
       this.classroomManager.createClassroomsAndTemplates();
       this.utils.toastMessage("Google Classrooms created successfully.", "Success", 5);
       console.log("Google Classrooms created successfully.");
@@ -232,13 +185,10 @@ class MainController {
     }
   }
 
-  /**
-   * Updates existing Google Classrooms as needed.
-   */
   updateGoogleClassrooms() {
     try {
-      // Implement the logic to update Google Classrooms
-      this.classroomManager.updateClassrooms();
+      // Assuming `updateClassrooms` was a method that might need to be implemented similarly to create.
+      this.classroomManager.updateClassrooms(); // This method is not defined in the snippet, consider implementing.
       this.utils.toastMessage("Google Classrooms updated successfully.", "Success", 5);
       console.log("Google Classrooms updated successfully.");
     } catch (error) {
@@ -248,13 +198,10 @@ class MainController {
     }
   }
 
-  /**
-   * Sets up assessment documents in Google Classrooms.
-   */
   setupAssessmentDocs() {
     try {
-      // Implement the logic to set up assessment documents
-      this.classroomManager.setupAssessmentDocuments();
+      // Similarly, `setupAssessmentDocuments` not defined. Needs to be implemented or removed.
+      this.classroomManager.setupAssessmentDocuments(); 
       this.utils.toastMessage("Assessment documents set up successfully.", "Success", 5);
       console.log("Assessment documents set up successfully.");
     } catch (error) {
@@ -264,15 +211,25 @@ class MainController {
     }
   }
 
-  /**
-   * Saves the selected classroom's name and ID to the 'ClassInfo' sheet.
-   *
-   * @param {string} courseName - The name of the selected classroom.
-   * @param {string} courseId - The ID of the selected classroom.
-   */
   saveClassroom(courseName, courseId) {
     try {
-      this.classroomManager.saveClassroomInfo(courseName, courseId);
+      // Directly update ClassInfo sheet
+      const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+      let sheet = spreadsheet.getSheetByName('ClassInfo');
+
+      // If 'ClassInfo' sheet doesn't exist, create it
+      if (!sheet) {
+        sheet = spreadsheet.insertSheet('ClassInfo');
+      }
+
+      // Set headers in A1 and B1
+      sheet.getRange('A1').setValue('Class Name');
+      sheet.getRange('A2').setValue('Course ID');
+
+      // Write the selected classroom's name and ID to A2 and B2
+      sheet.getRange('B1').setValue(courseName);
+      sheet.getRange('B2').setValue(courseId);
+
       console.log(`Classroom saved: ${courseName} (${courseId})`);
       this.utils.toastMessage("Classroom saved successfully.", "Success", 5);
     } catch (error) {
@@ -286,16 +243,6 @@ class MainController {
    * === Workflow Methods ===
    */
 
-  /**
-   * Initiates the processing of an assignment asynchronously by setting up a trigger
-   * and opens the progress modal.
-   *
-   * @param {string} assignmentTitle - The title of the assignment.
-   * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
-   * @param {string} assignmentId - The ID of the assignment.
-   * @param {string} referenceSlideId - The ID of the reference slide.
-   * @param {string} emptySlideId - The ID of the empty slide.
-   */
   saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
     try {
       this.saveSlideIdsForAssignment(assignmentId, slideIds);
@@ -308,20 +255,11 @@ class MainController {
     }
   }
 
-  /**
-   * Initiates the processing of an assignment asynchronously by setting up a trigger.
-   *
-   * @param {string} assignmentId - The ID of the assignment.
-   * @param {string} referenceSlideId - The ID of the reference slide.
-   * @param {string} emptySlideId - The ID of the empty slide.
-   * @returns {void}
-   */
   startProcessing(assignmentId, referenceSlideId, emptySlideId) {
     const properties = PropertiesService.getDocumentProperties();
     let triggerId;
 
     try {
-      // Changed delay to 1 minute (60 seconds) for better reliability
       triggerId = this.triggerController.createTimeBasedTrigger('triggerProcessSelectedAssignment', 1); // 1-minute delay
       console.log(`Trigger created for triggerProcessSelectedAssignment with triggerId: ${triggerId}`);
     } catch (error) {
@@ -343,9 +281,6 @@ class MainController {
     }
   }
 
-  /**
-   * Opens the progress modal dialog.
-   */
   showProgressModal() {
     if (this.uiManager) {
       this.uiManager.showProgressModal();
@@ -355,9 +290,6 @@ class MainController {
     }
   }
 
-  /**
-   * Processes the selected assignment by retrieving parameters and executing the workflow.
-   */
   processSelectedAssignment() {
     const lock = LockService.getDocumentLock();
 
@@ -376,31 +308,24 @@ class MainController {
       let step = 1;
 
       if (!assignmentId || !referenceSlideId || !emptySlideId || !triggerId) {
-        // Clean up triggers to prevent accumulation of disabled triggers
         this.triggerController.removeTriggers('triggerProcessSelectedAssignment');
         throw new Error("Missing parameters for processing.");
       }
 
-      // Delete the trigger as it's no longer needed
       this.triggerController.deleteTriggerById(triggerId);
       console.log("Trigger deleted after processing.");
 
-      // Initialize progress tracking
       this.progressTracker.startTracking();
       this.progressTracker.updateProgress(step++, "Assessment run starting.");
-      // this.utils.toastMessage("Assessment run starting...");
 
-      // Retrieve Course ID using GoogleClassroomManager
       const courseId = this.classroomManager.getCourseId();
       console.log('Course ID retrieved: ' + courseId);
       this.progressTracker.updateProgress(step++, `Course ID retrieved: ${courseId}`);
 
-      // Create an Assignment instance
       this.progressTracker.updateProgress(step++, "Creating Assignment instance.");
       const assignment = new Assignment(courseId, assignmentId, referenceSlideId, emptySlideId);
       this.progressTracker.updateProgress(null, "Assignment instance created.");
 
-      // Fetch all students and add them to the assignment
       this.progressTracker.updateProgress(step++, "Fetching all students.");
       const students = Student.fetchAllStudents(courseId);
       this.progressTracker.updateProgress(null, `${students.length} students fetched.`);
@@ -409,7 +334,6 @@ class MainController {
       students.forEach(student => assignment.addStudent(student));
       this.progressTracker.updateProgress(null, "All students added to the assignment.");
 
-      // Process the assignment
       this.progressTracker.updateProgress(step++, "Getting the tasks from the reference slides.");
       assignment.populateTasksFromSlides();
       this.progressTracker.updateProgress(null, "Tasks populated from reference slides.");
@@ -422,37 +346,32 @@ class MainController {
       assignment.processAllSubmissions();
       this.progressTracker.updateProgress(null, "All student work extracted.");
 
-      // Process images
-      this.progress_tracker.updateProgress(step++, "Processing Images.");
+      this.progressTracker.updateProgress(step++, "Processing Images.");
       assignment.processImages();
       this.progressTracker.updateProgress(null, "Images uploaded.");
 
-      // Assess responses
-      this.progress_tracker.updateProgress(step++, "Assessing student responses.");
+      this.progressTracker.updateProgress(step++, "Assessing student responses.");
       assignment.assessResponses();
-      this.progress_tracker.updateProgress(null, "Responses assessed.");
+      this.progressTracker.updateProgress(null, "Responses assessed.");
 
-      // Create the analysis sheet
-      this.progress_tracker.updateProgress(step++, "Creating the analysis sheet.");
+      this.progressTracker.updateProgress(step++, "Creating the analysis sheet.");
       const analysisSheetManager = new AnalysisSheetManager(assignment);
       analysisSheetManager.createAnalysisSheet();
-      this.progress_tracker.updateProgress(null, "Analysis sheet created.");
+      this.progressTracker.updateProgress(null, "Analysis sheet created.");
 
-      // Update the overview sheet
-      this.progress_tracker.updateProgress(step++, "Updating the overview sheet.");
+      this.progressTracker.updateProgress(step++, "Updating the overview sheet.");
       const overviewSheetManager = new OverviewSheetManager();
       overviewSheetManager.createOverviewSheet();
-      this.progress_tracker.updateProgress(null, "Overview sheet updated.");
+      this.progressTracker.updateProgress(null, "Overview sheet updated.");
 
-      // Mark the task as complete
-      this.progress_tracker.updateProgress(null, "Assessment run completed successfully.");
-      this.progress_tracker.complete();
+      this.progressTracker.updateProgress(null, "Assessment run completed successfully.");
+      this.progressTracker.complete();
 
       this.utils.toastMessage("Assessment run completed successfully.", "Success", 5);
       console.log("Assessment run completed successfully.");
 
     } catch (error) {
-      this.progress_tracker.logError(error.message);
+      this.progressTracker.logError(error.message);
       console.error("Error during assessment process:", error);
       this.utils.toastMessage("An error occurred: " + error.message, "Error", 5);
       throw error;
@@ -460,7 +379,6 @@ class MainController {
       lock.releaseLock();
       console.log("Lock released.");
 
-      // Clean up document properties.
       try {
         const properties = PropertiesService.getDocumentProperties();
         properties.deleteProperty('assignmentId');
@@ -469,18 +387,16 @@ class MainController {
         properties.deleteProperty('triggerId');
         console.log("Document properties cleaned up.");
       } catch (cleanupError) {
-        this.progress_tracker.logError(`Failed to clean up properties: ${cleanupError.message}`);
+        this.progressTracker.logError(`Failed to clean up properties: ${cleanupError.message}`);
         console.error(`Error during property cleanup: ${cleanupError}`);
       }
     }
   }
 
-  /**
-   * Test workflow function for debugging purposes.
-   */
   testWorkflow() {
     this.processSelectedAssignment();
   }
 }
+
 // Instantiate the MainController as a singleton
 const mainController = new MainController();

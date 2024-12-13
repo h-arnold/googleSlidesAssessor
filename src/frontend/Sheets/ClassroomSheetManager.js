@@ -1,4 +1,5 @@
 // ClassroomSheetManager.js
+
 /**
  * ClassroomSheetManager Class
  *
@@ -16,8 +17,7 @@ class ClassroomSheetManager extends BaseSheetManager {
 
     /**
      * Retrieves all data from the sheet.
-     * @returns {Array<Array>} The data in the sheet.Error: Failed to save classroom. Please try again.
-    at saveClassroom(z_main:181:11)
+     * @returns {Array<Array>} The data in the sheet.
      */
     getData() {
         return this.sheet.getDataRange().getValues();
@@ -78,7 +78,7 @@ class ClassroomSheetManager extends BaseSheetManager {
      * @param {string} className - The name of the class.
      * @param {string} courseId - The ID of the course.
      */
-    appendClassInfo(spreadsheetId, className, courseId) {
+    static appendClassInfo(spreadsheetId, className, courseId) {
         try {
             const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
             const classInfoSheetName = 'ClassInfo';
