@@ -46,6 +46,15 @@ class ClassroomApiClient {
      */
     static inviteTeacher(courseId, teacherEmail) {
         try {
+            // Check if the teacher is already part of the course
+            const existingTeachers = Classroom.Courses.Teachers.list(courseId).teachers || [];
+            const existingTeacherEmails = existingTeachers.map(teacher => teacher.profile.emailAddress);
+
+            if (existingTeacherEmails.includes(teacherEmail)) {
+                console.log(`Teacher ${teacherEmail} is already part of course ${courseId}. Skipping invitation.`);
+                return;
+            }
+
             const invitation = {
                 courseId: courseId,
                 role: 'TEACHER',
