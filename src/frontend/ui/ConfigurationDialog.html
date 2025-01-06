@@ -1,0 +1,154 @@
+<!-- ConfigurationDialog.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <!-- Materialize CSS for styling -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        .container {
+            padding: 20px;
+            max-width: 800px;
+        }
+
+        h4 {
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .button-group .btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <form id="config-form">
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input id="batchSize" name="batchSize" type="number" min="1" required>
+                    <label for="batchSize">Batch Size</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input id="langflowApiKey" name="langflowApiKey" type="text" required>
+                    <label for="langflowApiKey">Langflow API Key</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input id="langflowUrl" name="langflowUrl" type="url" required>
+                    <label for="langflowUrl">Langflow URL</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input id="imageFlowUid" name="imageFlowUid" type="text"
+                        placeholder="e.g., 3fa71f8c-d346-4eec-8094-d7349086bda4" required>
+                    <label for="imageFlowUid">Image Flow UID</label>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <h5 class="section">Assessment Tweak IDs</h5>
+
+            <div class="row">
+                <div class="input-field col s12 m4">
+                    <input id="textAssessmentTweakId" name="textAssessmentTweakId" type="text" required>
+                    <label for="textAssessmentTweakId">Text Assessment Tweak ID</label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="tableAssessmentTweakId" name="tableAssessmentTweakId" type="text" required>
+                    <label for="tableAssessmentTweakId">Table Assessment Tweak ID</label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="imageAssessmentTweakId" name="imageAssessmentTweakId" type="text" required>
+                    <label for="imageAssessmentTweakId">Image Assessment Tweak ID</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <a href="#!" class="btn grey lighten-1" onclick="google.script.host.close()">Cancel</a>
+                <button class="btn blue waves-effect waves-light" type="submit">
+                    <i class="material-icons right">save</i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Materialize JS and initialization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        /**
+         * Populates the form with existing configuration data.
+         * @param {Object} data - The configuration data.
+         */
+        function populateForm(data) {
+            document.getElementById('batchSize').value = data.batchSize || 20;
+            document.getElementById('langflowApiKey').value = data.langflowApiKey || '';
+            document.getElementById('langflowUrl').value = data.langflowUrl || '';
+            document.getElementById('imageFlowUid').value = data.imageFlowUid || '';
+            document.getElementById('textAssessmentTweakId').value = data.textAssessmentTweakId || '';
+            document.getElementById('tableAssessmentTweakId').value = data.tableAssessmentTweakId || '';
+            document.getElementById('imageAssessmentTweakId').value = data.imageAssessmentTweakId || '';
+
+            // Re-initialize labels after setting values
+            M.updateTextFields();
+        }
+
+        /**
+         * Handles form submission to save configuration.
+         * @param {Event} event - The form submission event.
+         */
+        document.getElementById('config-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const formData = {
+                batchSize: parseInt(document.getElementById('batchSize').value, 10),
+                langflowApiKey: document.getElementById('langflowApiKey').value.trim(),
+                langflowUrl: document.getElementById('langflowUrl').value.trim(),
+                imageFlowUid: document.getElementById('imageFlowUid').value.trim(),
+                textAssessmentTweakId: document.getElementById('textAssessmentTweakId').value.trim(),
+                tableAssessmentTweakId: document.getElementById('tableAssessmentTweakId').value.trim(),
+                imageAssessmentTweakId: document.getElementById('imageAssessmentTweakId').value.trim(),
+            };
+
+            // Basic validation can be enhanced if needed
+            if (isNaN(formData.batchSize) || formData.batchSize < 1) {
+                M.toast({ html: 'Batch Size must be a positive number.', classes: 'red' });
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    M.toast({ html: 'Configuration saved successfully.', classes: 'green' });
+                    google.script.host.close();
+                })
+                .withFailureHandler(error => {
+                    M.toast({ html: `Error saving configuration: ${error.message}`, classes: 'red' });
+                })
+                .saveConfiguration(formData);
+        });
+
+        // Initialize Materialize components and load existing configuration
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize any Materialize components if needed
+            // For example, if you have selects or other components
+
+            // Load existing configuration
+            google.script.run
+                .withSuccessHandler(populateForm)
+                .withFailureHandler(error => {
+                    M.toast({ html: `Error loading configuration: ${error.message}`, classes: 'red' });
+                })
+                .getConfiguration();
+        });
+    </script>
+</body>
+
+</html>
