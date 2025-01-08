@@ -3,6 +3,7 @@ function onOpen() {
   ui.createMenu('Assessment Bot')
     .addItem('Assess Assignment', 'assessAssignment')
     .addItem('Check Progress', 'showProgressModal')
+    .addItem('Change Class', 'showClassroomDropdown')
     .addToUi();
 }
 
@@ -11,7 +12,6 @@ function onOpen() {
 function assessAssignment() {
   return AIAssess.showAssignmentDropdown();
 }
-
 
 function createAssignmentDropdownHtml(assignments) {
   return AIAssess.createAssignmentDropdownHtml(assignments);
@@ -32,6 +32,16 @@ function createReferenceSlideModalHtml(assignmentId, referenceSlideId) {
 function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
   return AIAssess.processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
 }
+
+// Place holder code for classroom changing menu option
+function showClassroomDropdown() {
+  AI.Assess.showClassroomDropdown();
+}
+
+function saveClassroom(courseName, courseId) {
+  AIAssess.saveClassroom(courseName, courseId)
+}
+
 
 function requestStatus() {
   return AIAssess.requestStatus();
