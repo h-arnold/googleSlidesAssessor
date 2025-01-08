@@ -1,3 +1,5 @@
+// Creates the menu in Google Sheets
+
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Assessment Bot')
@@ -7,64 +9,61 @@ function onOpen() {
     .addToUi();
 }
 
-//Placeholder functions which call the library functions as the modal dialogue boxes can only execute functions in this script.
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Below are placeholder functions which call the respective global function from the library. 
+// Where you see a `return` it is because a value needs to be passed to the frontend HTML 
+// code.
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// Placeholder functions for the 'Assess Assignment Menu Option
+
+// Calls the function to generate the Assignment Chooser modal.
 
 function assessAssignment() {
   return AIAssess.showAssignmentDropdown();
 }
 
-function createAssignmentDropdownHtml(assignments) {
-  return AIAssess.createAssignmentDropdownHtml(assignments);
-}
-
-function openReferenceSlideModal(assignmentId) {
-  return AIAssess.openReferenceSlideModal(assignmentId)
-}
-
+// Gets a list of all assignments set in the Google Classroom associated with the Google Sheet.
 function getAssignments(courseId) {
   return AIAssess.getAssignments(courseId)
 }
 
+// Helper function for the above
+function createAssignmentDropdownHtml(assignments) {
+  return AIAssess.createAssignmentDropdownHtml(assignments);
+}
+
+
+// Opens the reference slide modal which comes after the assignment selection
+function openReferenceSlideModal(assignmentId) {
+  return AIAssess.openReferenceSlideModal(assignmentId)
+}
+
+// Helper function to generate and display html for the reference slide modal
 function createReferenceSlideModalHtml(assignmentId, referenceSlideId) {
   return AIAssess.createReferenceSlideModalHtml(assignmentId, referenceSlideId) 
 }
 
-function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
-  return AIAssess.processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
-}
-
-// Place holder code for classroom changing menu option
-function showClassroomDropdown() {
-  AI.Assess.showClassroomDropdown();
-}
-
-function saveClassroom(courseName, courseId) {
-  AIAssess.saveClassroom(courseName, courseId)
-}
-
-
-function requestStatus() {
-  return AIAssess.requestStatus();
-}
-
-function removeTrigger(functionName){
-  AIAssess.removeTrigger(functionName);
-
-}
-
-function triggerProcessSelectedAssignment() {
-  AIAssess.triggerProcessSelectedAssignment();
+// Saves the reference and empty slide Ids to avoid having to do it each assessment run.
+function saveSlideIdsForAssignment(assignmentId, slideIds) {
+  return AIAssess.saveSlideIdsForAssignment(assignmentId, slideIds)
 }
 
 /**
- * Opens the progress modal dialog.
+ * Sets the trigger and stores the revelant parameters to process the selected assignment.
+ * @param {string} assignmentTitle - The title of the assignment.
+ * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
+ * @param {string} assignmentId - The ID of the assignment.
+ * @param {string} referenceSlideId - The ID of the reference slide.
+ * @param {string} emptySlideId - The ID of the empty slide.
  */
-function showProgressModal() {
-  AIAssess.showProgressModal();
+function saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
+  AIAssess.saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId);
 }
 
 /**
- * Initiates the processing of an assignment asynchronously by setting up a trigger.
+ * Initiates the processing of an assignment asynchronously by setting up a trigger. (Called by saveStartAndShowProgress)
  *
  * @param {string} assignmentId - The ID of the assignment.
  * @param {string} referenceSlideId - The ID of the reference slide.
@@ -76,22 +75,44 @@ function startProcessing(assignmentId, referenceSlideId, emptySlideId) {
 }
 
 /**
- * Initiates the processing of an assignment asynchronously by setting up a trigger
- * and opens the progress modal.
- *
- * @param {string} assignmentTitle - The title of the assignment.
- * @param {Object} slideIds - An object containing referenceSlideId and emptySlideId.
- * @param {string} assignmentId - The ID of the assignment.
- * @param {string} referenceSlideId - The ID of the reference slide.
- * @param {string} emptySlideId - The ID of the empty slide.
+ * Opens the progress modal dialog.
  */
-function saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId) {
-  AIAssess.saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, referenceSlideId, emptySlideId);
+function showProgressModal() {
+  AIAssess.showProgressModal();
 }
 
-function saveSlideIdsForAssignment(assignmentId, slideIds) {
-  return AIAssess.saveSlideIdsForAssignment(assignmentId, slideIds)
+// Needed to get the progress data for the progress modal.
+function requestStatus() {
+  return AIAssess.requestStatus();
 }
+// Place holder code for classroom changing menu option
+function showClassroomDropdown() {
+  AI.Assess.showClassroomDropdown();
+}
+
+function saveClassroom(courseName, courseId) {
+  AIAssess.saveClassroom(courseName, courseId)
+}
+
+
+function removeTrigger(functionName){
+  AIAssess.removeTrigger(functionName);
+
+}
+
+// Is the function without parameters to call processSelectedAssignment. Retrieves assignment details from document properties.
+function triggerProcessSelectedAssignment() {
+  AIAssess.triggerProcessSelectedAssignment();
+}
+
+// Called by the above with the retrieved parameters.
+function processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId) {
+  return AIAssess.processSelectedAssignment(assignmentId, referenceSlideId, emptySlideId)
+}
+
+//
+// Backend configuration calling functions. I may remove these in a future release.
+//
 
 function openConfigurationDialog() {
   AIAssess.showConfigurationDialog();
@@ -105,3 +126,5 @@ function saveConfiguration(formData) {
 function getConfiguration() {
   return AIAssess.getConfiguration();
 }
+
+
