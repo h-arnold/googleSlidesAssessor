@@ -1,7 +1,8 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('Classroom')
+  ui.createMenu('Assessment Bot')
     .addItem('Assess Assignment', 'assessAssignment')
+    .addItem('Check Progress', 'showProgressModal')
     .addToUi();
 }
 
@@ -10,6 +11,7 @@ function onOpen() {
 function assessAssignment() {
   return AIAssess.showAssignmentDropdown();
 }
+
 
 function createAssignmentDropdownHtml(assignments) {
   return AIAssess.createAssignmentDropdownHtml(assignments);
@@ -79,4 +81,17 @@ function saveStartAndShowProgress(assignmentTitle, slideIds, assignmentId, refer
 
 function saveSlideIdsForAssignment(assignmentId, slideIds) {
   return AIAssess.saveSlideIdsForAssignment(assignmentId, slideIds)
+}
+
+function openConfigurationDialog() {
+  AIAssess.showConfigurationDialog();
+}
+
+
+function saveConfiguration(formData) {
+  return AIAssess.saveConfiguration(formData);
+}
+
+function getConfiguration() {
+  return AIAssess.getConfiguration();
 }
