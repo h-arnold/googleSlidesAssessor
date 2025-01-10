@@ -1,6 +1,8 @@
 class ConfigurationManager {
     static get CONFIG_KEYS() {
         return {
+
+            // Langflow and LLM related config values.
             BATCH_SIZE: 'batchSize',
             LANGFLOW_API_KEY: 'langflowApiKey',
             LANGFLOW_URL: 'langflowUrl',
@@ -8,8 +10,16 @@ class ConfigurationManager {
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
             IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
             IMAGE_FLOW_UID: 'imageFlowUid',
+
+            // Assessment Record creator config values
             ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
+
+            // Note: This is the FolderId used to create the departmental overview sheets. At some point it'll be renamed to something more descriptive but for now I've left it until I can update that properly.
             ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder'
+
+            // Departmental Analysis Sheet Config Values
+            OVERVIEW_SHEET_NAME: 'overviewSheetName',
+            MASTER_OVERVIEW_SHEET_NAME: 'masterOverviewSheetName',
         };
     }
 
