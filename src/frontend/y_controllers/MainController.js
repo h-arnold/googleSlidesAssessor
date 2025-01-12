@@ -21,9 +21,12 @@ class MainController {
 
     // Retrieve the 'ClassInfo' sheet
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = spreadsheet.getSheetByName("Classrooms");
+    let sheet = spreadsheet.getSheetByName("Classrooms");
+
+    // Create the sheet if it doesn't exist.
     if (!sheet) {
-      throw new Error("Classroom sheet not found in the active spreadsheet.");
+      sheet = spreadsheet.insertSheet("Classrooms");
+      console.log("Classrooms sheet created.");
     }
 
     // Instantiate GoogleClassroomManager with necessary parameters

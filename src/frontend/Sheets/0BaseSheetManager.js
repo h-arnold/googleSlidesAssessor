@@ -24,7 +24,7 @@ class BaseSheetManager {
             this.sheet = spreadsheet.insertSheet(sheetName);
         } else {
             // Clear existing content and formatting
-            this.clearSheet();
+            //this.clearSheet(); // temporarily removing this. Keeping it in breaks the createAssessmentRecords method in GoogleClassroomManager but may result in empty Google Sheets when creating assessment data.
         }
     }
 

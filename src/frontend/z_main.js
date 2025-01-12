@@ -120,18 +120,6 @@ function handleCreateGoogleClassrooms() {
 }
 
 /**
- * Updates existing Google Classrooms as needed.
- */
-function handleUpdateGoogleClassrooms() {
-  try {
-    mainController.updateGoogleClassrooms();
-  } catch (error) {
-    console.error("Error updating Google Classrooms:", error);
-    mainController.utils.toastMessage("Failed to update classrooms: " + error.message, "Error", 5);
-  }
-}
-
-/**
  * Sets up assessment documents in Google Classrooms.
  */
 function createAssessmentRecords() {
