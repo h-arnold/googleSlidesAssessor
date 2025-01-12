@@ -6,7 +6,7 @@ class GoogleClassroomManager {
     this.configManager = configurationManager;
     this.sheet = sheet;
     this.classrooms = [];
-    this.templateSheetId =  this.configManager.getAssessmentRecordTemplateId();
+    this.templateSheetId = this.configManager.getAssessmentRecordTemplateId();
     this.destinationFolderId = this.configManager.getAssessmentRecordDestinationFolder();
     this.progressTracker = ProgressTracker.getInstance();
   }
@@ -110,55 +110,212 @@ class GoogleClassroomManager {
     console.log('Google Classrooms created successfully with createAssessmentRecord column updated.');
   }
 
-  /**
- * Copies templates for classrooms flagged with `createAssessmentRecord` set to `TRUE`.
- * Updates the sheet with the copied template's Google Drive FileId.
- */
-  createAssessmentRecords() {
-    let data = this.sheet.getDataRange().getValues()
 
-    // Check that there is some data to process.
-    if (data.length[0] < 2) {
-      const errorMessage = "`No classrooms in the classroom sheet. Please fetch or create them first.`"
-      this.progressTracker.logError(errorMessage)
-      throw new Error(errorMessage)
+  /**
+   * Copies templates for classrooms flagged with `createAssessmentRecord` set to `TRUE`.
+   * Adds "Year Group" and "Spreadsheet ID" columns (if missing) in one final batch update,
+   * and updates the progress after each successfully copied template.
+   * Finally, shares the destination folder with all teacher emails found in the sheet.
+   */
+  createAssessmentRecords() {
+
+    // 0) Initialise progress tracker
+    
+    let step = 0 //initialise step variable for the Progress Tracker
+    this.progressTracker.updateProgress(step, 'Creating Assessment Records');
+
+    // 1) Retrieve all rows
+    const data = this.sheet.getDataRange().getValues();
+
+
+    // 2) Quick check that there's something to process
+    if (data.length < 2) {
+      const errorMessage = "`No classrooms in the classroom sheet. Please fetch or create them first.`";
+      this.progressTracker.logError(errorMessage);
+      throw new Error(errorMessage);
     }
 
-    // Ensure the `Template FileId` column exists
-    let hasTemplateFileId = data[0].includes('Template File Id');
-    let increment = 0 // If the Template File Id column already exists no need to increment the index when adding the file IDs of the spreadsheet
-    if (!hasTemplateFileId) {
-      this.sheet.getRange(1, data[0].length + 1).setValue('Template File Id');
-      increment = 1
-      hasTemplateFileId = true;
-    } 
+    // 3) Identify the header row and find createAssessmentRecord column
+    const headers = data[0];
+    const createARIndex = headers.indexOf('createAssessmentRecord');
+    if (createARIndex === -1) {
+      const errorMessage = "No 'createAssessmentRecord' column found. Please ensure it exists.";
+      this.progressTracker.logError(errorMessage);
+      throw new Error(errorMessage);
+    }
 
-    // Process rows with `createAssessmentRecord` set to `TRUE`
-    data.forEach((row, index) => {
-      if (index === 0 || row[data[0].indexOf('createAssessmentRecord')] !== true) return; // Skip header and rows not flagged
+    // 4) Check if 'Template File Id' column exists
+    let templateFileIdIndex = headers.indexOf('Template File Id');
+    if (templateFileIdIndex === -1) {
+      templateFileIdIndex = headers.length; // Add it to the end
+      headers.push('Template File Id');
+    }
 
-      try {
-        const classroomName = row[1];
-        const destinationFolderId = this.destinationFolderId;
+    // 5) Check if 'Year Group' column exists
+    let yearGroupIndex = headers.indexOf('Year Group');
+    if (yearGroupIndex === -1) {
+      yearGroupIndex = headers.length;
+      headers.push('Year Group');
+    }
 
-        // Copy the template sheet to the destination folder
-        const copiedSheetFile = DriveManager.copyTemplateSheet(
-          this.templateSheetId,
-          destinationFolderId,
-          classroomName
-        );
+    // 6) We'll store row updates in memory for a final single batch update
+    //    rowUpdates = array of { rowIndex, templateFileIdValue, spreadsheetIdValue }
+    const rowUpdates = [];
 
-        // Update the `Template FileId` column in the sheet
-        this.sheet.getRange(index + 1, data[0].length + increment).setValue(copiedSheetFile.getId());
+    // 6a) We'll also gather teacher emails from columns "Teacher 1" through "Teacher 4"
+    //     (which are columns 2..5 if the header is [Classroom ID (0), Name (1), Teacher 1 (2) ...])
+    //     Adjust indices if your sheet differs.
+    const teacherEmailsSet = new Set();
 
-        console.log(`Template copied and FileId stored for classroom: ${classroomName}`);
-      } catch (error) {
-        this.progressTracker.logError(`Failed to copy template for row ${index + 1}: ${error.message}`);
+    // 7) Loop over all data rows and copy the template if createAssessmentRecord = true
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      // Collect any teacher emails from columns 2..5
+      for (let col = 2; col <= 5; col++) {
+        if (row[col] && row[col].trim()) {
+          teacherEmailsSet.add(row[col].trim());
+        }
+      }
+
+      if (row[createARIndex] === true) {
+        try {
+          const classroomName = row[1]; // e.g., course name in column B
+          // Copy the template using the updated DriveManager
+          const copyResult = DriveManager.copyTemplateSheet(
+            this.templateSheetId,
+            this.destinationFolderId,
+            classroomName
+          );
+
+          if (copyResult.status === 'copied') {
+            const newFileId = copyResult.fileId; // definitely not null in 'copied' case
+            // We'll store the new file's ID in both 'Template File Id' and 'Spreadsheet ID'
+            // so we can apply them all together in a single batch update at the end.
+            rowUpdates.push({
+              rowIndex: i, // 0-based index in `data`
+              templateFileIdValue: newFileId
+            });
+
+            // Update progress each time we successfully copy a template
+            this.progressTracker.updateProgress(
+              ++step,  
+              `Created assessment record for: ${classroomName}`
+            );
+          } else if (copyResult.status === 'skipped') {
+            console.log(copyResult.message);
+            // Push the existing file ID to the readpsheet instead
+            const existingFiledId = copyResult.fileId
+            rowUpdates.push({
+              rowIndex: i, // 0-based index in `data`
+              templateFileIdValue: existingFiledId
+            });
+
+            this.progressTracker.updateProgress(
+              ++step,
+              `Skipping record for: ${classroomName} (already exists)`
+            );
+          }
+        } catch (error) {
+          const errMsg = `Failed to copy template for row ${i + 1}: ${error.message}`;
+          this.progressTracker.logError(errMsg);
+          console.error(errMsg);
+        }
+      }
+    }
+
+    // 8) Build our final batch requests array
+    const requests = [];
+    const sheetId = this.sheet.getSheetId();
+    const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+
+    // 8a) Potentially add columns if needed
+    const neededColumns = headers.length;
+    const currentColumns = this.sheet.getMaxColumns();
+    if (neededColumns > currentColumns) {
+      requests.push({
+        appendDimension: {
+          sheetId,
+          dimension: "COLUMNS",
+          length: neededColumns - currentColumns
+        }
+      });
+    }
+
+    // 8b) Update the entire header row with the new headers
+    const headerCells = headers.map(header => ({
+      userEnteredValue: { stringValue: header }
+    }));
+    requests.push({
+      updateCells: {
+        rows: [{ values: headerCells }],
+        fields: "userEnteredValue",
+        start: { sheetId, rowIndex: 0, columnIndex: 0 }
       }
     });
 
-    console.log('Assessment records created successfully where flagged.');
+    // 9) Update each row's 'Template File Id' (and optionally 'Spreadsheet ID') columns
+    rowUpdates.forEach(({ rowIndex, templateFileIdValue, spreadsheetIdValue }) => {
+      requests.push({
+        updateCells: {
+          rows: [{
+            values: [{
+              userEnteredValue: { stringValue: templateFileIdValue }
+            }]
+          }],
+          fields: "userEnteredValue",
+          start: {
+            sheetId,
+            rowIndex, // 0-based row in the API
+            columnIndex: templateFileIdIndex
+          }
+        }
+      });
+    });
+
+    // 10) Execute one final batchUpdate to apply new columns, headers, and row cell changes
+    if (requests.length > 0) {
+      Sheets.Spreadsheets.batchUpdate({ requests }, spreadsheetId);
+      console.log("Batch update executed successfully for assessment records.");
+    } else {
+      console.log("No batch updates were needed (no new columns or flagged rows).");
+    }
+
+    console.log("Assessment records created successfully where flagged.");
+
+    // 11) Finally, share the folder with all teacher emails
+    // (assuming your DriveManager has the updated shareFolder method)
+    if (teacherEmailsSet.size > 0) {
+      try {
+        const shareResult = DriveManager.shareFolder(this.destinationFolderId, teacherEmailsSet);
+        // Use the shareResult status to update progress or log a message
+        if (shareResult.status === 'complete') {
+          this.progressTracker.updateProgress(++step, 
+            `Folder shared with all ${teacherEmailsSet.size} teacher(s) successfully.`
+          );
+        } else if (shareResult.status === 'partial') {
+          this.progressTracker.updateProgress(null, 
+            `Some teachers shared, some failed. Check logs.`
+          );
+        } else if (shareResult.status === 'none') {
+          this.progressTracker.updateProgress(null, 
+            `No teacher emails provided; folder sharing skipped.`
+          );
+        }
+        console.log(shareResult.message);
+      } catch (error) {
+        // If we throw on an error (folder not found, etc.)
+        this.progressTracker.logError(`Failed to share folder: ${error.message}`);
+        console.error(`Failed to share folder: ${error.message}`);
+      }
+    } else {
+      console.log('No teacher emails were found. Folder not shared with anyone.');
+    }
   }
+
+
+
+
 
 
 

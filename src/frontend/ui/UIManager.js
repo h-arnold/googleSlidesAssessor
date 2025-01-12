@@ -27,7 +27,8 @@ class UIManager {
     const classroomsSubMenu = ui.createMenu('Google Classrooms')
       .addItem('Fetch Classrooms', 'handleFetchGoogleClassrooms')
       .addItem('Create Classrooms', 'handleCreateGoogleClassrooms')
-      .addItem('Update Classrooms', 'handleUpdateGoogleClassrooms');
+      //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); // This didn't survive the refactor and will need to be re-implemented
+      .addItem('Create Assessment Records', 'createAssessmentRecords')
     menu.addSubMenu(classroomsSubMenu);
 
     // Add the menu to the UI

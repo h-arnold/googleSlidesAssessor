@@ -1,4 +1,4 @@
-<!-- ConfigurationDialog.html -->
+<!--- ConfigurationDialog.html --->
 <!DOCTYPE html>
 <html>
 
@@ -55,7 +55,7 @@
             </div>
 
             <div class="divider"></div>
-            <h5 class="section">Assessment Tweak IDs</h5>
+            <h5 class="section">Tweak IDs</h5>
 
             <div class="row">
                 <div class="input-field col s12 m4">
@@ -69,6 +69,20 @@
                 <div class="input-field col s12 m4">
                     <input id="imageAssessmentTweakId" name="imageAssessmentTweakId" type="text" required>
                     <label for="imageAssessmentTweakId">Image Assessment Tweak ID</label>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <h5 class="section">Assessment Record</h5>
+
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input id="assessmentRecordTemplateId" name="assessmentRecordTemplateId" type="text" required>
+                    <label for="assessmentRecordTemplateId">Assessment Record Template ID</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input id="assessmentRecordDestinationFolder" name="assessmentRecordDestinationFolder" type="text" required>
+                    <label for="assessmentRecordDestinationFolder">Assessment Record Destination Folder</label>
                 </div>
             </div>
 
@@ -96,6 +110,8 @@
             document.getElementById('textAssessmentTweakId').value = data.textAssessmentTweakId || '';
             document.getElementById('tableAssessmentTweakId').value = data.tableAssessmentTweakId || '';
             document.getElementById('imageAssessmentTweakId').value = data.imageAssessmentTweakId || '';
+            document.getElementById('assessmentRecordTemplateId').value = data.assessmentRecordTemplateId || '';
+            document.getElementById('assessmentRecordDestinationFolder').value = data.assessmentRecordDestinationFolder || '';
 
             // Re-initialize labels after setting values
             M.updateTextFields();
@@ -116,6 +132,8 @@
                 textAssessmentTweakId: document.getElementById('textAssessmentTweakId').value.trim(),
                 tableAssessmentTweakId: document.getElementById('tableAssessmentTweakId').value.trim(),
                 imageAssessmentTweakId: document.getElementById('imageAssessmentTweakId').value.trim(),
+                assessmentRecordTemplateId: document.getElementById('assessmentRecordTemplateId').value.trim(),
+                assessmentRecordDestinationFolder: document.getElementById('assessmentRecordDestinationFolder').value.trim()
             };
 
             // Basic validation can be enhanced if needed
@@ -137,10 +155,7 @@
 
         // Initialize Materialize components and load existing configuration
         document.addEventListener('DOMContentLoaded', function () {
-            // Initialize any Materialize components if needed
-            // For example, if you have selects or other components
-
-            // Load existing configuration
+              // Load existing configuration
             google.script.run
                 .withSuccessHandler(populateForm)
                 .withFailureHandler(error => {

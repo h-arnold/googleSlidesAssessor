@@ -21,7 +21,7 @@ class MainController {
 
     // Retrieve the 'ClassInfo' sheet
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = spreadsheet.getSheetByName("Classroom");
+    const sheet = spreadsheet.getSheetByName("Classrooms");
     if (!sheet) {
       throw new Error("Classroom sheet not found in the active spreadsheet.");
     }
@@ -119,7 +119,7 @@ class MainController {
     if (this.uiManager) {
       return this.uiManager.getClassroomData();
     } else {
-      this.utils.toastMessage('Failed to get classroom data','Error', 5);
+      this.utils.toastMessage('Failed to get classroom data', 'Error', 5);
       console.error("Failed to get classroom data");
     }
   }
@@ -128,7 +128,7 @@ class MainController {
     if (this.uiManager) {
       this.uiManager.saveClassroomData(rows);
     } else {
-      this.utils.toastMessage('Failed to get classroom data','Error', 5);
+      this.utils.toastMessage('Failed to get classroom data', 'Error', 5);
       console.error("Failed to get classroom data");
     }
   }
@@ -137,82 +137,82 @@ class MainController {
     this.uiManager.showClassroomEditorModal();
   }
 
-/**
- * === Configuration Management ===
- */
-saveConfiguration(config) {
+  /**
+   * === Configuration Management ===
+   */
+  saveConfiguration(config) {
     try {
-        // Delegate configuration saving to ConfigurationManager
-        if (config.batchSize !== undefined) {
-            this.configurationManager.setBatchSize(config.batchSize);
-        }
-        if (config.langflowApiKey !== undefined) {
-            this.configurationManager.setLangflowApiKey(config.langflowApiKey);
-        }
-        if (config.langflowUrl !== undefined) {
-            this.configurationManager.setLangflowUrl(config.langflowUrl);
-        }
-        if (config.imageFlowUid !== undefined) {
-            this.configurationManager.setImageFlowUid(config.imageFlowUid);
-        }
+      // Delegate configuration saving to ConfigurationManager
+      if (config.batchSize !== undefined) {
+        this.configurationManager.setBatchSize(config.batchSize);
+      }
+      if (config.langflowApiKey !== undefined) {
+        this.configurationManager.setLangflowApiKey(config.langflowApiKey);
+      }
+      if (config.langflowUrl !== undefined) {
+        this.configurationManager.setLangflowUrl(config.langflowUrl);
+      }
+      if (config.imageFlowUid !== undefined) {
+        this.configurationManager.setImageFlowUid(config.imageFlowUid);
+      }
 
-        // Handle Tweak IDs
-        if (config.textAssessmentTweakId !== undefined) {
-            this.configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
-        }
-        if (config.tableAssessmentTweakId !== undefined) {
-            this.configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
-        }
-        if (config.imageAssessmentTweakId !== undefined) {
-            this.configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
-        }
+      // Handle Tweak IDs
+      if (config.textAssessmentTweakId !== undefined) {
+        this.configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
+      }
+      if (config.tableAssessmentTweakId !== undefined) {
+        this.configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
+      }
+      if (config.imageAssessmentTweakId !== undefined) {
+        this.configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+      }
 
-        // Handle Assessment Record values
-        if (config.assessmentRecordTemplateId !== undefined) {
-            this.configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
-        }
-        if (config.assessmentRecordDestinationFolder !== undefined) {
-            this.configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
-        }
+      // Handle Assessment Record values
+      if (config.assessmentRecordTemplateId !== undefined) {
+        this.configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
+      }
+      if (config.assessmentRecordDestinationFolder !== undefined) {
+        this.configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
+      }
 
-        this.utils.toastMessage("Configuration saved successfully.", "Success", 5);
-        console.log("Configuration saved successfully.");
+      this.utils.toastMessage("Configuration saved successfully.", "Success", 5);
+      console.log("Configuration saved successfully.");
     } catch (error) {
-        console.error("Error saving configuration:", error);
-        this.utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
-        throw new Error("Failed to save configuration. Please check the inputs.");
+      console.error("Error saving configuration:", error);
+      this.utils.toastMessage("Failed to save configuration: " + error.message, "Error", 5);
+      throw new Error("Failed to save configuration. Please check the inputs.");
     }
-}
+  }
 
 
   /** 
    * === Classroom Management ===
    */
 
-fetchGoogleClassrooms() {
-  try {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    let classroomSheet = spreadsheet.getSheetByName("Classroom");
+  fetchGoogleClassrooms() {
+    try {
+      const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+      let classroomSheet = spreadsheet.getSheetByName("Classrooms");
 
-    // If 'Classroom' sheet doesn't exist, create it
-    if (!classroomSheet) {
-      classroomSheet = spreadsheet.insertSheet("Classroom");
+      // If 'Classroom' sheet doesn't exist, create it
+      if (!classroomSheet) {
+        classroomSheet = spreadsheet.insertSheet("Classrooms");
+      }
+
+      // Ensure that the GoogleClassroomManager uses the 'Classroom' sheet
+      this.classroomManager.sheet = classroomSheet;
+
+      // Now call the manager's fetchGoogleClassrooms method, which writes data to the sheet
+      this.classroomManager.fetchGoogleClassrooms();
+
+      this.utils.toastMessage("Google Classrooms fetched and written to 'Classroom' sheet successfully.", "Success", 5);
+      console.log("Google Classrooms fetched successfully.");
+    } catch (error) {
+      console.error("Error fetching Google Classrooms:", error);
+      this.utils.toastMessage("Failed to fetch classrooms: " + error.message, "Error", 5);
+      throw error;
     }
-
-    // Ensure that the GoogleClassroomManager uses the 'Classroom' sheet
-    this.classroomManager.sheet = classroomSheet;
-
-    // Now call the manager's fetchGoogleClassrooms method, which writes data to the sheet
-    this.classroomManager.fetchGoogleClassrooms();
-
-    this.utils.toastMessage("Google Classrooms fetched and written to 'Classroom' sheet successfully.", "Success", 5);
-    console.log("Google Classrooms fetched successfully.");
-  } catch (error) {
-    console.error("Error fetching Google Classrooms:", error);
-    this.utils.toastMessage("Failed to fetch classrooms: " + error.message, "Error", 5);
-    throw error;
   }
-}
 
 
   createGoogleClassrooms() {
@@ -242,15 +242,32 @@ fetchGoogleClassrooms() {
 
   createAssessmentRecords() {
     try {
-      this.classroomManager.createAssessmentRecords(); 
+      // Start progress tracking
+      this.progressTracker.startTracking();
+
+      // Show the progress modal (if the UI is available)
+      if (this.uiManager) {
+        this.uiManager.showProgressModal();
+      } else {
+        console.warn("UIManager is not available; cannot show the progress modal.");
+      }
+
+      // Perform the actual record creation (in GoogleClassroomManager)
+      this.classroomManager.createAssessmentRecords();
+
+      // If everything went well, complete the progress
+      this.progressTracker.complete();
       this.utils.toastMessage("Assessment documents set up successfully.", "Success", 5);
       console.log("Assessment documents set up successfully.");
     } catch (error) {
+      // Log and display any errors
       console.error("Error setting up assessment documents:", error);
+      this.progressTracker.logError(error.message);
       this.utils.toastMessage("Failed to set up assessment documents: " + error.message, "Error", 5);
       throw error;
     }
   }
+
 
   saveClassroom(courseName, courseId) {
     try {

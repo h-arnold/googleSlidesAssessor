@@ -1,8 +1,6 @@
 class ConfigurationManager {
     static get CONFIG_KEYS() {
         return {
-
-            // Langflow and LLM related config values.
             BATCH_SIZE: 'batchSize',
             LANGFLOW_API_KEY: 'langflowApiKey',
             LANGFLOW_URL: 'langflowUrl',
@@ -10,16 +8,8 @@ class ConfigurationManager {
             TABLE_ASSESSMENT_TWEAK_ID: 'tableAssessmentTweakId',
             IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
             IMAGE_FLOW_UID: 'imageFlowUid',
-
-            // Assessment Record creator config values
             ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
-
-            // Note: This is the FolderId used to create the departmental overview sheets. At some point it'll be renamed to something more descriptive but for now I've left it until I can update that properly.
             ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder'
-
-            // Departmental Analysis Sheet Config Values
-            OVERVIEW_SHEET_NAME: 'overviewSheetName',
-            MASTER_OVERVIEW_SHEET_NAME: 'masterOverviewSheetName',
         };
     }
 
@@ -82,12 +72,12 @@ class ConfigurationManager {
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.LANGFLOW_API_KEY:
-                if (typeof value !== 'string' || !this.isValidApiKey(value)) {
+                if (typeof value !== 'string') { // Temperoraily removed valid API validation check because the DataStax langflow instance uses a different format.
                     throw new Error("LangFlow API Key must be a valid string starting with 'sk-' followed by alphanumeric characters and hyphens, without leading/trailing hyphens or consecutive hyphens.");
                 }
                 break;
             case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
-                if (typeof value !== 'string' || !this.isValidUrl(value)) {
+                if (typeof value !== 'string' || !Utils.isValidUrl(value)) {
                     throw new Error(`${this.toReadableKey(key)} must be a valid URL string.`);
                 }
                 break;
@@ -122,23 +112,6 @@ class ConfigurationManager {
 
         this.scriptProperties.setProperty(key, value.toString());
         this.configCache = null; // Invalidate cache
-    }
-
-    /**
-     * Validates if a string is a well-formed URL.
-     * @param {string} url - The URL string to validate.
-     * @return {boolean} - True if valid, false otherwise.
-     */
-    isValidUrl(url) {
-        const urlPattern = new RegExp('^(https?:\/\/)' + // protocol
-            '((([a-zA-Z0-9$-_@.&+!*"(),]|(%[0-9a-fA-F]{2}))+)(:[0-9]+)?@)?' + // authentication
-            '((\[[0-9a-fA-F:.]+\])|' + // IPv6
-            '(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}))' + // domain name
-            '(\:[0-9]+)?' + // port
-            '(\/[-a-zA-Z0-9%_.~+]*)*' + // path
-            '(\?[;&a-zA-Z0-9%_.~+=-]*)?' + // query string
-            '(\#[-a-zA-Z0-9_]*)?$', 'i'); // fragment locator
-        return urlPattern.test(url);
     }
 
     /**
