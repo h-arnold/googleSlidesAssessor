@@ -100,7 +100,7 @@ class GoogleClassroomManager {
         // Update Classroom ID in the sheet
         // Before: this.sheet.getRange(index + 1, 1).setValue(classroom.id);
         // Before: this.sheet.getRange(index + 1, row.length + 1).setValue(false);
-        rowsToUpdate.push({ rowIndex: index, classroomId: classroom.id });
+        rowsToUpdate.push({ rowIndex: index, courseId: classroom.id });
 
       } catch (error) {
         this.progressTracker.logError(`Failed to create classroom for row ${index + 1}: ${error.message}`);
@@ -110,7 +110,7 @@ class GoogleClassroomManager {
     if (rowsToUpdate.length > 0) {
       const updateRows = rowsToUpdate.map(update => {
         const newRowData = ['', ...data[update.rowIndex].slice(1), false]; // Ensure 'createAssessmentRecord' is false
-        newRowData[0] = update.classroomId;
+        newRowData[0] = update.courseId;
         return newRowData;
       });
       this.csm.writeData(updateRows, []); // Use ClassroomSheetManager to update rows
@@ -134,8 +134,7 @@ class GoogleClassroomManager {
     this.progressTracker.updateProgress(step, 'Creating Assessment Records');
 
     // 1) Retrieve all rows
-    // Before: const data = this.sheet.getDataRange().getValues();
-    const data = this.csm.getData(); // Use ClassroomSheetManager
+    const data = this.csm.getData(); 
 
     // 2) Quick check that there's something to process
     if (data.length < 2) {
@@ -190,12 +189,13 @@ class GoogleClassroomManager {
 
       if (row[createARIndex] === true) {
         try {
-          const classroomName = row[1]; // e.g., course name in column B
-          // Copy the template using the updated DriveManager
+          const courseId = row[0] // Gets the ClassID from column A
+          const className = row[1]; // Gets the Class Name from column B
+
           const copyResult = DriveManager.copyTemplateSheet(
             this.templateSheetId,
             this.destinationFolderId,
-            classroomName
+            className
           );
 
           if (copyResult.status === 'copied') {
@@ -207,10 +207,14 @@ class GoogleClassroomManager {
               templateFileIdValue: newFileId
             });
 
+            //Adds the class info to the newly created assessment record.
+
+            ClassroomSheetManager.appendClassInfo(newFileId, className, courseId)
+
             // Update progress each time we successfully copy a template
             this.progressTracker.updateProgress(
               ++step,
-              `Created assessment record for: ${classroomName}`
+              `Created assessment record for: ${className}`
             );
           } else if (copyResult.status === 'skipped') {
             console.log(copyResult.message);
@@ -223,7 +227,7 @@ class GoogleClassroomManager {
 
             this.progressTracker.updateProgress(
               ++step,
-              `Skipping record for: ${classroomName} (already exists)`
+              `Skipping record for: ${className} (already exists)`
             );
           }
         } catch (error) {
