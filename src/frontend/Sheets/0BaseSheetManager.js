@@ -181,7 +181,7 @@ class BaseSheetManager {
     }
 
     if (!spreadsheetId) {
-    spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+      spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
     }
 
     try {
@@ -193,5 +193,57 @@ class BaseSheetManager {
       console.error("Error executing batch update:", e);
       throw new Error(`Error applying batch update. ${e.message}`);
     }
+  }
+
+  /**
+   * Extracts all values from a column based on its header name.
+   * @param {string} columnName - The name of the column to extract.
+   * @param {number} [startRow=0] - The row index to search for the column name (default: 0).
+   * @param {boolean} [includeHeader=false] - Whether to include the header in the returned values (default: false).
+   * @returns {Array} - Array of values from the specified column.
+   * @throws {Error} - If column name is not found.
+   */
+  extractColumn(columnName, startRow = 0, includeHeader = false) {
+    const headerRange = this.sheet.getRange(startRow + 1, 1, 1, this.sheet.getLastColumn());
+    const headers = headerRange.getValues()[0];
+    const columnIndex = headers.indexOf(columnName);
+
+    if (columnIndex === -1) {
+      throw new Error(`Column "${columnName}" not found`);
+    }
+
+    const dataRange = this.sheet.getRange(startRow + 2, columnIndex + 1, this.sheet.getLastRow() - startRow - 1, 1);
+    const values = dataRange.getValues().map(row => row[0]);
+
+    return includeHeader ? [columnName, ...values] : values;
+  }
+
+  //extracts all values from a row based on the value of a given column in the row
+  /**
+   * Extracts all values from a row based on a matching value in a specified column.
+   * @param {string} columnName - The name of the column to search in.
+   * @param {*} matchValue - The value to match in the column.
+   * @param {number} [startRow=0] - The row index to search for the column name (default: 0).
+   * @returns {Array} - Array of values from the matched row.
+   * @throws {Error} - If column name is not found or no matching value is found.
+   */
+  extractRow(columnName, matchValue, startRow = 0) {
+    const headerRange = this.sheet.getRange(startRow + 1, 1, 1, this.sheet.getLastColumn());
+    const headers = headerRange.getValues()[0];
+    const columnIndex = headers.indexOf(columnName);
+
+    if (columnIndex === -1) {
+      throw new Error(`Column "${columnName}" not found`);
+    }
+
+    const dataRange = this.sheet.getRange(startRow + 2, 1, this.sheet.getLastRow() - startRow - 1, headers.length);
+    const values = dataRange.getValues();
+    const matchingRow = values.find(row => row[columnIndex] === matchValue);
+
+    if (!matchingRow) {
+      throw new Error(`No row found with value "${matchValue}" in column "${columnName}"`);
+    }
+
+    return matchingRow;
   }
 }
