@@ -1,5 +1,3 @@
-// OverviewSheetManager.gs
-
 /**
  * OverviewSheetManager Class
  *
@@ -12,9 +10,9 @@ class OverviewSheetManager extends BaseSheetManager {
     constructor() {
         super();
         this.headers = ['Name', 'Completeness', 'Accuracy', 'SPaG', 'Average'];
-        this.studentAverages = []; // To hold calculated averages
-        this.rangeAssociations = []; // To keep track of range types and sheet names
-        this.requests = []; // Initialize requests array
+        this.studentAverages = [];     // To hold calculated averages
+        this.rangeAssociations = [];   // To keep track of range types and sheet names
+        this.requests = [];            // Initialise requests array
     }
 
     /**
@@ -46,13 +44,14 @@ class OverviewSheetManager extends BaseSheetManager {
     }
 
     /**
-     * Fetches data from the stored ranges using batchGet.
+     * Fetches data from all stored ranges via the Google Sheets API.
+     * If a sheet is missing, cleans the invalid references and retries.
      */
     fetchData() {
         const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-        const ranges = [];
 
-        // Since ranges may overlap, we need to keep track of the association
+        // Build up the list of ranges we want to batch-get
+        let ranges = [];
         this.rangeAssociations = [];
 
         for (const sheetName in this.averagesRanges) {
@@ -62,25 +61,92 @@ class OverviewSheetManager extends BaseSheetManager {
                 ranges.push(sheetRanges.studentName);
                 this.rangeAssociations.push({ type: 'studentName', sheetName });
             }
-
             if (sheetRanges.completeness) {
                 ranges.push(sheetRanges.completeness);
                 this.rangeAssociations.push({ type: 'completeness', sheetName });
             }
-
             if (sheetRanges.accuracy) {
                 ranges.push(sheetRanges.accuracy);
                 this.rangeAssociations.push({ type: 'accuracy', sheetName });
             }
-
             if (sheetRanges.spag) {
                 ranges.push(sheetRanges.spag);
                 this.rangeAssociations.push({ type: 'spag', sheetName });
             }
         }
 
-        const response = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges: ranges });
-        this.retrievedData = response.valueRanges;
+        // Attempt the batchGet
+        try {
+            const response = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges });
+            this.retrievedData = response.valueRanges;
+        } catch (error) {
+            // If batchGet fails, attempt to clean invalid ranges
+            this.cleanInvalidStoredRanges();
+
+            // Rebuild the ranges from the newly cleaned this.averagesRanges
+            ranges = [];
+            this.rangeAssociations = [];
+            for (const sheetName in this.averagesRanges) {
+                const sheetRanges = this.averagesRanges[sheetName];
+
+                if (sheetRanges.studentName) {
+                    ranges.push(sheetRanges.studentName);
+                    this.rangeAssociations.push({ type: 'studentName', sheetName });
+                }
+                if (sheetRanges.completeness) {
+                    ranges.push(sheetRanges.completeness);
+                    this.rangeAssociations.push({ type: 'completeness', sheetName });
+                }
+                if (sheetRanges.accuracy) {
+                    ranges.push(sheetRanges.accuracy);
+                    this.rangeAssociations.push({ type: 'accuracy', sheetName });
+                }
+                if (sheetRanges.spag) {
+                    ranges.push(sheetRanges.spag);
+                    this.rangeAssociations.push({ type: 'spag', sheetName });
+                }
+            }
+
+            // Attempt batchGet again with cleaned references
+            try {
+                const retryResponse = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges });
+                this.retrievedData = retryResponse.valueRanges;
+            } catch (error2) {
+                // If it still fails, bubble up a clearer error
+                throw new Error('After cleaning invalid references, batchGet still fails. Please check references manually.');
+            }
+        }
+    }
+
+    /**
+     * Cleans any invalid references (e.g. removed sheets) from the stored ranges.
+     */
+    cleanInvalidStoredRanges() {
+        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+        const documentProperties = PropertiesService.getDocumentProperties();
+        let hasChanges = false;
+
+        // Create a new object to store valid ranges
+        const validRanges = {};
+
+        // Check each sheet in averagesRanges
+        for (const sheetName in this.averagesRanges) {
+            const sheet = spreadsheet.getSheetByName(sheetName);
+            if (sheet) {
+                // Sheet exists, keep its ranges
+                validRanges[sheetName] = this.averagesRanges[sheetName];
+            } else {
+                // Sheet doesn't exist, skip it
+                hasChanges = true;
+                console.log(`Removing references to deleted sheet: ${sheetName}`);
+            }
+        }
+
+        if (hasChanges) {
+            // Update stored ranges with only valid entries
+            documentProperties.setProperty('averagesRanges', JSON.stringify(validRanges));
+            this.averagesRanges = validRanges;
+        }
     }
 
     /**
@@ -108,15 +174,13 @@ class OverviewSheetManager extends BaseSheetManager {
                     if (!studentData[studentKey]) {
                         studentData[studentKey] = { name: '' };
                     }
-                    if (association.type !== 'studentName') {
-                        if (!studentData[studentKey][association.type]) {
-                            studentData[studentKey][association.type] = 0;
-                            studentData[studentKey][`${association.type}Count`] = 0;
-                        }
-                        if (!isNaN(numericValue)) {
-                            studentData[studentKey][association.type] += numericValue;
-                            studentData[studentKey][`${association.type}Count`] += 1;
-                        }
+                    if (!studentData[studentKey][association.type]) {
+                        studentData[studentKey][association.type] = 0;
+                        studentData[studentKey][`${association.type}Count`] = 0;
+                    }
+                    if (!isNaN(numericValue)) {
+                        studentData[studentKey][association.type] += numericValue;
+                        studentData[studentKey][`${association.type}Count`] += 1;
                     }
                 }
             });
@@ -229,9 +293,21 @@ class OverviewSheetManager extends BaseSheetManager {
         this.studentAverages.forEach((student, index) => {
             const rowData = [
                 { userEnteredValue: { stringValue: student.name } },
-                { userEnteredValue: { numberValue: student.completeness !== 'N/A' ? parseFloat(student.completeness) : null } },
-                { userEnteredValue: { numberValue: student.accuracy !== 'N/A' ? parseFloat(student.accuracy) : null } },
-                { userEnteredValue: { numberValue: student.spag !== 'N/A' ? parseFloat(student.spag) : null } },
+                {
+                    userEnteredValue: {
+                        numberValue: student.completeness !== 'N/A' ? parseFloat(student.completeness) : null
+                    }
+                },
+                {
+                    userEnteredValue: {
+                        numberValue: student.accuracy !== 'N/A' ? parseFloat(student.accuracy) : null
+                    }
+                },
+                {
+                    userEnteredValue: {
+                        numberValue: student.spag !== 'N/A' ? parseFloat(student.spag) : null
+                    }
+                },
                 {
                     userEnteredValue: {
                         formulaValue: `=IFERROR(ROUND(AVERAGE(B${startRowIndex + index + 1}:D${startRowIndex + index + 1}),1),0)`
@@ -243,7 +319,7 @@ class OverviewSheetManager extends BaseSheetManager {
                 updateCells: {
                     rows: [{ values: rowData }],
                     fields: 'userEnteredValue',
-                    start: { sheetId: sheetId, rowIndex: startRowIndex + index, columnIndex: 0 }
+                    start: { sheetId, rowIndex: startRowIndex + index, columnIndex: 0 }
                 }
             });
         });
@@ -262,7 +338,7 @@ class OverviewSheetManager extends BaseSheetManager {
             updateCells: {
                 rows: [{}],
                 fields: 'userEnteredValue',
-                start: { sheetId: sheetId, rowIndex: lastDataRowIndex, columnIndex: 0 }
+                start: { sheetId, rowIndex: lastDataRowIndex, columnIndex: 0 }
             }
         });
 
@@ -275,7 +351,7 @@ class OverviewSheetManager extends BaseSheetManager {
         ];
 
         const columns = ['B', 'C', 'D', 'E'];
-        columns.forEach((col, index) => {
+        columns.forEach(col => {
             let formula;
             if (col === 'E') {
                 // Overall average
@@ -300,7 +376,7 @@ class OverviewSheetManager extends BaseSheetManager {
             updateCells: {
                 rows: [{ values: rowData }],
                 fields: 'userEnteredValue,userEnteredFormat',
-                start: { sheetId: sheetId, rowIndex: averageRowIndex, columnIndex: 0 }
+                start: { sheetId, rowIndex: averageRowIndex, columnIndex: 0 }
             }
         });
     }
@@ -313,11 +389,11 @@ class OverviewSheetManager extends BaseSheetManager {
         const numRows = this.studentAverages.length + 1; // Data rows plus header row
         const numColumns = this.headers.length;
 
-        // Apply cell formatting
+        // Apply basic cell formatting
         this.requests.push({
             repeatCell: {
                 range: {
-                    sheetId: sheetId,
+                    sheetId,
                     startRowIndex: 1, // After headers
                     endRowIndex: numRows + 2, // Including blank and average rows
                     startColumnIndex: 1,
@@ -329,7 +405,7 @@ class OverviewSheetManager extends BaseSheetManager {
                         verticalAlignment: "MIDDLE"
                     }
                 },
-                fields: "userEnteredFormat(horizontalAlignment, verticalAlignment)"
+                fields: "userEnteredFormat(horizontalAlignment,verticalAlignment)"
             }
         });
 
@@ -348,15 +424,15 @@ class OverviewSheetManager extends BaseSheetManager {
         const requests = [];
         const startRowIndex = 1; // Data starts after headers
         const endRowIndex = numRows + 2; // Including blank row and class average row
-        const startColumnIndex = 1; // Starting from 'Completeness' column
+        const startColumnIndex = 1; // Start from 'Completeness' column
         const endColumnIndex = numColumns;
 
         const range = {
-            sheetId: sheetId,
-            startRowIndex: startRowIndex,
-            startColumnIndex: startColumnIndex,
-            endRowIndex: endRowIndex,
-            endColumnIndex: endColumnIndex
+            sheetId,
+            startRowIndex,
+            startColumnIndex,
+            endRowIndex,
+            endColumnIndex
         };
 
         // Gradient formatting based on score
@@ -404,8 +480,8 @@ class OverviewSheetManager extends BaseSheetManager {
      * Creates a request to set header values.
      * @param {number} sheetId - The ID of the sheet.
      * @param {Array<string>} headers - The header titles.
-     * @param {number} rowIndex - The row index to set headers.
-     * @returns {Object} - The header values request.
+     * @param {number} rowIndex - The row index for setting headers.
+     * @returns {Object} - The request for updating header values.
      */
     createHeaderValuesRequest(sheetId, headers, rowIndex) {
         return {
@@ -416,7 +492,7 @@ class OverviewSheetManager extends BaseSheetManager {
                     }))
                 }],
                 fields: 'userEnteredValue',
-                start: { sheetId: sheetId, rowIndex: rowIndex, columnIndex: 0 }
+                start: { sheetId, rowIndex, columnIndex: 0 }
             }
         };
     }
@@ -427,13 +503,13 @@ class OverviewSheetManager extends BaseSheetManager {
      * @param {number} numColumns - Number of columns to format.
      * @param {number} rowIndex - The row index of headers.
      * @param {number} numRows - Number of rows to format.
-     * @returns {Object} - The header formatting request.
+     * @returns {Object} - The request for header formatting.
      */
     createHeaderFormattingRequest(sheetId, numColumns, rowIndex, numRows) {
         return {
             repeatCell: {
                 range: {
-                    sheetId: sheetId,
+                    sheetId,
                     startRowIndex: rowIndex,
                     endRowIndex: rowIndex + numRows,
                     startColumnIndex: 0,
@@ -446,7 +522,7 @@ class OverviewSheetManager extends BaseSheetManager {
                         verticalAlignment: "MIDDLE"
                     }
                 },
-                fields: "userEnteredFormat(textFormat, horizontalAlignment, verticalAlignment)"
+                fields: "userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)"
             }
         };
     }
@@ -455,13 +531,13 @@ class OverviewSheetManager extends BaseSheetManager {
      * Creates requests to set column widths.
      * @param {number} sheetId - The ID of the sheet.
      * @param {Array<number>} widths - Array of widths for each column.
-     * @returns {Array<Object>} - Array of column width requests.
+     * @returns {Array<Object>} - Array of requests to set column widths.
      */
     createColumnWidthRequests(sheetId, widths) {
         return widths.map((width, index) => ({
             updateDimensionProperties: {
                 range: {
-                    sheetId: sheetId,
+                    sheetId,
                     dimension: "COLUMNS",
                     startIndex: index,
                     endIndex: index + 1
@@ -477,16 +553,16 @@ class OverviewSheetManager extends BaseSheetManager {
      * @param {number} sheetId - The ID of the sheet.
      * @param {number} frozenRowCount - Number of rows to freeze.
      * @param {number} frozenColumnCount - Number of columns to freeze.
-     * @returns {Object} - The freeze request.
+     * @returns {Object} - The request for freezing row/column.
      */
     createFreezeRequest(sheetId, frozenRowCount, frozenColumnCount) {
         return {
             updateSheetProperties: {
                 properties: {
-                    sheetId: sheetId,
+                    sheetId,
                     gridProperties: {
-                        frozenRowCount: frozenRowCount,
-                        frozenColumnCount: frozenColumnCount
+                        frozenRowCount,
+                        frozenColumnCount
                     }
                 },
                 fields: "gridProperties.frozenRowCount, gridProperties.frozenColumnCount"
