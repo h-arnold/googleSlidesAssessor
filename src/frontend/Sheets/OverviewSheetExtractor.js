@@ -1,8 +1,6 @@
 // OverviewSheetExtractor.js
 // The OverviewSheetExtractor class, which is responsible for extracting the data from the `Overview` sheets in each Assessment Record sheet.
 
-import BaseSheetManager from './0BaseSheetManager.js';
-
 class OverviewSheetExtractor extends BaseSheetManager {
     /**
      * Creates an instance of OverviewSheetExtractor.
