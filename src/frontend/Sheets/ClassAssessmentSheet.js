@@ -1,6 +1,7 @@
 /**
  * Represents a single class assessment spreadsheet
  * and provides methods to extract data from it.
+ * Used by MultiSheetExtractor to process multiple assessment records, enabling analysis of data from entire cohorts. 
  */
 class ClassAssessmentSheet {
     /**
