@@ -11,8 +11,7 @@ class MultiSheetExtractor extends BaseSheetManager {
     constructor() {
         super();
         this.sheetsData = [];   // Array of {fileId: string, name: string, yearGroup: string} from the "master" sheet
-        // Final aggregated object: { 'Year Group': { 'Class Name': [...] } }
-        this.overviewData = {};
+        this.overviewData = {};  // Final aggregated object: { 'Year Group': { 'Class Name': [...] } }
     }
 
     /**
