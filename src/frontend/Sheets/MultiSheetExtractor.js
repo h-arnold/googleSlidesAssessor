@@ -80,26 +80,5 @@ class MultiSheetExtractor extends BaseSheetManager {
         }, {});
 
         return this.overviewData;
-        /**
-         * Optional: Provide a getter if you want direct access to the overviewData
-         * 
-         * @returns {Object} - The aggregated overview data.
-         * @returns {Object.<string, Object.<string, Array>>} - The structure is:
-         * {
-         *   'Year 10': {
-         *     'Class A': [...],
-         *     'Class B': [...],
-         *     ...
-         *   },
-         *   'Year 11': {
-         *     'Class C': [...],
-         *     ...
-         *   },
-         *   ...
-         * }
-         */
-        getOverviewData() {
-            return this.overviewData;
-        }
     }
 }
