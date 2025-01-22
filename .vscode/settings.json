@@ -8,7 +8,4 @@
         "plaintext",
         "javascript"
     ],
-    "files.associations": {
-        "*.yaml": "home-assistant"
-    }
 }
