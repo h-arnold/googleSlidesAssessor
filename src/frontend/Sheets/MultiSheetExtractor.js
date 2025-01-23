@@ -59,10 +59,10 @@ class MultiSheetExtractor extends BaseSheetManager {
 
             try {
                 const spreadsheet = SpreadsheetApp.openById(fileId);
-                const classSheet = new ClassAssessmentSheet(spreadsheet, name, yearGroup);
+                const assessmentRecordDestinationFolder = new ClassAssessmentSheet(spreadsheet, name, yearGroup);
 
                 // Extract the overview data from this single class's assessment file
-                const sheetData = classSheet.extractOverviewSheetData();
+                const sheetData = assessmentRecordDestinationFolder.extractOverviewSheetData();
 
                 // Group by year group, then by class name
                 if (!acc[yearGroup]) {
