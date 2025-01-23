@@ -5,10 +5,11 @@
  * BaseSheetManager Class
  *
  * Provides common methods for sheet manipulation.
+ * @param {Object} [sheet=null] - Optional sheet object to initialize with.
  */
 class BaseSheetManager {
-  constructor() {
-    this.sheet = null;
+  constructor(sheet = null) {
+    this.sheet = sheet;
     this.requests = [];
   }
 

@@ -1,5 +1,3 @@
-
-
 /**
  * @class MultiSheetExtractor
  * @classdesc Manages the extraction and aggregation of data from multiple Google Sheets.
@@ -8,8 +6,8 @@
  */
 class MultiSheetExtractor extends BaseSheetManager {
 
-    constructor() {
-        super();
+    constructor(sheet) {
+        super(sheet);
         this.sheetsData = [];   // Array of {fileId: string, name: string, yearGroup: string} from the "master" sheet
         this.overviewData = {};  // Final aggregated object: { 'Year Group': { 'Class Name': [...] } }
     }
@@ -61,10 +59,10 @@ class MultiSheetExtractor extends BaseSheetManager {
 
             try {
                 const spreadsheet = SpreadsheetApp.openById(fileId);
-                const classSheet = new ClassAssessmentSheet(spreadsheet, name, yearGroup);
+                const assessmentRecordDestinationFolder = new ClassAssessmentSheet(spreadsheet, name, yearGroup);
 
                 // Extract the overview data from this single class's assessment file
-                const sheetData = classSheet.extractOverviewSheetData();
+                const sheetData = assessmentRecordDestinationFolder.extractOverviewSheetData();
 
                 // Group by year group, then by class name
                 if (!acc[yearGroup]) {
@@ -81,3 +79,4 @@ class MultiSheetExtractor extends BaseSheetManager {
         return this.overviewData;
     }
 }
+
