@@ -14,14 +14,9 @@ class UIManager {
 
     // Create the root menu
     const menu = ui.createMenu('Assessment Bot')
-      .addItem('Assess Student Work', 'showAssignmentDropdown')
-      .addItem('Check Progress', 'showProgressModal');
+    .addItem('Analyse Cohorts', 'analyseCohorts')
 
-    // Add a sub-menu for Settings
-    const settingsSubMenu = ui.createMenu('Settings')
-      .addItem('Backend Settings', 'showConfigurationDialog')
-      .addItem('Change Classroom', 'showClassroomDropdown');
-    menu.addSubMenu(settingsSubMenu);
+
 
     // Add a sub-menu for Google Classrooms operations
     const classroomsSubMenu = ui.createMenu('Google Classrooms')
@@ -29,7 +24,22 @@ class UIManager {
       .addItem('Create Classrooms', 'handleCreateGoogleClassrooms')
       //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); // This didn't survive the refactor and will need to be re-implemented
       .addItem('Create Assessment Records', 'createAssessmentRecords')
-    menu.addSubMenu(classroomsSubMenu);
+    menu.addSubMenu(classroomsSubMenu);   
+
+
+    // Add a sub-menu for Settings
+    const settingsSubMenu = ui.createMenu('Settings')
+      .addItem('Backend Settings', 'showConfigurationDialog')
+      .addItem('Change Classroom', 'showClassroomDropdown');
+    menu.addSubMenu(settingsSubMenu);
+
+
+
+    // Add a sub-menu for Debug operations
+    const debugSubMenu = ui.createMenu('Debug')
+      .addItem('Assess Student Work', 'showAssignmentDropdown')
+      .addItem('Check Progress', 'showProgressModal');
+    menu.addSubMenu(debugSubMenu);
 
     // Add the menu to the UI
     menu.addToUi();

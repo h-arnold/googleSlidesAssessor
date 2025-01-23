@@ -200,6 +200,14 @@ function onOpen() {
 }
 
 /**
+ * Starts the cohort analysis
+ */
+
+function analyseCohorts() {
+  mainController.analyseCohorts();
+}
+
+/**
  * Test workflow function for debugging purposes.
  */
 function testWorkflow() {

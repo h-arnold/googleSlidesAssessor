@@ -11,7 +11,7 @@ class SummarySheetManager extends BaseSheetManager {
    * averages (or other aggregates).
    *
    * @param {Object} overviewData - The aggregated data returned by MultiSheetExtractor.
-   *                                Structure: { "Y7": { "7A1 Digital Tech": {...}, ...}, "8": ... }
+   *                                Structure: { "Y7": { "7A1 Digital Tech": {...}, ...}, "Y8": ... }
    * @param {string} masterSpreadsheetId - ID of the spreadsheet where "Summary" should be created/updated.
    */
   createSummarySheet(overviewData, masterSpreadsheetId) {
