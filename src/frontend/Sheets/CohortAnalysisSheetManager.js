@@ -132,7 +132,6 @@ class CohortAnalysisSheetManager extends BaseSheetManager {
    * Private helper method that transforms a single year group’s
    * class-and-student object data into tabular format.
    *
-   * @param {string} yearGroup - e.g. "Year 7"
    * @param {Object} classData - e.g. { "7A1 Digital Tech": { "Student A": {...}, ...}, ... }
    * @returns {{ headers: string[], rows: Array<Array<string>> }}
    */
