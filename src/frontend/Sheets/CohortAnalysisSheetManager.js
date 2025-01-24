@@ -1,3 +1,5 @@
+// CohortAnalysisSheetManager.js
+
 class CohortAnalysisSheetManager extends BaseSheetManager {
 
   /**
@@ -25,9 +27,7 @@ class CohortAnalysisSheetManager extends BaseSheetManager {
       const headerFormattingRequest = this.createHeaderFormattingRequest(sheetId, headers.length, 0, 1);
       this.requests.push(headerRequest, headerFormattingRequest);
 
-      // 5. Identify which columns should be numeric
-      //    Example: The first 2 columns are text (Name, Class).
-      //    The rest are numeric. Or, you might have a fixed set of known numeric columns.
+      // 5. Identify which columns should be numeric - this enables us to work out which columns to conditionally format
       const numericColumnIndices = this._identifyNumericColumns(headers);
 
       // 6. Convert rows to rowData, forcing numeric columns
@@ -57,23 +57,12 @@ class CohortAnalysisSheetManager extends BaseSheetManager {
   }
 
   /**
-   * Example logic to decide which columns are numeric vs. string.
-   * You can hard-code them (e.g. columns >= 2 are numeric) or
-   * parse the header names (e.g. ["Completeness", "Accuracy", "SPaG", "Average"]).
-   *
+   * Identifies the indicies of columns containing numeric values from their headers
+   * Defaults to 'Completeness, Accuracy, SPaG and Average. You can pass others if you want different ones.
    * @param {string[]} headers - An array of header titles (e.g. ["Student Name", "Class Name", "Completeness", ...])
    * @returns {number[]} numericColumnIndices - The 0-based indices of columns we treat as numbers
    */
   _identifyNumericColumns(headers, numericHeaders = ["Completeness", "Accuracy", "SPaG", "Average"]) {
-    // SIMPLE EXAMPLE #1:
-    //   Let's say the first two columns are always text, everything else is numeric.
-    //   (Headers: [0:"Student Name", 1:"Class Name", 2:"Completeness", 3:"Accuracy", 4:"SPaG", 5:"Average"...])
-    //   So columns 2,3,4,5... are numeric.
-    //
-    // return headers
-    //   .map((_, index) => index)
-    //   .filter(index => index >= 2);
-
     // OR, you can specifically look for certain header names:
     // e.g. Only columns named "Completeness", "Accuracy", "SPaG", "Average" are numeric:
     return headers
@@ -186,7 +175,6 @@ class CohortAnalysisSheetManager extends BaseSheetManager {
     // --- Define your row indices ---
     // In 0-based indexing:
     //  - Row 0 is the header row
-    //  - Row 1 is the first data row
     const startRowIndex = 1; // data starts immediately after the headers
     const endRowIndex = startRowIndex + dataRowCount; // no extra blank row or average row in this example
 
@@ -205,8 +193,7 @@ class CohortAnalysisSheetManager extends BaseSheetManager {
       endColumnIndex: endColumnIndex
     };
 
-    // 1) Gradient formatting for numeric scores
-    //    Adapt min/mid/max values (0,2.5,5) to your scoring scale.
+    // Push conditional formatting rules
     requests.push({
       addConditionalFormatRule: {
         rule: {
