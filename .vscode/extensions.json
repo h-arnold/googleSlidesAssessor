@@ -1,7 +1,5 @@
 {
     "recommendations": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
         "ms-vscode.js-debug",
         "github.copilot",
         "github.copilot-chat"
