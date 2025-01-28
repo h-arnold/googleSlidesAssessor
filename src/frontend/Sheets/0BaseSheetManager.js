@@ -247,4 +247,40 @@ class BaseSheetManager {
 
     return matchingRow;
   }
+
+    /**
+   * Finds the column indices of matching header values.
+   * @param {Array<string>} headerNames - An array of header names to find.
+   * @param {number} [startRow=0] - The row index to search for the headers (default: 0).
+   * @returns {Object} - An object where keys are header names and values are column indices.
+   * @throws {Error} - If no headers are found.
+   */
+  getColumnIndicesFromHeader(headerNames, startRow = 0) {
+    const headerRange = this.sheet.getRange(startRow + 1, 1, 1, this.sheet.getLastColumn());
+    const headers = headerRange.getValues()[0];
+    const indices = {};
+
+    if (typeof headerNames === 'string' ){
+      headerNames = [headerNames];
+    }
+
+    headerNames.forEach(header => {
+      const columnIndex = headers.indexOf(header);
+      if (columnIndex === -1) {
+        return;
+      }
+      const cleansedHeader = header.toLowerCase().replaceAll(' ','');
+      indices[cleansedHeader] = columnIndex;
+    });
+
+    if (indices.length == 1) {
+      // If there's only the one value to return, just return the value.
+      return indices[headerNames[0]];
+    } else {
+
+    // Return the indices in the form of key-value pairs.
+
+    return indices;
+    }
+  }
 }
