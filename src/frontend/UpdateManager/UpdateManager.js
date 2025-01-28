@@ -9,11 +9,27 @@
 
 class UpdateManager{
     constructor() {
-        this.cloner = new SheetCloner();
         this.sheet = SpreadsheetApp.getActiveSpreadsheet();
         this.ui = new UIManager(this.sheet);
         this.progressTracker = new ProgressTracker();
         this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
+    }
+
+    cloneAllSheets(assessmentRecordSheets, templateSheetId, adminSheetId) {
+      const destinationFolderId = `1kNeyJanDBpF6XaRSx2zc-W6vP6UaPECN`
+      Object.keys(assessmentRecordSheets).forEach(className => {    
+        
+        SheetCloner.cloneEverything({
+          "templateSheetId" : templateSheetId,
+          "newSpreadsheetName" :  className,
+          "sourceSpreadsheetId": assessmentRecordSheets[className],
+          "copyDocProps": true,
+          "copyScriptProps": true,
+          "destinationFolderId": destinationFolderId
+        })
+
+      })
+
     }
 
     /**
@@ -37,5 +53,7 @@ class UpdateManager{
       
       return assessmentRecordSheets;
     }
+
+
 
 }
