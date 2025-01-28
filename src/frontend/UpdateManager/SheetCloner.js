@@ -1,3 +1,5 @@
+// SheetCloner.js
+
 /**
  * SheetCloner Class
  * 
