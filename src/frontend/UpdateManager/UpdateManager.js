@@ -19,16 +19,19 @@ class UpdateManager{
       const destinationFolderId = `1kNeyJanDBpF6XaRSx2zc-W6vP6UaPECN`
       Object.keys(assessmentRecordSheets).forEach(className => {    
         
-        SheetCloner.cloneEverything({
+        const newSheet = SheetCloner.cloneEverything({
           "templateSheetId" : templateSheetId,
           "newSpreadsheetName" :  className,
-          "sourceSpreadsheetId": assessmentRecordSheets[className],
+          "sourceSpreadsheetId": assessmentRecordSheets[className].originalSheetId,
           "copyDocProps": true,
           "copyScriptProps": true,
           "destinationFolderId": destinationFolderId
         })
 
+       assessmentRecordSheets[className].newSheetId = newSheet.fileId
       })
+
+      return assessmentRecordSheets
 
     }
 
@@ -47,7 +50,10 @@ class UpdateManager{
     sheetsData.forEach(row => {
       //Adds a element to the assessmentRecordsheet object if there's a file ID in the row.
       if (row[headerIndicies.arfileid]) {
-        assessmentRecordSheets[row[headerIndicies.name]] = row[headerIndicies.arfileid];
+        assessmentRecordSheets[row[headerIndicies.name]] = {
+          "originalSheetId" :row[headerIndicies.arfileid],
+          "newSheetId": "" //leave this attribute blank for now
+          }
         }
       });
       
