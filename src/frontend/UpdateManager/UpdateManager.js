@@ -18,6 +18,8 @@ class UpdateManager {
     this.progressTracker = new ProgressTracker();
     this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
     this.versionNo = "0.4.0";
+    this.assessmentRecordSheets = {};
+    this.adminSheetsDetails = {};
   }
 
   cloneSheets(assessmentRecordSheets, templateSheetId) {
@@ -62,7 +64,7 @@ class UpdateManager {
       }
     });
 
-    return assessmentRecordSheets;
+    return this.assessmentRecordSheets = assessmentRecordSheets
   }
 
   /** 
@@ -77,25 +79,25 @@ class UpdateManager {
       "originalSheetId": this.sheet.getId(),
       "newSheetId": "" //leave blank for now.
     }
-    return adminSheet;
+    return this.adminSheetsDetails = adminSheet;
+
   }
 
   /**
    * Updates the 'Classoom' sheet in the new Admin Spreadsheet with the latest Assessment Record sheet Ids.
-   * @ param {object} - updatedSheetDetails - contains an object with the Sheet Names, the original Assessment Record Id and the new Assessment Record ID
-   * @ param {object} - updatedAdminSheetDetails - contains an object with the new Admin Sheet and corresponding original sheet.
+   * 
    */
-  updateClassroomSheetWithNewAssessmentRecords(updatedSheetDetails, updatedAdminSheetDetails) {
-    const newClassroomSheet = new ClassroomSheetManager('Classrooms', updatedAdminSheetDetails.newSheetId);
+  updateClassroomSheetWithNewAssessmentRecords() {
+    const newClassroomSheet = new ClassroomSheetManager('Classrooms', this.adminSheetsDetails.newSheetId);
     const currentValues = newClassroomSheet.getData();
     let updatedValues = currentValues;
-    let arFileIdColumnIndex = newClassroomSheet.getColumnIndicesFromHeader('AR File ID'); //Gets the Row indices
-    arFileIdColumnIndex = arFileIdColumnIndex.arfileid //Gets the value only as there's only one index value that we need
+    let arFileIdColumnIndex = newClassroomSheet.getColumnIndicesFromHeader('AR File ID');
+    arFileIdColumnIndex = arFileIdColumnIndex.arfileid
 
     //Update Classroom Sheet Array with new Sheet Values
 
-    Object.keys(updatedSheetDetails).forEach(className => {
-      const sheetDetails = updatedSheetDetails[className];
+    Object.keys(this.assessmentRecordSheets).forEach(className => {
+      const sheetDetails = this.assessmentRecordSheets[className];
 
       for (const row of updatedValues) {
         if (row.includes(sheetDetails.originalSheetId)) {
@@ -105,10 +107,29 @@ class UpdateManager {
       }
     });
 
-    //Write this array back to the Classroom sheet
-
     this.classroomSheet.setData(updatedValues);
 
   }
+
+  /** 
+   * Moves the old versions of the Assessment Records and Admin Sheet to a folder called Archive {date} 
+   * in the parent folder.
+   */
+
+  archiveOldVersions() {
+    // Create Archive Folder
+    const parentFolder = DriveManager.getParentFolderId(this.sheet.getId());
+    const date = Utils.getDate();
+    const archiveFolder = DriveManager.createFolder(parentFolder, `Archive ${date}`);
+
+    // Get an array of the original FileIds
+    const assessmentRecordFileIds = Object.values(this.assessmentRecordSheets)
+      .map(item => item.originalSheetId);
+
+    // Move all the files to the archive folder
+    DriveManager.moveFiles(archiveFolder.newFolderId, assessmentRecordFileIds, ` - ARCHIVED - ${date}`);
+  }
+
+
 
 }
