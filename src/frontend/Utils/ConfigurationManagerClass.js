@@ -297,7 +297,7 @@ class ConfigurationManager {
   }
 
   setUpdateDetailsUrl(url) {
-    this.setProperpty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL);
+    this.setProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL, url);
   }
 }
 
