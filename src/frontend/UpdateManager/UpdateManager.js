@@ -20,6 +20,10 @@ class UpdateManager {
     this.versionNo = "0.4.0";
     this.assessmentRecordSheets = {};
     this.adminSheetsDetails = {};
+
+    // These are the FileIds of the sheets that will be copied into the user's assessment record folder and populated with the values from the old versions.
+    this.assessmentRecordTemplateId = ""
+    this.adminSheetTemplateId = ""
   }
 
   cloneSheets(assessmentRecordSheets, templateSheetId) {
@@ -130,6 +134,78 @@ class UpdateManager {
     DriveManager.moveFiles(archiveFolder.newFolderId, assessmentRecordFileIds, ` - ARCHIVED - ${date}`);
   }
 
+  /**
+   * Retrieves the template file IDs for the specified version.
+   * Validates the retrieved file Ids using DriveManager.isValidGoogleDriveFileId()
+   * @param {string} versionNumber - The version number to look up.
+   * @returns {void} - Sets the file IDs as class properties directly.
+   */
+  getTemplateFileIds(versionNumber) {
+    // 1. Access Configuration: Get the Update_Details_Url
+    const updateDetailsUrl = configurationManager.getUpdateDetailsUrl();
 
+    if (!updateDetailsUrl) {
+      console.error("Update_Details_Url not found in configuration.");
+      return;
+    }
+
+    // 2. Fetch JSON: Download assessmentBotVersions.json using BaseRequestManager
+    const request = {
+      url: updateDetailsUrl,
+      method: "GET",
+      muteHttpExceptions: true // Prevents errors from being thrown for non-200 responses.
+    };
+
+    const requestManager = new BaseRequestManager();
+    const response = requestManager.sendRequestWithRetries(request);
+
+    if (!response) {
+      console.error("Failed to fetch assessmentBotVersions.json.");
+      return;
+    }
+
+    //Get the response code
+    const responseCode = response.getResponseCode();
+
+    if (responseCode !== 200) {
+      console.error(`Failed to fetch assessmentBotVersions.json. Status Code: ${responseCode} Returned Message: ${response.getContentText()}.`);
+      return;
+    }
+
+    try {
+      const data = JSON.parse(response.getContentText());
+
+      // 3. Extract IDs: Get file IDs for the given version
+      const versionData = data[versionNumber];
+      if (!versionData) {
+        console.error(`Version ${versionNumber} not found in assessmentBotVersions.json`);
+        return;
+      }
+
+      //Extract the fileIds from the versionData
+      const assessmentRecordTemplateId = versionData.assessmentRecordTemplate;
+      const adminSheetTemplateId = versionData.adminSheetTemplate;
+
+      // Validate file Ids using DriveManager.isValidGoogleDriveFileId()
+      if (!DriveManager.isValidGoogleDriveFileId(assessmentRecordTemplateId)) {
+        throw new Error(`Invalid assessmentRecordTemplate ID: ${assessmentRecordTemplateId}`);
+      }
+
+      if (!DriveManager.isValidGoogleDriveFileId(adminSheetTemplateId)) {
+        throw new Error(`Invalid adminSheetTemplate ID: ${adminSheetTemplateId}`);
+      }
+
+      // 4. Set Class Properties: Store IDs in class properties
+      this.assessmentRecordTemplateId = assessmentRecordTemplateId;
+      this.adminSheetTemplateId = adminSheetTemplateId;
+
+      //Success!
+      console.log(`Successfully set the file ids for version ${versionNumber}.`);
+
+    } catch (error) {
+      console.error(`Error getting or validating data from assessmentBotVersions.json: ${error}`);
+      return;
+    }
+  }
 
 }

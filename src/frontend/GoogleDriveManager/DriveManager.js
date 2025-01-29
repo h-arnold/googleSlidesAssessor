@@ -290,4 +290,18 @@ class DriveManager {
       details
     };
   }
+
+  /**
+   * Validates if a string is a valid Google Drive File ID (format check only).
+   * @param {string} fileId - The File ID to validate.
+   * @return {boolean} - True if the format is valid, false otherwise.
+   */
+  static isValidGoogleDriveFileId(fileId) {
+    // Define the regex for a valid google drive file id.
+    const fileIdRegex = /^[a-zA-Z0-9_-]{33,44}$/;
+    // Test if the passed string matches the regex and return the result.
+    return fileIdRegex.test(fileId);
+  }
+
 }
+
