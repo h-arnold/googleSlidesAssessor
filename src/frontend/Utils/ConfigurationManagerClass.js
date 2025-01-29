@@ -9,7 +9,8 @@ class ConfigurationManager {
       IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
       IMAGE_FLOW_UID: 'imageFlowUid',
       ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
-      ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder'
+      ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder',
+      UPDATE_DETAILS_URL: 'updateDetailsUrl'
     };
   }
 
@@ -77,6 +78,7 @@ class ConfigurationManager {
         }
         break;
       case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
+      case ConfigurationManager.UPDATE_DETAILS_URL:
         if (typeof value !== 'string' || !Utils.isValidUrl(value)) {
           throw new Error(`${this.toReadableKey(key)} must be a valid URL string.`);
         }
@@ -218,6 +220,18 @@ class ConfigurationManager {
     return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
   }
 
+  /** 
+   * Gets the URL of the json file which holds the file IDs of the different Assessment Bot versions
+   */
+  getUpdateDetailsUrl() {
+    const value = this.getProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL)
+    if (!value) {
+      return `https://raw.githubusercontent.com/h-arnold/googleSlidesAssessor/refs/heads/UpdateManager/src/frontend/UpdateManager/assessmentBotVersions.json`
+    } else {
+      return value;
+    }
+  }
+
   /**
    * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
    * @return {string} - The constructed Table Assessment URL.
@@ -280,6 +294,10 @@ class ConfigurationManager {
 
   setAssessmentRecordDestinationFolder(folderId) {
     this.setProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER, folderId);
+  }
+
+  setUpdateDetailsUrl(url) {
+    this.setProperpty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL);
   }
 }
 
