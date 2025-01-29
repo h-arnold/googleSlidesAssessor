@@ -1,7 +1,5 @@
 // UpdateManager.gs
 
-// Declaring this global constant here for now in lieu of a better way of defining this later on. This needs to be updated with each
-// version update (for now) as this is appended to the admin sheet filename.
 /**
  * Update Manager Class
  * Orchestrates the copying of spreadsheet data, including Script and Document Properties from 
@@ -17,7 +15,7 @@ class UpdateManager {
     this.ui = new UIManager(this.sheet);
     this.progressTracker = new ProgressTracker();
     this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
-    this.versionNo = "0.4.0";
+    this.versionNo = "";
     this.assessmentRecordSheets = {};
     this.adminSheetsDetails = {};
 
@@ -26,12 +24,12 @@ class UpdateManager {
     this.adminSheetTemplateId = ""
   }
 
-  cloneSheets(assessmentRecordSheets, templateSheetId) {
-    const destinationFolderId = `1kNeyJanDBpF6XaRSx2zc-W6vP6UaPECN`
+  cloneSheets(assessmentRecordSheets) {
+    const destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder()
     Object.keys(assessmentRecordSheets).forEach(className => {
 
       const newSheet = SheetCloner.cloneEverything({
-        "templateSheetId": templateSheetId,
+        "templateSheetId": this.assessmentRecordTemplateId,
         "newSpreadsheetName": className,
         "sourceSpreadsheetId": assessmentRecordSheets[className].originalSheetId,
         "copyDocProps": true,
@@ -81,7 +79,7 @@ class UpdateManager {
     const adminSheetName = `Assessment Bot v${this.versionNo}`
     adminSheet[adminSheetName] = {
       "originalSheetId": this.sheet.getId(),
-      "newSheetId": "" //leave blank for now.
+      "newSheetId": this.adminSheetTemplateId
     }
     return this.adminSheetsDetails = adminSheet;
 
@@ -183,8 +181,8 @@ class UpdateManager {
       }
 
       //Extract the fileIds from the versionData
-      const assessmentRecordTemplateId = versionData.assessmentRecordTemplate;
-      const adminSheetTemplateId = versionData.adminSheetTemplate;
+      const assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
+      const adminSheetTemplateId = versionData.adminSheetFileId;
 
       // Validate file Ids using DriveManager.isValidGoogleDriveFileId()
       if (!DriveManager.isValidGoogleDriveFileId(assessmentRecordTemplateId)) {
@@ -198,6 +196,7 @@ class UpdateManager {
       // 4. Set Class Properties: Store IDs in class properties
       this.assessmentRecordTemplateId = assessmentRecordTemplateId;
       this.adminSheetTemplateId = adminSheetTemplateId;
+      this.versionNo = versionNumber
 
       //Success!
       console.log(`Successfully set the file ids for version ${versionNumber}.`);
