@@ -24,6 +24,14 @@ class ClassroomSheetManager extends BaseSheetManager {
     return this.sheet.getDataRange().getValues();
   }
 
+  /** 
+   * Writes all data in an array back to a sheet
+   * @param {Array} - the array of values to write to the Classroom sheet.
+   */
+  setData(values){
+    return this.sheet.getDataRange().setValues(values);
+  }
+
   /**
    * Writes headers to the first row of the sheet using batch requests.
    * @param {Array<string>} headers - The column headers.

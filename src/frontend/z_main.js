@@ -1,8 +1,6 @@
 // z_main.js
 // Global functions that bind UI actions and triggers to MainController methods.
 
-const versionNo = "0.4.0"
-
 /**
  * Initiates the processing of an assignment asynchronously by setting up a trigger
  * and opens the progress modal.
