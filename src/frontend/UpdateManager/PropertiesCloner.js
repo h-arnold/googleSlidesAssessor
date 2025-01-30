@@ -11,9 +11,8 @@ class PropertiesCloner extends BaseSheetManager {
      * A subclass of BaseSheetManager for cloning Document and Script properties.
      * @param {string} [sheetName='propertiesStore'] - The name of the sheet to store properties.
      */
-    constructor(sheetName = 'propertiesStore') {
-      super(); // calls BaseSheetManager constructor
-      this.createOrGetSheet(sheetName);
+    constructor(sheet = 'propertiesStore', spreadSheetId =  null) {
+      super(sheet, spreadSheetId); // calls BaseSheetManager constructor
     }
   
     /**

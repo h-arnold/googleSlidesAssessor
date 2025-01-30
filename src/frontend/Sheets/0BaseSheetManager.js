@@ -8,10 +8,10 @@
  * @param {Object} [sheet=null] - Optional sheet object to initialize with.
  */
 class BaseSheetManager {
-  constructor(sheet = null) {
+  constructor(sheet = null, spreadSheetId = null) {
     // If a string is passed, create or get the sheet name
     if (typeof sheet === 'string') {
-      this.createOrGetSheet(sheetName)
+      this.createOrGetSheet(sheet, spreadSheetId)
     } else {
       // If it isn't use the passed sheet object.
       this.sheet = sheet;
