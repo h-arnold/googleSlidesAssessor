@@ -133,33 +133,26 @@ class SheetCloner {
    * @param {string} params.templateSpreadsheetId - The ID of the template to copy.
    * @param {string} params.newSpreadsheetName - The name for the new spreadsheet.
    * @param {string} params.sourceSpreadsheetId - The ID of the spreadsheet whose sheets you want to clone.
-   * @param {boolean} [params.copyDocProps=false] - Whether to copy document properties.
-   * @param {boolean} [params.copyScriptProps=false] - Whether to copy script properties.
    * @param {string} [params.destinationFolderId] - The ID of the folder to place the new copy. Optional.
    * @returns {{ file: GoogleAppsScript.Drive.File, fileId: string }} 
    *     An object with the new file object and its ID.
    */
   static cloneEverything(params) {
-    // 1) Copy the template
+    // 1) Retrieve Document and Script properties and store them in a hidden sheet as there's no way to transfer them natively from App Script.
+    // These will be written back to the new document upon the first run of that sheet.
+    const propertiesCloner = new PropertiesCloner("propertiesStore", params.sourceSpreadsheetId);
+    propertiesCloner.serialiseProperties();
+
+    // 2) Copy the template
     const newFile = DriveManager.copyTemplateSheet(
       params.templateSheetId,
       params.destinationFolderId,
       params.newSpreadsheetName
     );
 
-    // 2) Copy all sheets from source into the newly created file
+    // 3) Copy all sheets from source into the newly created file
     const newSpreadsheetId = newFile.fileId;
     SheetCloner.copyAllSheetsToTarget(params.sourceSpreadsheetId, newSpreadsheetId);
-
-    // 3) (Optionally) copy document properties
-    if (params.copyDocProps) {
-      SheetCloner.copyDocumentProperties(params.sourceSpreadsheetId, newSpreadsheetId);
-    }
-
-    // 4) (Optionally) copy script properties
-    if (params.copyScriptProps) {
-      SheetCloner.copyDocumentProperties(params.sourceSpreadsheetId, newSpreadsheetId);
-    }
 
     return {
       file: newFile,
