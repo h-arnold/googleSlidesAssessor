@@ -255,19 +255,19 @@ class BaseSheetManager {
     return matchingRow;
   }
 
-    /**
-   * Finds the column indices of matching header values.
-   * @param {Array<string>} headerNames - An array of header names to find.
-   * @param {number} [startRow=0] - The row index to search for the headers (default: 0).
-   * @returns {Object} - An object where keys are header names and values are column indices.
-   * @throws {Error} - If no headers are found.
-   */
+  /**
+ * Finds the column indices of matching header values.
+ * @param {Array<string>} headerNames - An array of header names to find.
+ * @param {number} [startRow=0] - The row index to search for the headers (default: 0).
+ * @returns {Object} - An object where keys are header names and values are column indices.
+ * @throws {Error} - If no headers are found.
+ */
   getColumnIndicesFromHeader(headerNames, startRow = 0) {
     const headerRange = this.sheet.getRange(startRow + 1, 1, 1, this.sheet.getLastColumn());
     const headers = headerRange.getValues()[0];
     const indices = {};
 
-    if (typeof headerNames === 'string' ){
+    if (typeof headerNames === 'string') {
       headerNames = [headerNames];
     }
 
@@ -276,7 +276,7 @@ class BaseSheetManager {
       if (columnIndex === -1) {
         return;
       }
-      const cleansedHeader = header.toLowerCase().replaceAll(' ','');
+      const cleansedHeader = header.toLowerCase().replaceAll(' ', '');
       indices[cleansedHeader] = columnIndex;
     });
 
@@ -285,9 +285,28 @@ class BaseSheetManager {
       return indices[headerNames[0]];
     } else {
 
-    // Return the indices in the form of key-value pairs.
+      // Return the indices in the form of key-value pairs.
 
-    return indices;
+      return indices;
     }
   }
+
+  /**
+ * Retrieves all values from the sheet's data range.
+ * @returns {Array<Array<*>>} A 2D array of the sheet's values.
+ */
+  getAllValues() {
+    return this.sheet.getDataRange().getValues();
+  }
+
+  /**
+   * Clears the sheet, then sets all values in one go.
+   * @param {Array<Array<*>>} values A 2D array of values to set in the sheet.
+   */
+  setAllValues(values) {
+    // Optionally clear the sheet first if desired
+    this.clearSheet();
+    this.sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
+  }
+
 }
