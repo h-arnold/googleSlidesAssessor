@@ -9,7 +9,14 @@
  */
 class BaseSheetManager {
   constructor(sheet = null) {
-    this.sheet = sheet;
+    // If a string is passed, create or get the sheet name
+    if (typeof sheet === 'string') {
+      this.createOrGetSheet(sheetName)
+    } else {
+      // If it isn't use the passed sheet object.
+      this.sheet = sheet;
+    }
+
     this.requests = [];
   }
 
