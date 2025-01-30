@@ -1,210 +1,162 @@
-// UpdateManager.gs
-
 /**
- * Update Manager Class
- * Orchestrates the copying of spreadsheet data, including Script and Document Properties from 
- * the 'Admin' and Assessment Record sheets to updated templates which have the latest version of 
- * code. This class is necessary because most education establishments don't allow AppScript API
- * access (for obvious reasons) and copy and pasting code manually is slow and unwieldy.
+ * SheetCloner Class
  * 
+ * Manages the process of cloning spreadsheets, including:
+ * 1) Creating a copy of a template spreadsheet.
+ * 2) Copying all sheets (data & formatting) from a source spreadsheet to the new file.
+ * 3) Copying document properties from the source (optional).
  */
+class SheetCloner {
 
-class UpdateManager {
-  constructor() {
-    this.sheet = SpreadsheetApp.getActiveSpreadsheet();
-    this.ui = new UIManager(this.sheet);
-    this.progressTracker = new ProgressTracker();
-    this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
-    this.versionNo = "";
-    this.assessmentRecordSheets = {};
-    this.adminSheetsDetails = {};
+  /**
+   * Makes a copy of the template spreadsheet in a specific folder with a new name.
+   * @param {string} templateSpreadsheetId - The ID of the template spreadsheet.
+   * @param {string} newSpreadsheetName - The name for the newly copied spreadsheet.
+   * @param {string} [destinationFolderId] - The ID of the folder to place the new copy. If omitted, it goes to My Drive.
+   * @returns {GoogleAppsScript.Drive.File} The newly created spreadsheet file.
+   */
+  static copyTemplateSpreadsheet(templateSpreadsheetId, newSpreadsheetName, destinationFolderId) {
+    const templateFile = DriveApp.getFileById(templateSpreadsheetId);
 
-    // These are the FileIds of the sheets that will be copied into the user's assessment record folder and populated with the values from the old versions.
-    this.assessmentRecordTemplateId = ""
-    this.adminSheetTemplateId = ""
-  }
+    if (destinationFolderId) {
+      // If a destination folder is specified, copy the file into that folder
+      const destinationFolder = DriveApp.getFolderById(destinationFolderId);
 
-  cloneSheets(assessmentRecordSheets) {
-    const destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder()
-    Object.keys(assessmentRecordSheets).forEach(className => {
-
-      const newSheet = SheetCloner.cloneEverything({
-        "templateSheetId": this.assessmentRecordTemplateId,
-        "newSpreadsheetName": className,
-        "sourceSpreadsheetId": assessmentRecordSheets[className].originalSheetId,
-        "copyDocProps": true,
-        "copyScriptProps": true,
-        "destinationFolderId": destinationFolderId
-      })
-
-      assessmentRecordSheets[className].newSheetId = newSheet.fileId
-    })
-
-    return assessmentRecordSheets
-
+      // Create a copy with the specified name in the destination folder
+      return templateFile.makeCopy(newSpreadsheetName, destinationFolder);
+    } else {
+      // Otherwise just create a copy in the user's My Drive
+      return templateFile.makeCopy(newSpreadsheetName);
+    }
   }
 
   /**
-   * Gets the class name and file ID of all assessment records listed in the 
-   * 'Classrooms Sheet'
+   * Copies all sheets from the source spreadsheet to the target spreadsheet.
+   * This preserves data, formatting, conditional formatting rules, notes, etc.
+   * @param {string} sourceSpreadsheetId - The ID of the source spreadsheet.
+   * @param {string} targetSpreadsheetId - The ID of the target spreadsheet.
    */
-  getAssessmentRecordDetails() {
-    const headerIndicies = this.classroomSheet.getColumnIndicesFromHeader([`Name`, `AR File ID`]);
-    const sheetsData = this.classroomSheet.getData()
-    //Remove header rows
-    sheetsData.shift()
+  static copyAllSheetsToTarget(sourceSpreadsheetId, targetSpreadsheetId) {
+    const source = SpreadsheetApp.openById(sourceSpreadsheetId);
+    const target = SpreadsheetApp.openById(targetSpreadsheetId);
 
-    let assessmentRecordSheets = {}
+    const sourceSheets = source.getSheets();
 
-    sheetsData.forEach(row => {
-      //Adds a element to the assessmentRecordsheet object if there's a file ID in the row.
-      if (row[headerIndicies.arfileid]) {
-        assessmentRecordSheets[row[headerIndicies.name]] = {
-          "originalSheetId": row[headerIndicies.arfileid],
-          "newSheetId": "" //leave this attribute blank for now
+    sourceSheets.forEach(sheet => {
+      const sheetName = sheet.getName();
+
+    
+      if (sheetName !== "Sheet1") {
+
+      const newSheet = sheet.copyTo(target);
+      // Rename the sheet in the target to match the source (copyTo calls it "Copy of X" by default)
+      try {
+        newSheet.setName(sheetName);
+      } catch (e) {
+
+        // If a sheet of the same name already exists, rename it and then rename the new copy to the correct name.
+        if (e.message.indexOf(`already exists. Please enter another name.`) !== -1) {
+          const targetSheet = target.getSheetByName(sheetName);
+          const date = new Date();
+          targetSheet.setName(`${sheetName} ${date}`);
+
+          newSheet.setName(sheetName)
+        } else {
+          throw new Error(e.message);
         }
+      }
       }
     });
 
-    return this.assessmentRecordSheets = assessmentRecordSheets
-  }
-
-  /** 
-   * Helper method to get admin sheet (the sheet this script is bound to) details
-   * in readiness for cloning.
-   */
-
-  getAdminSheetDetails() {
-    let adminSheet = {}
-    const adminSheetName = `Assessment Bot v${this.versionNo}`
-    adminSheet[adminSheetName] = {
-      "originalSheetId": this.sheet.getId(),
-      "newSheetId": this.adminSheetTemplateId
-    }
-    return this.adminSheetsDetails = adminSheet;
 
   }
 
   /**
-   * Updates the 'Classoom' sheet in the new Admin Spreadsheet with the latest Assessment Record sheet Ids.
-   * 
+   * Copies all document properties from one spreadsheet to another.
+   * @param {string} sourceSpreadsheetId - The ID of the source spreadsheet.
+   * @param {string} targetSpreadsheetId - The ID of the target spreadsheet.
    */
-  updateClassroomSheetWithNewAssessmentRecords() {
-    const newClassroomSheet = new ClassroomSheetManager('Classrooms', this.adminSheetsDetails.newSheetId);
-    const currentValues = newClassroomSheet.getData();
-    let updatedValues = currentValues;
-    let arFileIdColumnIndex = newClassroomSheet.getColumnIndicesFromHeader('AR File ID');
-    arFileIdColumnIndex = arFileIdColumnIndex.arfileid
+  static copyDocumentProperties(sourceSpreadsheetId, targetSpreadsheetId) {
+    // Open both as needed, though for purely document-bound properties, you may not need to open them
+    const sourceSpreadsheet = SpreadsheetApp.openById(sourceSpreadsheetId);
+    const targetSpreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
 
-    //Update Classroom Sheet Array with new Sheet Values
+    // Grab the document properties from the source. 
+    // Note: The code is running in whichever script container you have, so "source" properties might be
+    // the same or different depending on your environment’s security settings.
+    const sourceProps = PropertiesService.getDocumentProperties();
+    const props = sourceProps.getProperties();
 
-    Object.keys(this.assessmentRecordSheets).forEach(className => {
-      const sheetDetails = this.assessmentRecordSheets[className];
-
-      for (const row of updatedValues) {
-        if (row.includes(sheetDetails.originalSheetId)) {
-          row[arFileIdColumnIndex] = sheetDetails.newSheetId;
-          break;  // Stop iterating once updated
-        }
-      }
+    // Switch context to the target
+    // (In most container-bound scripts, the "DocumentProperties" object is unique to the current container.)
+    // If your code runs outside the container-bound script, you won't actually switch context automatically.
+    const targetProps = PropertiesService.getDocumentProperties();
+    Object.keys(props).forEach(key => {
+      const value = props[key];
+      targetProps.setProperty(key, value);
     });
-
-    this.classroomSheet.setData(updatedValues);
-
   }
 
-  /** 
-   * Moves the old versions of the Assessment Records and Admin Sheet to a folder called Archive {date} 
-   * in the parent folder.
+    /**
+   * Copies all document properties from one spreadsheet to another.
+   * @param {string} sourceSpreadsheetId - The ID of the source spreadsheet.
+   * @param {string} targetSpreadsheetId - The ID of the target spreadsheet.
    */
+  static copyScriptProperties(sourceSpreadsheetId, targetSpreadsheetId) {
+    // Open both as needed, though for purely document-bound properties, you may not need to open them
+    const sourceSpreadsheet = SpreadsheetApp.openById(sourceSpreadsheetId);
+    const targetSpreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
 
-  archiveOldVersions() {
-    // Create Archive Folder
-    const parentFolder = DriveManager.getParentFolderId(this.sheet.getId());
-    const date = Utils.getDate();
-    const archiveFolder = DriveManager.createFolder(parentFolder, `Archive ${date}`);
+    // Grab the document properties from the source. 
+    // Note: The code is running in whichever script container you have, so "source" properties might be
+    // the same or different depending on your environment’s security settings.
+    const sourceProps = PropertiesService.getScriptProperties();
+    const props = sourceProps.getProperties();
 
-    // Get an array of the original FileIds
-    const assessmentRecordFileIds = Object.values(this.assessmentRecordSheets)
-      .map(item => item.originalSheetId);
-
-    // Move all the files to the archive folder
-    DriveManager.moveFiles(archiveFolder.newFolderId, assessmentRecordFileIds, ` - ARCHIVED - ${date}`);
+    // Switch context to the target
+    // (In most container-bound scripts, the "DocumentProperties" object is unique to the current container.)
+    // If your code runs outside the container-bound script, you won't actually switch context automatically.
+    const targetProps = PropertiesService.getScriptProperties();
+    Object.keys(props).forEach(key => {
+      const value = props[key];
+      targetProps.setProperty(key, value);
+    });
   }
 
   /**
-   * Retrieves the template file IDs for the specified version.
-   * Validates the retrieved file Ids using DriveManager.isValidGoogleDriveFileId()
-   * @param {string} versionNumber - The version number to look up.
-   * @returns {void} - Sets the file IDs as class properties directly.
+   * End-to-end method to clone a spreadsheet, including:
+   * 1) Copying the template.
+   * 2) Copying all sheets from the source spreadsheet into this new template.
+   * 3) Copying document properties (optional).
+   *
+   * @param {Object} params - The parameters encapsulated in a JSON object.
+   * @param {string} params.templateSpreadsheetId - The ID of the template to copy.
+   * @param {string} params.newSpreadsheetName - The name for the new spreadsheet.
+   * @param {string} params.sourceSpreadsheetId - The ID of the spreadsheet whose sheets you want to clone.
+   * @param {string} [params.destinationFolderId] - The ID of the folder to place the new copy. Optional.
+   * @returns {{ file: GoogleAppsScript.Drive.File, fileId: string }} 
+   *     An object with the new file object and its ID.
    */
-  getTemplateFileIds(versionNumber) {
-    // 1. Access Configuration: Get the Update_Details_Url
-    const updateDetailsUrl = configurationManager.getUpdateDetailsUrl();
+  static cloneEverything(params) {
+    // 1) Retrieve Document and Script properties and store them in a hidden sheet as there's no way to transfer them natively from App Script.
+    // These will be written back to the new document upon the first run of that sheet.
+    const propertiesCloner = new PropertiesCloner("propertiesStore", params.sourceSpreadsheetId);
+    propertiesCloner.serialiseProperties();
 
-    if (!updateDetailsUrl) {
-      console.error("Update_Details_Url not found in configuration.");
-      return;
-    }
+    // 2) Copy the template
+    const newFile = DriveManager.copyTemplateSheet(
+      params.templateSheetId,
+      params.destinationFolderId,
+      params.newSpreadsheetName
+    );
 
-    // 2. Fetch JSON: Download assessmentBotVersions.json using BaseRequestManager
-    const request = {
-      url: updateDetailsUrl,
-      method: "GET",
-      muteHttpExceptions: true // Prevents errors from being thrown for non-200 responses.
+    // 3) Copy all sheets from source into the newly created file
+    const newSpreadsheetId = newFile.fileId;
+    SheetCloner.copyAllSheetsToTarget(params.sourceSpreadsheetId, newSpreadsheetId);
+
+    return {
+      file: newFile,
+      fileId: newSpreadsheetId
     };
-
-    const requestManager = new BaseRequestManager();
-    const response = requestManager.sendRequestWithRetries(request);
-
-    if (!response) {
-      console.error("Failed to fetch assessmentBotVersions.json.");
-      return;
-    }
-
-    //Get the response code
-    const responseCode = response.getResponseCode();
-
-    if (responseCode !== 200) {
-      console.error(`Failed to fetch assessmentBotVersions.json. Status Code: ${responseCode} Returned Message: ${response.getContentText()}.`);
-      return;
-    }
-
-    try {
-      const data = JSON.parse(response.getContentText());
-
-      // 3. Extract IDs: Get file IDs for the given version
-      const versionData = data[versionNumber];
-      if (!versionData) {
-        console.error(`Version ${versionNumber} not found in assessmentBotVersions.json`);
-        return;
-      }
-
-      //Extract the fileIds from the versionData
-      const assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
-      const adminSheetTemplateId = versionData.adminSheetFileId;
-
-      // Validate file Ids using DriveManager.isValidGoogleDriveFileId()
-      if (!DriveManager.isValidGoogleDriveFileId(assessmentRecordTemplateId)) {
-        throw new Error(`Invalid assessmentRecordTemplate ID: ${assessmentRecordTemplateId}`);
-      }
-
-      if (!DriveManager.isValidGoogleDriveFileId(adminSheetTemplateId)) {
-        throw new Error(`Invalid adminSheetTemplate ID: ${adminSheetTemplateId}`);
-      }
-
-      // 4. Set Class Properties: Store IDs in class properties
-      this.assessmentRecordTemplateId = assessmentRecordTemplateId;
-      this.adminSheetTemplateId = adminSheetTemplateId;
-      this.versionNo = versionNumber
-
-      //Success!
-      console.log(`Successfully set the file ids for version ${versionNumber}.`);
-
-    } catch (error) {
-      console.error(`Error getting or validating data from assessmentBotVersions.json: ${error}`);
-      return;
-    }
   }
-
 }

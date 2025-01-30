@@ -14,6 +14,8 @@ class PropertiesCloner extends BaseSheetManager {
     constructor(sheet = 'propertiesStore', spreadSheetId =  null) {
       super(sheet, spreadSheetId); // calls BaseSheetManager constructor
     }
+
+    
   
     /**
      * Serialises all Document and Script properties to the 'propertiesStore' sheet.
