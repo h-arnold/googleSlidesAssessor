@@ -51,7 +51,7 @@ class DriveManager {
       };
     } catch (error) {
       console.error(`Failed to copy template sheet: ${error.message}`);
-      throw error; 
+      throw error;
       // or return { status: 'error', file: null, fileId: null, message: error.message };
     }
   }
@@ -167,17 +167,28 @@ class DriveManager {
   }
 
   /**
-   * Creates a folder inside a parent folder.
+   * Creates a folder inside a parent folder if it doesn't already exist.
+   * If a folder with the same name exists, returns its ID instead.
    * @param {string} parentFolderId - The ID of the parent folder.
    * @param {string} folderName - The name for the new folder.
-   * @returns {{ parentFolderId: string, newFolderId: string }}
-   *          An object containing the parent folder ID and the newly created folder ID.
+   * @returns {{ parentFolderId: string, folderId: string }}
+   *          An object containing the parent folder ID and the folder ID (existing or newly created).
    */
   static createFolder(parentFolderId, folderName) {
     try {
       const parentFolder = DriveApp.getFolderById(parentFolderId);
-      const newFolder = parentFolder.createFolder(folderName);
+      const folders = parentFolder.getFoldersByName(folderName);
 
+      if (folders.hasNext()) {
+        const existingFolder = folders.next();
+        console.log(`Folder "${folderName}" already exists under parent folder ID ${parentFolderId}. Returning existing folder ID.`);
+        return {
+          parentFolderId,
+          newFolderId: existingFolder.getId()
+        };
+      }
+
+      const newFolder = parentFolder.createFolder(folderName);
       console.log(`Folder "${folderName}" created under parent folder ID ${parentFolderId}.`);
       return {
         parentFolderId,

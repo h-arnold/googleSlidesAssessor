@@ -67,61 +67,8 @@ class SheetCloner {
       }
       }
     });
-
-
   }
 
-  /**
-   * Copies all document properties from one spreadsheet to another.
-   * @param {string} sourceSpreadsheetId - The ID of the source spreadsheet.
-   * @param {string} targetSpreadsheetId - The ID of the target spreadsheet.
-   */
-  static copyDocumentProperties(sourceSpreadsheetId, targetSpreadsheetId) {
-    // Open both as needed, though for purely document-bound properties, you may not need to open them
-    const sourceSpreadsheet = SpreadsheetApp.openById(sourceSpreadsheetId);
-    const targetSpreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
-
-    // Grab the document properties from the source. 
-    // Note: The code is running in whichever script container you have, so "source" properties might be
-    // the same or different depending on your environment’s security settings.
-    const sourceProps = PropertiesService.getDocumentProperties();
-    const props = sourceProps.getProperties();
-
-    // Switch context to the target
-    // (In most container-bound scripts, the "DocumentProperties" object is unique to the current container.)
-    // If your code runs outside the container-bound script, you won't actually switch context automatically.
-    const targetProps = PropertiesService.getDocumentProperties();
-    Object.keys(props).forEach(key => {
-      const value = props[key];
-      targetProps.setProperty(key, value);
-    });
-  }
-
-    /**
-   * Copies all document properties from one spreadsheet to another.
-   * @param {string} sourceSpreadsheetId - The ID of the source spreadsheet.
-   * @param {string} targetSpreadsheetId - The ID of the target spreadsheet.
-   */
-  static copyScriptProperties(sourceSpreadsheetId, targetSpreadsheetId) {
-    // Open both as needed, though for purely document-bound properties, you may not need to open them
-    const sourceSpreadsheet = SpreadsheetApp.openById(sourceSpreadsheetId);
-    const targetSpreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
-
-    // Grab the document properties from the source. 
-    // Note: The code is running in whichever script container you have, so "source" properties might be
-    // the same or different depending on your environment’s security settings.
-    const sourceProps = PropertiesService.getScriptProperties();
-    const props = sourceProps.getProperties();
-
-    // Switch context to the target
-    // (In most container-bound scripts, the "DocumentProperties" object is unique to the current container.)
-    // If your code runs outside the container-bound script, you won't actually switch context automatically.
-    const targetProps = PropertiesService.getScriptProperties();
-    Object.keys(props).forEach(key => {
-      const value = props[key];
-      targetProps.setProperty(key, value);
-    });
-  }
 
   /**
    * End-to-end method to clone a spreadsheet, including:
@@ -138,19 +85,14 @@ class SheetCloner {
    *     An object with the new file object and its ID.
    */
   static cloneEverything(params) {
-    // 1) Retrieve Document and Script properties and store them in a hidden sheet as there's no way to transfer them natively from App Script.
-    // These will be written back to the new document upon the first run of that sheet.
-    const propertiesCloner = new PropertiesCloner("propertiesStore", params.sourceSpreadsheetId);
-    propertiesCloner.serialiseProperties();
-
-    // 2) Copy the template
+    // 1) Copy the template
     const newFile = DriveManager.copyTemplateSheet(
       params.templateSheetId,
       params.destinationFolderId,
       params.newSpreadsheetName
     );
 
-    // 3) Copy all sheets from source into the newly created file
+    // 2) Copy all sheets from source into the newly created file
     const newSpreadsheetId = newFile.fileId;
     SheetCloner.copyAllSheetsToTarget(params.sourceSpreadsheetId, newSpreadsheetId);
 

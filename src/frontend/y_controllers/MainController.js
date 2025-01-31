@@ -42,28 +42,11 @@ class MainController {
     }
 
     // Instantiate ConfigurationManager if needed
-    this.configurationManager = new ConfigurationManager();
+    //this.configurationManager = new ConfigurationManager();
 
-    // Deserialise config values if necessary (should be only after an update)
-    this.deserialiseConfigValues();
+    // Create a new onChange Trigger for update purposes
+    //this.createOnChangeTrigger();
 
-  }
-
-  /**
-   * Config Deserialisation Method
-   */
-
-
-
-  // Checks if the propertiesStore sheet exists (which happens after an update) and deserialises the config values if so.
-  deserialiseConfigValues() {
-    console.log(`Deserialising config values`)
-    const propertiesStoreSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(`propertiesStore`);
-
-    if (propertiesStoreSheet) {
-      const propertiesCloner = new PropertiesCloner(propertiesStoreSheet);
-      propertiesCloner.deserialiseProperties(true);
-    }
   }
 
   /** 
@@ -539,28 +522,12 @@ class MainController {
       throw error;
     }
   }
-
-  /**
-     * Serialises document properties if the edited cell is Z1 in the classInfo sheet.
-     * @param {GoogleAppsScript.Events.SheetsOnEdit} e - The onEdit event object.
-     */
-  serialiseProperties(e) {
-    console.log(JSON.stringify(e))
-    const sheet = e.range.getSheet();
-    const sheetName = sheet.getName();
-    const editedCell = e.range.getA1Notation();
-
-    console.log(`Sheet ${sheet}, Sheet Name ${sheetName}, Edited Cell: ${editedCell}`);
-
-    // Check if the edited cell is Z1 in the classInfo sheet
-    if (sheetName == 'ClassInfo' && editedCell == 'Z1') {
-      console.log('Running Properties Cloner')
-      const propertiesCloner = new PropertiesCloner();
-      propertiesCloner.serialiseProperties();
-    }
-  }
 }
 
 
 // Instantiate the MainController as a singleton
 const mainController = new MainController();
+
+function testOnChange() {
+  mainController.createOnChangeTrigger();
+}

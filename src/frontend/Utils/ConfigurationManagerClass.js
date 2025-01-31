@@ -18,13 +18,28 @@ class ConfigurationManager {
     if (ConfigurationManager.instance) {
       return ConfigurationManager.instance;
     }
-
     this.scriptProperties = PropertiesService.getScriptProperties();
+    this.documentProperties = PropertiesService.getDocumentProperties();
+
+    // The update process copies the values formatting etc. from the old sheet into a new one and serialises any Script or Document Properties.
+    // When the updated sheet is first opened, any configuration values will be stored in a sheet called propertiesStore and need to be returned
+    // to the relevant store as the Properties Service is much quicker than reading from a Google sheet. The code below checks if they're empty and 
+    // attempts to deserialise if so.
+
+    if (!this.scriptProperties || !this.documentProperties) {
+      console.log('No script properties detected. Deserialising config data.')
+      const propertiesCloner = new PropertiesCloner();
+      propertiesCloner.deserialiseProperties();
+    } else {
+      console.log(`Script and or document properties detected. Not deserialising.`)
+    }
     this.configCache = null; // Initialize cache
 
     ConfigurationManager.instance = this;
     return this;
   }
+
+
 
   /**
    * Retrieves all configuration properties.
@@ -254,7 +269,16 @@ class ConfigurationManager {
   }
 
   getAssessmentRecordDestinationFolder() {
-    return this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
+    let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
+    // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
+    if (!destinationFolder) {
+      const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+      const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
+      const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
+      destinationFolder = newFolder.newFolderId;
+    }
+    
+    return destinationFolder;
   }
 
   /**
@@ -297,7 +321,7 @@ class ConfigurationManager {
   }
 
   setUpdateDetailsUrl(url) {
-    this.setProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL, url);
+    this.setProperpty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL, url);
   }
 }
 
