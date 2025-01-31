@@ -244,9 +244,6 @@ class UpdateManager {
 
     const adminSheetDetails = this.getAdminSheetDetails();
 
-    const date = new Date();
-    const formattedDate = Utilities.formatDate(date, Session.getScriptTimeZone(), "dd/MM/yyyy");
-
     const adminSheetName = Object.keys(this.adminSheetsDetails)
 
     const currentAdminSheetFileId = this.adminSheetsDetails[adminSheetName].originalSheetId;

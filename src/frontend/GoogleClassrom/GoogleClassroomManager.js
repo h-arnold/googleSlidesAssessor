@@ -2,10 +2,9 @@
 Manages Google Classroom operations and associated tasks.
 */
 class GoogleClassroomManager {
-  constructor(sheet) {
+  constructor() {
     this.configManager = configurationManager;
-    this.sheet = sheet;
-    this.csm = new ClassroomSheetManager(sheet.getName()); // Instantiate ClassroomSheetManager
+    this.csm = new ClassroomSheetManager(); // Instantiate ClassroomSheetManager
     this.classrooms = [];
     this.templateSheetId = this.configManager.getAssessmentRecordTemplateId();
     this.destinationFolderId = this.configManager.getAssessmentRecordDestinationFolder();

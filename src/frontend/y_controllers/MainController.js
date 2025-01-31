@@ -19,22 +19,12 @@ class MainController {
     // Instantiate other components
     this.llmRequestManager = new LLMRequestManager();
 
-    // Retrieve the 'ClassInfo' sheet
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = spreadsheet.getSheetByName("Classrooms");
-
-    // Create the sheet if it doesn't exist.
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet("Classrooms");
-      console.log("Classrooms sheet created.");
-    }
-
     // Instantiate GoogleClassroomManager with necessary parameters
-    this.classroomManager = new GoogleClassroomManager(sheet);
+    this.classroomManager = new GoogleClassroomManager();
 
     // Attempt to instantiate UIManager only in user context to avoid issues with triggers
     try {
-      this.uiManager = new UIManager(sheet);
+      this.uiManager = new UIManager();
       console.log("UIManager instantiated successfully.");
     } catch (error) {
       console.error("UIManager cannot be instantiated: " + error);
@@ -527,7 +517,3 @@ class MainController {
 
 // Instantiate the MainController as a singleton
 const mainController = new MainController();
-
-function testOnChange() {
-  mainController.createOnChangeTrigger();
-}

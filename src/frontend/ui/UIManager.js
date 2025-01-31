@@ -1,9 +1,9 @@
 // UIManager.gs
 
 class UIManager {
-  constructor(sheet) {
+  constructor() {
     this.ui = SpreadsheetApp.getUi();
-    this.classroomManager = new GoogleClassroomManager(sheet);
+    this.classroomManager = new GoogleClassroomManager();
   }
 
   /**
@@ -279,5 +279,52 @@ class UIManager {
 
     this.ui.showModalDialog(html, 'Edit Classrooms');
     console.log('Classroom editor modal displayed.');
+  }
+
+  showVersionSelector() {
+    try {
+      const updateManager = new UpdateManager();
+      const versions = updateManager.fetchVersionDetails();
+
+      if (!versions) {
+        throw new Error('Failed to fetch version details');
+      }
+
+      const template = HtmlService.createTemplateFromFile('ui/VersionSelectorModal');
+      template.versions = versions;
+
+      const htmlOutput = template.evaluate()
+        .setWidth(400)
+        .setHeight(250);
+
+      this.ui.showModalDialog(htmlOutput, 'Select Version to Update To');
+    } catch (error) {
+      console.error('Error showing version selector:', error);
+      Utils.toastMessage('Failed to load versions: ' + error.message, 'Error', 5);
+    }
+  }
+}
+
+function testVersoinDropdown () {
+  const uiMan = new UIManager();
+  uiMan.showVersionSelector();
+
+}
+
+/**
+ * Handles the version update request from the UI
+ * @param {Object} versionData - Contains version number and file IDs
+ */
+function handleVersionUpdate(versionData) {
+  try {
+    const updateManager = new UpdateManager();
+    updateManager.versionNo = versionData.version;
+    updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
+    updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
+
+    return updateManager.updateAdminSheet();
+  } catch (error) {
+    console.error('Error in handleVersionUpdate:', error);
+    throw new Error(`Update failed: ${error.message}`);
   }
 }

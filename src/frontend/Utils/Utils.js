@@ -153,9 +153,18 @@ class Utils {
     return result; //True or False
   }
 
+    /**
+   * Gets the date in DD/MM/YYYY format for appending to various file names
+   */
+  static getDate() {
+    const dateObj = new Date();
+    const timeZone = Session.getScriptTimeZone();
+
+    // "dd/MM/yyyy" produces strings like "29/01/2025"
+    return Utilities.formatDate(dateObj, timeZone, 'dd/MM/yyyy');
+  }
 
 }
-
 // Ensure singleton instance (if needed)
 const utils = new Utils();
 Object.freeze(utils);

@@ -271,12 +271,12 @@ class ConfigurationManager {
   getAssessmentRecordDestinationFolder() {
     let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
     // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
-    if (!destinationFolder) {
-      const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-      const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
-      const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
-      destinationFolder = newFolder.newFolderId;
-    }
+    //if (!destinationFolder) {
+    //  const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+    //  const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
+    //  const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
+    //  destinationFolder = newFolder.newFolderId;
+    //}
     
     return destinationFolder;
   }
