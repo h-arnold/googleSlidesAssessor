@@ -8,11 +8,11 @@
 
 ## 1. Update Admin Sheet
 
- - Serialise script properties
- - Make a copy of template update
- - Copy all sheets to update
- - Move and rename old sheet to archive folder
- - Get Url of new admin sheet, open it and prompt user to close old admin sheet.
+~~ - Serialise script properties ~~
+~~ - Make a copy of template update ~~
+~~ - Copy all sheets to update ~~
+~~ - Move and rename old sheet to archive folder ~~
+~~ - Get Url of new admin sheet~~ , open it and prompt user to close old admin sheet.
 
  ## 2. Setup process from admin sheet
 
