@@ -235,7 +235,7 @@ class UpdateManager {
 
   updateAdminSheet() {
 
-    this.versionNo = `v0.4.0`;     // Replace this with a passed value once the gui is sorted
+    this.versionNo = `0.4.0`;     // Replace this with a passed value once the gui is sorted
     this.getTemplateFileIds();
 
     // Serialises existing config
