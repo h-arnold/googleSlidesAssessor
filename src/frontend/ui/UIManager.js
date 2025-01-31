@@ -16,24 +16,20 @@ class UIManager {
     const menu = ui.createMenu('Assessment Bot')
     .addItem('Analyse Cohorts', 'analyseCohorts')
 
-
-
     // Add a sub-menu for Google Classrooms operations
     const classroomsSubMenu = ui.createMenu('Google Classrooms')
       .addItem('Fetch Classrooms', 'handleFetchGoogleClassrooms')
       .addItem('Create Classrooms', 'handleCreateGoogleClassrooms')
-      //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); // This didn't survive the refactor and will need to be re-implemented
+      //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); 
       .addItem('Create Assessment Records', 'createAssessmentRecords')
     menu.addSubMenu(classroomsSubMenu);   
-
 
     // Add a sub-menu for Settings
     const settingsSubMenu = ui.createMenu('Settings')
       .addItem('Backend Settings', 'showConfigurationDialog')
-      .addItem('Change Classroom', 'showClassroomDropdown');
+      .addItem('Change Classroom', 'showClassroomDropdown')
+      .addItem('Update Version', 'showVersionSelector');
     menu.addSubMenu(settingsSubMenu);
-
-
 
     // Add a sub-menu for Debug operations
     const debugSubMenu = ui.createMenu('Debug')
@@ -305,26 +301,4 @@ class UIManager {
   }
 }
 
-function testVersoinDropdown () {
-  const uiMan = new UIManager();
-  uiMan.showVersionSelector();
 
-}
-
-/**
- * Handles the version update request from the UI
- * @param {Object} versionData - Contains version number and file IDs
- */
-function handleVersionUpdate(versionData) {
-  try {
-    const updateManager = new UpdateManager();
-    updateManager.versionNo = versionData.version;
-    updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
-    updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
-
-    return updateManager.updateAdminSheet();
-  } catch (error) {
-    console.error('Error in handleVersionUpdate:', error);
-    throw new Error(`Update failed: ${error.message}`);
-  }
-}

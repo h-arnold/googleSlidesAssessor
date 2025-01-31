@@ -82,6 +82,15 @@ function showClassroomDropdown() {
 }
 
 /**
+ * Displays the version selector interface by delegating to the main controller.
+ * @returns {void}
+ * @public
+ */
+function showVersionSelector() {
+  return mainController.showVersionSelector();
+}
+
+/**
  * Saves the provided configuration properties.
  * @param {Object} config - An object containing key-value pairs of configurations.
  */
@@ -205,6 +214,15 @@ function onOpen() {
 
 function analyseCohorts() {
   mainController.analyseCohorts();
+}
+
+/**
+ * Global function to handle version updates.
+ * @param {Object} versionData Object containing version and file IDs
+ * @return {Object} Result of the update operation
+ */
+function handleVersionUpdate(versionData) {
+    return mainController.updateAdminSheet(versionData);
 }
 
 /**

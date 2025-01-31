@@ -31,12 +31,6 @@ class MainController {
       this.uiManager = null; // UIManager is not available in this context
     }
 
-    // Instantiate ConfigurationManager if needed
-    //this.configurationManager = new ConfigurationManager();
-
-    // Create a new onChange Trigger for update purposes
-    //this.createOnChangeTrigger();
-
   }
 
   /** 
@@ -132,6 +126,10 @@ class MainController {
 
   showClassroomEditorModal() {
     this.uiManager.showClassroomEditorModal();
+  }
+
+  showVersionSelector() {
+    this.uiManager.showVersionSelector();
   }
 
   /**
@@ -510,6 +508,23 @@ class MainController {
       console.error("Error during cohort analysis:", error);
       this.progressTracker.logError(error.message);
       throw error;
+    }
+  }
+  /**
+* Handles the version update request from the UI
+* @param {Object} versionData - Contains version number and file IDs
+*/
+  updateAdminSheet(versionData) {
+    try {
+      const updateManager = new UpdateManager();
+      updateManager.versionNo = versionData.version;
+      updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
+      updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
+
+      return updateManager.updateAdminSheet();
+    } catch (error) {
+      console.error('Error in handleVersionUpdate:', error);
+      throw new Error(`Update failed: ${error.message}`);
     }
   }
 }
