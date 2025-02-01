@@ -26,14 +26,25 @@ class UpdateManager {
     this.adminSheetTemplateId = ""
   }
 
+  /**
+   * Clones assessment record sheets to a destination folder.
+   * @param {Object} assessmentRecordSheets - Object containing assessment record sheets with className as keys.
+   * @param {string} [destinationFolderId] - The ID of the destination folder. Defaults to configured assessment record destination folder.
+   * @param {string} [templateSheetId] - The ID of the template sheet. Defaults to assessmentRecordTemplateId.
+   * @returns {Object} The updated assessmentRecordSheets object with new sheet IDs.
+   * @description For each class name in the assessmentRecordSheets object, creates a new sheet
+   * based on the template and copies all properties from the source sheet.
+   * Updates the original object with new sheet IDs and returns it.
+   */
   cloneSheets(
-    assessmentRecordSheets, 
-    destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder()
-    ) {
+    assessmentRecordSheets,
+    destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder(),
+    templateSheetId = this.assessmentRecordTemplateId
+  ) {
     Object.keys(assessmentRecordSheets).forEach(className => {
 
       const newSheet = SheetCloner.cloneEverything({
-        "templateSheetId": this.assessmentRecordTemplateId,
+        "templateSheetId": templateSheetId,
         "newSpreadsheetName": className,
         "sourceSpreadsheetId": assessmentRecordSheets[className].originalSheetId,
         "copyDocProps": true,
@@ -131,9 +142,9 @@ class UpdateManager {
 
     // If no array is passed, it will default to the assessmentRecordSheets details.
     if (!assessmentRecordFileIds) {
-          // Get an array of the original FileIds
+      // Get an array of the original FileIds
       assessmentRecordFileIds = Object.values(this.assessmentRecordSheets)
-      .map(item => item.originalSheetId);
+        .map(item => item.originalSheetId);
     }
 
 
@@ -266,7 +277,7 @@ class UpdateManager {
     this.destinationFolderId = parentFolderId;
 
     // Clones the admin sheet
-    this.cloneSheets(adminSheetDetails, this.destinationFolderId);
+    this.cloneSheets(adminSheetDetails, this.destinationFolderId, this.adminSheetTemplateId);
 
     // The newSheetId property should be populated now.
     const newSheetId = this.adminSheetsDetails[adminSheetName].newSheetId;

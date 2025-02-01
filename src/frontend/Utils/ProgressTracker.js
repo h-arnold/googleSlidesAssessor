@@ -87,7 +87,7 @@ class ProgressTracker {
     // are saved and can be deserialised later.
     const propertiesCloner = new PropertiesCloner();
     propertiesCloner.serialiseProperties(true, false); //serialise document properties only because only the admin script uses ScriptProperties.
-
+  }
 
   /**
    * Logs an error encountered during the process.

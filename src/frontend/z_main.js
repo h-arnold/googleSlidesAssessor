@@ -204,8 +204,14 @@ function clearAllCacheKeys() {
 /**
  * Adds custom menus when the spreadsheet is opened.
  */
-function onOpen() {
-  mainController.onOpen();
+/**
+ * Trigger function that runs when the Google Sheets document is opened.
+ * Acts as an entry point wrapper for the main controller's onOpen functionality.
+ * Used for initialisation and setting up the custom menus.
+ * @param {Object} e - The event object passed by Google Apps Script runtime
+ */
+function onOpen(e) {
+  mainController.onOpen(e);
 }
 
 /**
@@ -221,7 +227,13 @@ function analyseCohorts() {
  * @param {Object} versionData Object containing version and file IDs
  * @return {Object} Result of the update operation
  */
-function handleVersionUpdate(versionData) {
+function handleVersionUpdate(
+  versionData = {
+        version: '0.4.0',
+        assessmentRecordTemplateFileId: '15U8tZSus3g2LRNP55K2pBWGQ0ashOzA9-3ohqFUcIYM',
+        adminSheetFileId: '1HxvD6GEHzlah5Noartn4sp-yQ6bLFf21f5gpWhbxJJ8'
+       }
+) {
     return mainController.updateAdminSheet(versionData);
 }
 
@@ -230,4 +242,13 @@ function handleVersionUpdate(versionData) {
  */
 function testWorkflow() {
   mainController.testWorkflow();
+}
+
+function handleAuthorisation() {
+  mainController.handleAuthorisation();
+}
+
+function revokeAuthorisation() {
+  const sa = new ScriptAppManager()
+  sa.revokeAuthorisation();
 }

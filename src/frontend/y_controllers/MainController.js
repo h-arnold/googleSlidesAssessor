@@ -37,9 +37,15 @@ class MainController {
    * === UI Wrapper Methods ===
    */
 
-  onOpen() {
+  /**
+   * Handles the open event of the Google Sheets document.
+   * Adds custom menus to the UI when the document is opened.
+   * @param {GoogleAppsScript.Events.Sheets.OnOpen} e - The event object passed when the document is opened
+   * @throws {Error} Logs error if UIManager is not initialized
+   */
+  onOpen(e) {
     if (this.uiManager) {
-      this.uiManager.addCustomMenus();
+      this.uiManager.addCustomMenus(e);
     } else {
       console.error("UIManager is not available to add custom menus.");
     }
@@ -516,6 +522,7 @@ class MainController {
 */
   updateAdminSheet(versionData) {
     let adminSheetUrl;
+    console.log(JSON.stringify(versionData));
     
     try {
       const updateManager = new UpdateManager();
@@ -531,8 +538,12 @@ class MainController {
     const ui = this.uiManager.ui
     ui.alert(`Update Successful`, `Your new Admin Sheet has opened and you can access it at: ${adminSheetUrl}. Please close this window.`, ui.ButtonSet.OK)
   }
+
+
+  handleAuthorisation(){
+    this.uiManager.handleAuthorisation();
+  }
+
 }
-
-
 // Instantiate the MainController as a singleton
 const mainController = new MainController();
