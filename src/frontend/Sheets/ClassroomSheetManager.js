@@ -12,8 +12,7 @@ class ClassroomSheetManager extends BaseSheetManager {
    * @param {string} spreadsheetId - The spreadsheet attached to the sheet to manage
    */
   constructor() {
-    super();
-    this.sheet = this.createOrGetSheet('Classrooms');
+    super('Classrooms');
   }
 
   /**
