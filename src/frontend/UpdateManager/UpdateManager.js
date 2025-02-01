@@ -187,7 +187,7 @@ class UpdateManager {
   }
 
   /**
-   * Retrieves the template file IDs for the specified version.
+   * * Retrieves the template file IDs for the specified version.
    * Validates the retrieved file Ids using DriveManager.isValidGoogleDriveFileId()
    * @param {string} versionNumber - The version number to look up.
    * @returns {void} - Sets the file IDs as class properties directly.
@@ -232,16 +232,31 @@ class UpdateManager {
     console.log(`Successfully set the file IDs for version ${versionNumber}.`);
   }
 
-
+  /**
+   * Updates the admin sheet by creating a new version and archiving the old one.
+   * This process includes:
+   * 1. Serialising existing configuration (you can't copy script properties directly)
+   * 2. Cloning the admin sheet to a new location
+   * 3. Archiving the old version
+   * 4. Opening the new sheet in a browser window
+   * 
+   * NOTE: the versionNo, assessmentRecordTemplateId and adminSheetTemplateId must be set before calling this method. 
+   * Currently this is handled by the MainController.updateAdminSheet() method which recieves the values from the UI.
+   * 
+   * @returns {string} The URL of the newly created admin sheet
+   * @throws {Error} If any of the sheet operations fail
+   */
   updateAdminSheet() {
-    this.getTemplateFileIds();
+
+    // Update configuration values prior to cloning. These get serialised in the next step so that they can be copied from sheet to sheet.
+    configurationManager.setAssessmentRecordTemplateId = this.assessmentRecordTemplateId; //Gets the latest Assessment Record Template ID
+    configurationManager.setUpdateStage(1); // Sets the update stage to 1 (Admin Sheet Updated).
 
     // Serialises existing config
     const propsCloner = new PropertiesCloner();
     propsCloner.serialiseProperties();
 
     const adminSheetDetails = this.getAdminSheetDetails();
-
     const adminSheetName = Object.keys(this.adminSheetsDetails)
 
     const currentAdminSheetFileId = this.adminSheetsDetails[adminSheetName].originalSheetId;
@@ -264,6 +279,7 @@ class UpdateManager {
 
     this.ui.openUrlInNewWindow(newSheetUrl);
 
+    // Returns the URL so that it can be fed to the GUI.
     return newSheetUrl;
   }
 

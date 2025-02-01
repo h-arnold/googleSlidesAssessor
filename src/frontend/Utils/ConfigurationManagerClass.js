@@ -10,7 +10,8 @@ class ConfigurationManager {
       IMAGE_FLOW_UID: 'imageFlowUid',
       ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
       ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder',
-      UPDATE_DETAILS_URL: 'updateDetailsUrl'
+      UPDATE_DETAILS_URL: 'updateDetailsUrl',
+      UPDATE_STAGE: 'updateStage'
     };
   }
 
@@ -120,6 +121,12 @@ class ConfigurationManager {
         }
         if (key === ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER && !this.isValidGoogleDriveFolderId(value)) {
           throw new Error("Assessment Record Destination Folder must be a valid Google Drive Folder ID.");
+        }
+        break;
+      case ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE:
+        const stage = parseInt(value);
+        if (!Number.isInteger(stage) || stage < 0 || stage > 2) {
+          throw new Error("Update Stage must be 0, 1, or 2");
         }
         break;
       default:
@@ -248,6 +255,20 @@ class ConfigurationManager {
   }
 
   /**
+ * Gets the current update stage (0=finished/not started, 1=admin sheet updated, 2=updating records)
+ * @return {number} - The current update stage
+ */
+  getUpdateStage() {
+    const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE), 10);
+    // If value isn't set, return the default of 0 - finished/not started.
+    if (isNaN(value)) {
+      return 0;
+    } else {
+      return value;
+    }
+  }
+
+  /**
    * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
    * @return {string} - The constructed Table Assessment URL.
    */
@@ -277,7 +298,7 @@ class ConfigurationManager {
     //  const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
     //  destinationFolder = newFolder.newFolderId;
     //}
-    
+
     return destinationFolder;
   }
 
@@ -322,6 +343,15 @@ class ConfigurationManager {
 
   setUpdateDetailsUrl(url) {
     this.setProperpty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL, url);
+  }
+
+  // Add setter method
+  /**
+   * Sets the current update stage
+   * @param {number} stage - The update stage (0=finished/not started, 1=admin sheet updated, 2=updating records)
+   */
+  setUpdateStage(stage) {
+    this.setProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE, stage);
   }
 }
 

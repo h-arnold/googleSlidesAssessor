@@ -233,6 +233,7 @@ class GoogleClassroomManager {
           const errMsg = `Failed to copy template for row ${i + 1}: ${error.message}`;
           this.progressTracker.logError(errMsg);
           console.error(errMsg);
+          throw new error(errMsg);
         }
       }
     }
