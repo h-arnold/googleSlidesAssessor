@@ -20,6 +20,15 @@ class PropertiesCloner extends BaseSheetManager {
   /**
    * Serialises all Document and Script properties to the 'propertiesStore' sheet.
    */
+  /**
+   * Serialises document and/or script properties to a hidden spreadsheet.
+   * Creates a table with columns: Type, Key, Value.
+   * Each property is stored as a row with its type (DOCUMENT/SCRIPT), key and value.
+   * 
+   * @param {boolean} [serialiseDocProps=true] - Whether to serialise document properties
+   * @param {boolean} [serialiseScriptProps=true] - Whether to serialise script properties
+   * @returns {void} - Returns nothing if both parameters are false
+   */
   serialiseProperties(serialiseDocProps = true, serialiseScriptProps = true) {
     const docProperties = PropertiesService.getDocumentProperties();
     const scriptProperties = PropertiesService.getScriptProperties();
