@@ -10,7 +10,7 @@
     ],
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true,
-    "files.associations": {
-        "*.yaml": "home-assistant"
     },
+    "editor.wordWrap": "on",
+    "github.copilot.chat.generateTests.codeLens": true,
 }

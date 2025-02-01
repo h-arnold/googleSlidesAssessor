@@ -277,6 +277,17 @@ class UIManager {
     console.log('Classroom editor modal displayed.');
   }
 
+  /**
+   * Displays a modal dialog for version selection.
+   * Creates and shows a UI dialog that allows users to select from available versions for update.
+   * Fetches version details through UpdateManager and displays them in a templated HTML modal.
+   * 
+   * @throws {Error} If version details cannot be fetched
+   * 
+   * @example
+   * const uiManager = new UIManager();
+   * uiManager.showVersionSelector();
+   */
   showVersionSelector() {
     try {
       const updateManager = new UpdateManager();
@@ -299,6 +310,39 @@ class UIManager {
       Utils.toastMessage('Failed to load versions: ' + error.message, 'Error', 5);
     }
   }
+
+    /**
+     * Opens a specified URL in a new browser window using Google Apps Script's UI service.
+     * Creates a temporary HTML dialog that triggers the window opening and then closes itself.
+     * 
+     * @param {string} url - The URL to open in the new window
+     * @throws {Error} Throws an error if URL parameter is empty or undefined
+     * @return {void}
+     * 
+     * @example
+     * // Opens Google in a new window
+     * openUrlInNewWindow('https://www.google.com');
+     */
+    openUrlInNewWindow(url) {
+      try {
+        if (!url) {
+          throw new Error('URL is required');
+        }
+        
+        const html = HtmlService.createHtmlOutput(
+          `<script>window.open('${url}', '_blank'); google.script.host.close();</script>`
+        )
+          .setWidth(1)
+          .setHeight(1);
+          
+        this.ui.showModalDialog(html, 'Opening...');
+        console.log(`Opening URL in new window: ${url}`);
+      } catch (error) {
+        console.error(`Failed to open URL: ${error.message}`);
+        throw error;
+      }
+    }
+  
 }
 
 

@@ -234,8 +234,6 @@ class UpdateManager {
 
 
   updateAdminSheet() {
-
-    this.versionNo = `0.4.0`;     // Replace this with a passed value once the gui is sorted
     this.getTemplateFileIds();
 
     // Serialises existing config
@@ -261,14 +259,12 @@ class UpdateManager {
     // Archives old admin sheet
     this.archiveOldVersions([currentAdminSheetFileId]); //archiveOldVersions expects array so we'll pass the single value as a single object array.
 
-    // Passes the Url of the new sheet back to the GUI so that 
+    //Gets the Url of the new sheet and opens it in a new window.
     const newSheetUrl = SpreadsheetApp.openById(newSheetId).getUrl();
+
+    this.ui.openUrlInNewWindow(newSheetUrl);
+
     return newSheetUrl;
   }
 
-}
-
-function testUpdateAdminSheet() {
-  const um = new UpdateManager()
-  um.updateAdminSheet();
 }

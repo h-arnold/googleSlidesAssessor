@@ -515,17 +515,21 @@ class MainController {
 * @param {Object} versionData - Contains version number and file IDs
 */
   updateAdminSheet(versionData) {
+    let adminSheetUrl;
+    
     try {
       const updateManager = new UpdateManager();
       updateManager.versionNo = versionData.version;
       updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
       updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
 
-      return updateManager.updateAdminSheet();
+      adminSheetUrl = updateManager.updateAdminSheet();
     } catch (error) {
       console.error('Error in handleVersionUpdate:', error);
       throw new Error(`Update failed: ${error.message}`);
     }
+    const ui = this.uiManager.ui
+    ui.alert(`Update Successful`, `Your new Admin Sheet has opened and you can access it at: ${adminSheetUrl}. Please close this window.`, ui.ButtonSet.OK)
   }
 }
 
