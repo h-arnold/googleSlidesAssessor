@@ -539,11 +539,51 @@ class MainController {
     ui.alert(`Update Successful`, `Your new Admin Sheet has opened and you can access it at: ${adminSheetUrl}. Please close this window.`, ui.ButtonSet.OK)
   }
 
+   /**
+   * Handles the authorisation flow when user clicks authorise. This method ensures that the authorised menu appears after the auth process has taken place.
+   */
+  handleAuthorisation() { 
+    const scriptAppManager = new ScriptAppManager();
+    const authResult = scriptAppManager.handleAuthFlow();
+    const updateStage = configurationManager.getUpdateStage();
 
-  handleAuthorisation(){
-    this.uiManager.handleAuthorisation();
+    // Checks if the update needs finishing.
+    if (updateStage == 1) 
+      {
+
+      if (authResult.needsAuth) 
+      {
+      //Get the script authorised.
+      this.uiManager.showAuthorisationModal(authResult.authUrl);
+      }
+
+      // Finish the update
+      this.finishUpdate();
+
+      //Create the regular authorised menu.
+      this.uiManager.createAuthorisedMenu();
+
+    } 
+    else if (authResult.needsAuth) 
+    {
+      this.uiManager.showAuthorisationModal();
+
+      //Update the menu after authorisation so that it give the user access to all functions without having to refresh the page.
+      this.uiManager.createAuthorisedMenu();
+    
+    } 
+    else 
+    {
+      this.uiManager.createAuthorisedMenu()
+    }
   }
 
+  finishUpdate() {
+    const updateManager = new UpdateManager();
+    updateManager.runAssessmentRecordUpdateWizard();
+  }
 }
+
+
 // Instantiate the MainController as a singleton
 const mainController = new MainController();

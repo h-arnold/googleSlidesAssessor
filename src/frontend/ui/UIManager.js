@@ -14,16 +14,19 @@ class UIManager {
     const authMode = e.authMode
     const updateStatus = configurationManager.getUpdateStage();
 
-    if (authMode === ScriptApp.AuthMode.LIMITED) {
-      this.createUnauthorisedMenu();
+    // Check if the update needs to be completed. 
+    // Ordinarily this option shouldn't be necessary unless the user closes the tab containing the spreadsheet before they've completed the auth flow.
+    if  (authMode === ScriptApp.AuthMode.FULL && updateStatus == 1) {
+      this.createFinishUpdateMenu()
     } 
-    else if (authMode === ScriptApp.AuthMode.FULL && updateStatus == 1) // Check if the update needs to be completed.
+    //If not, get authorisation and then continue to either complete update or create authorised menu.
+    else if (authMode === ScriptApp.AuthMode.LIMITED) 
       {
-        this.createFinishUpdateMenu();
+        this.createUnauthorisedMenu();
       } 
     else 
     { // Script is authorised and up-to-date.
-        this.createAuthorisedMenu();
+        this.createAuthorisedMenu()
     }
 
   }
@@ -44,7 +47,7 @@ class UIManager {
    */
     createFinishUpdateMenu() {
       const menu = this.ui.createMenu('Assessment Bot')
-        .addItem('Finish Update', 'handleAuthorization');
+        .addItem('Finish Update', 'handleAuthorisation');
       menu.addToUi();
     }
 
@@ -421,19 +424,6 @@ class UIManager {
     console.log('Authorization modal displayed.');
   }
 
-    /**
-   * Handles the authorization flow when user clicks authorize
-   */
-  handleAuthorisation() {
-    const scriptAppManager = new ScriptAppManager();
-    const authResult = scriptAppManager.handleAuthFlow();
-    if (authResult.needsAuth) {
-      this.showAuthorisationModal(authResult.authUrl);
-      this.createAuthorisedMenu
-    } else {
-      this.createAuthorisedMenu()
-    }
-  }
 }
 
 

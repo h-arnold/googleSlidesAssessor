@@ -27,13 +27,9 @@ class ConfigurationManager {
     // to the relevant store as the Properties Service is much quicker than reading from a Google sheet. The code below checks if they're empty and 
     // attempts to deserialise if so.
 
-    if (!this.scriptProperties || !this.documentProperties) {
-      console.log('No script properties detected. Deserialising config data.')
-      const propertiesCloner = new PropertiesCloner();
-      propertiesCloner.deserialiseProperties();
-    } else {
-      console.log(`Script and or document properties detected. Not deserialising.`)
-    }
+    const propertiesCloner = new PropertiesCloner();
+    propertiesCloner.deserialiseProperties();
+    console.log('Allegedly deserialising properties.')
     this.configCache = null; // Initialize cache
 
     ConfigurationManager.instance = this;
@@ -292,12 +288,12 @@ class ConfigurationManager {
   getAssessmentRecordDestinationFolder() {
     let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
     // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
-    //if (!destinationFolder) {
-    //  const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-    //  const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
-    //  const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
-    //  destinationFolder = newFolder.newFolderId;
-    //}
+    if (!destinationFolder) {
+      const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+      const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
+      const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
+      destinationFolder = newFolder.newFolderId;
+    }
 
     return destinationFolder;
   }

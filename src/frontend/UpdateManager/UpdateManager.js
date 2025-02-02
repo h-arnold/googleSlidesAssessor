@@ -12,18 +12,25 @@
 class UpdateManager {
   constructor() {
     this.sheet = SpreadsheetApp.getActiveSpreadsheet();
-    this.ui = new UIManager(this.sheet);
-    this.progressTracker = new ProgressTracker();
+    this.uiManager = new UIManager(this.sheet);
     this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
     this.versionDetails = this.fetchVersionDetails();
-    this.versionNo = "";
+    this.versionNo = '0.4.0'; //Hard-coded value that needs to be updated with each release.
     this.assessmentRecordSheets = {};
     this.adminSheetsDetails = {};
     this.destinationFolderId = ""
 
     // These are the FileIds of the sheets that will be copied into the user's assessment record folder and populated with the values from the old versions.
-    this.assessmentRecordTemplateId = ""
-    this.adminSheetTemplateId = ""
+    this.assessmentRecordTemplateId = this.getAssessmentRecordTemplateId();
+    this.adminSheetTemplateId = this.getadminSheetTemplateId();
+  }
+
+  getAssessmentRecordTemplateId (versionNo = this.versionNo) {
+    return this.versionDetails[versionNo].assessmentRecordTemplateFileId;
+  }
+
+  getadminSheetTemplateId (versionNo = this.versionNo) {
+    return this.versionDetails[versionNo].adminSheetFileId;
   }
 
   /**
@@ -252,7 +259,8 @@ class UpdateManager {
    * 4. Opening the new sheet in a browser window
    * 
    * NOTE: the versionNo, assessmentRecordTemplateId and adminSheetTemplateId must be set before calling this method. 
-   * Currently this is handled by the MainController.updateAdminSheet() method which recieves the values from the UI.
+   * Currently this is handled by the MainController.updateAdminSheet() method which recieves the values from the uiManager.ui.
+   * 
    * 
    * @returns {string} The URL of the newly created admin sheet
    * @throws {Error} If any of the sheet operations fail
@@ -260,7 +268,6 @@ class UpdateManager {
   updateAdminSheet() {
 
     // Update configuration values prior to cloning. These get serialised in the next step so that they can be copied from sheet to sheet.
-    configurationManager.setAssessmentRecordTemplateId = this.assessmentRecordTemplateId; //Gets the latest Assessment Record Template ID
     configurationManager.setUpdateStage(1); // Sets the update stage to 1 (Admin Sheet Updated).
 
     // Serialises existing config
@@ -288,10 +295,118 @@ class UpdateManager {
     //Gets the Url of the new sheet and opens it in a new window.
     const newSheetUrl = SpreadsheetApp.openById(newSheetId).getUrl();
 
-    this.ui.openUrlInNewWindow(newSheetUrl);
+    this.uiManager.ui.
+    openUrlInNewWindow(newSheetUrl);
 
-    // Returns the URL so that it can be fed to the GUI.
+    // Returns the URL so that it can be fed to the GuiManager.ui.
+
     return newSheetUrl;
   }
 
-}
+  /**
+   * Updates all assessment records by cloning them into the latest template and archiving old versions.
+   * This method performs the following steps:
+   * 1. Retrieves the assessment record template ID
+   * 2. Fetches assessment record details
+   * 3. Clones assessment record sheets into the latest template
+   * 4. Archives old assessment record sheets
+   * 5. Updates the classroom sheet with new assessment record file IDs
+   * 
+   * The progress of the update is tracked using the ProgressTracker singleton.
+   * The update stage is set to 2 in the ConfigurationManager to indicate assessment records are updated.
+   * 
+   * @throws {Error} If assessment record template ID is not set or if any step in the process fails
+   */
+  updateAssessmentRecords (){
+    const progressTracker = progressTracker.getInstance()
+    let step = 0;
+    progressTracker.startTracking('Updating all Assessment Records. This may take a while...')
+    //Gets the assessment record template file Id - this should have been set when the admin sheet was updated.
+    this.assessmentRecordTemplateId = configurationManager.getAssessmentRecordTemplateId()
+
+    progressTracker.updateProgress(++step, 'Fetching Assessment Record Details')
+    // Get the assessment record details
+    this.getAssessmentRecordDetails();
+
+    // Clones the assessment record sheets
+    progressTracker.updateProgress(++step, 'Cloning Assessment Record sheets into latest template');
+    this.cloneSheets(this.assessmentRecordSheets);
+
+    // Archives old assessment record sheets
+    progressTracker.updateProgress(++step, 'Archiving old Assessment Record sheets');
+    const assessmentRecordFileIds = Object.values(this.assessmentRecordSheets)
+      .map(item => item.originalSheetId);
+    this.archiveOldVersions(assessmentRecordFileIds);
+
+    // Updates the Classroom Sheet with the new Assessment Record File IDs
+    progressTracker.updateProgress(++step, 'Updating Classroom Sheet with new Assessment Record File IDs');
+    this.updateClassroomSheetWithNewAssessmentRecords();
+
+    // Marks the task as complete
+    progressTracker.complete();
+    configurationManager.setUpdateStage(2); // Sets the update stage back to 2 (Up to date).
+  }
+
+  /**
+   * This method makes it easier for the user to update the assessment records by:
+   * 1. Giving them the scriptId of the current admin script (this one)
+   * 2. Telling them to update the library of the assessment record template.
+   * 3. Opening the Url of the assessment record template in a new window so that they can update the library.   * 
+   */
+  runAssessmentRecordUpdateWizard() {
+    const ui = this.uiManager.ui
+    this.destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder();
+
+    //Make a 'local' copy of the Assessment Record Template so that you can upate the library file.
+    this.assessmentRecordTemplateId = this.copyAssessmentRecordTemplate();
+
+    const assessmentRecordTemplateUrl = this.getAssessmentRecordTemplateUrl(this.assessmentRecordTemplateId)
+
+    const sa = new ScriptAppManager();
+    const adminScriptId = sa.getScriptId();
+
+    const message = `Next, you need to update the assessment record template with a link to this library code. Instructions coming next.`
+
+    ui.alert(`Let's finish the update`, message, ui.ButtonSet.OK);
+
+    const instructions = `To update the Assessment Records, please follow these steps:
+    1. Open the Assessment Record Template: ${assessmentRecordTemplateUrl}
+    2. Click on 'Extensions' > 'App Script'
+    3. Copy this Script ID: ${adminScriptId}
+    4. Click on the plus (➕) button next to 'Libraries' in the left hand panel.
+    5. Paste the Script ID and click 'Look up'.
+    6. Select the latest version and click 'Add'.
+    7. Click '💾' Save.`
+
+    ui.alert('Update Instructions', instructions, ui.ButtonSet.OK);
+
+    this.uiManager.openUrlInNewWindow(assessmentRecordTemplateUrl);
+
+    // Remaining steps
+  }
+
+  /** Gets the URL of the assessment record template
+   * @param {string} assessmentRecordTemplateId - The ID of the assessment record template.
+   * @returns {string} The URL of the assessment record template.
+   */
+  getAssessmentRecordTemplateUrl(assessmentRecordTemplateId) {
+    const assessmentRecordTemplate = SpreadsheetApp.openById(assessmentRecordTemplateId);
+    return assessmentRecordTemplate.getUrl();
+  }
+
+  /**
+   * Creates a copy of the assessment record template in the destination folder.
+   * @returns {string} The ID of the newly created assessment record template copy.
+   * @throws {Error} If copying the template fails.
+   */
+  copyAssessmentRecordTemplate() {
+      const copiedAssessmentRecordTemplateId = DriveManager.copyTemplateSheet(
+      this.assessmentRecordTemplateId,
+      this.destinationFolderId, 
+      `Assessment Record Template v${this.versionNo}`
+      )
+      return this.assessmentRecordTemplateId = copiedAssessmentRecordTemplateId.fileId;
+  }
+
+
+  }
