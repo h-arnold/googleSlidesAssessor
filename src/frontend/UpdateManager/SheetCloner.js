@@ -1,12 +1,18 @@
 /**
  * SheetCloner Class
  * 
+ * This class should only be run from an admin sheet. An error will be thrown if it's run from an assessment record.
  * Manages the process of cloning spreadsheets, including:
  * 1) Creating a copy of a template spreadsheet.
  * 2) Copying all sheets (data & formatting) from a source spreadsheet to the new file.
  * 3) Copying document properties from the source (optional).
  */
 class SheetCloner {
+  constructor() {
+
+    // Ensure this is only run from the admin sheet. Throws an error if not.   
+    Utils.validateIsAdminSheet(true);
+  }
 
   /**
    * Makes a copy of the template spreadsheet in a specific folder with a new name.

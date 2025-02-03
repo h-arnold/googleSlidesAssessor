@@ -164,6 +164,26 @@ class Utils {
     return Utilities.formatDate(dateObj, timeZone, 'dd/MM/yyyy');
   }
 
+  /**
+ * Validates if current sheet is admin sheet
+ * @param {boolean} throwError - Whether to throw error or just log warning
+ * @returns {boolean} True if admin sheet
+ */
+  static validateIsAdminSheet(throwError = true) {
+    const isAdmin = configurationManager.getIsAdminSheet();
+    if (!isAdmin) {
+      const message = 'This operation can only be performed from the admin sheet.';
+      if (throwError) {
+        throw new Error(message);
+      } else {
+        console.warn(message);
+      }
+    }
+    return isAdmin;
+  }
+
+  
+
 }
 // Ensure singleton instance (if needed)
 const utils = new Utils();

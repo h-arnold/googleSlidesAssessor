@@ -229,13 +229,7 @@ function analyseCohorts() {
  * @param {Object} versionData Object containing version and file IDs
  * @return {Object} Result of the update operation
  */
-function handleVersionUpdate(
-  versionData = {
-        version: '0.4.0',
-        assessmentRecordTemplateFileId: '15U8tZSus3g2LRNP55K2pBWGQ0ashOzA9-3ohqFUcIYM',
-        adminSheetFileId: '1HxvD6GEHzlah5Noartn4sp-yQ6bLFf21f5gpWhbxJJ8'
-       }
-) {
+function handleVersionUpdate(versionData) {
     return mainController.updateAdminSheet(versionData);
 }
 

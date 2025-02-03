@@ -28,15 +28,14 @@ class ConfigurationManager {
     // to the relevant store as the Properties Service is much quicker than reading from a Google sheet. The code below checks if they're empty and 
     // attempts to deserialise if so.
 
-    if (!this.scriptProperties && !this.documentProperties) 
-    {
+    if (!this.scriptProperties && !this.documentProperties) {
 
-    const propertiesCloner = new PropertiesCloner();
-    propertiesCloner.deserialiseProperties();
-    console.log('Copying script and document properties from propertiesStore to the relevant properties store');
+      const propertiesCloner = new PropertiesCloner();
+      propertiesCloner.deserialiseProperties();
+      console.log('Copying script and document properties from propertiesStore to the relevant properties store');
     }
     this.configCache = null; // Initialize cache
-    
+
 
     ConfigurationManager.instance = this;
     return this;
@@ -73,6 +72,9 @@ class ConfigurationManager {
   getProperty(key) {
     if (!this.configCache) {
       this.getAllConfigurations();
+    }
+    if (key === ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET) {
+      return this.documentProperties.getProperty(key) || false;
     }
     return this.configCache[key] || '';
   }
@@ -131,6 +133,9 @@ class ConfigurationManager {
           throw new Error("Update Stage must be 0, 1, or 2");
         }
         break;
+      case ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET:
+        this.documentProperties.setProperty(key, Boolean(value));
+        return;
       default:
         // No specific validation
         break;
@@ -292,16 +297,19 @@ class ConfigurationManager {
   }
 
   getAssessmentRecordDestinationFolder() {
-    let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
-    // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
-    if (!destinationFolder) {
-      const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
-      const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
-      const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
-      destinationFolder = newFolder.newFolderId;
-    }
+    // Getting the assessment record desintation folder is unnessecary for the assessment record sheets and slows down initilisation so it will not run if the sheet is an assessment record.
+    if (Utils.validateIsAdminSheet(false)) {
+      let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
+      // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
+      if (!destinationFolder) {
+        const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
+        const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
+        destinationFolder = newFolder.newFolderId;
+      }
 
-    return destinationFolder;
+      return destinationFolder;
+    }
   }
 
   getIsAdminSheet() {
@@ -359,16 +367,18 @@ class ConfigurationManager {
   setUpdateStage(stage) {
     this.setProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE, stage);
   }
-}
 
-/**
- * Sets the admin sheet status
- * @param {boolean|any} isAdmin - Will be converted to boolean if non-boolean provided
- * @returns {void}
- */
-setIsAdminSheet(isAdmin) {
+
+  /**
+   * Sets the admin sheet status
+   * @param {boolean|any} isAdmin - Will be converted to boolean if non-boolean provided
+   * @returns {void}
+   */
+  setIsAdminSheet(isAdmin) {
     const boolValue = Boolean(isAdmin);
     this.setProperty(ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET, boolValue);
+  }
+
 }
 // Ensure singleton instance
 const configurationManager = new ConfigurationManager();
@@ -380,3 +390,7 @@ const configurationManager = new ConfigurationManager();
 function getConfiguration() {
   return configurationManager.getAllConfigurations();
 }
+
+function setIsAdmin() {
+  configurationManager.setIsAdminSheet(true);
+  }

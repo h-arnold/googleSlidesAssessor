@@ -11,10 +11,16 @@
 
 class UpdateManager {
   constructor() {
+    //This class should only be instantiated from the Admin Sheet. If it's instantiated from anywhere else, throw an error.
+    // Checks if this is being run from an Admin Sheet. Throws an error if not.
+    Utils.validateIsAdminSheet(true)
+
+    //Assuming no errors, instantiate the rest of the class.
     this.sheet = SpreadsheetApp.getActiveSpreadsheet();
     this.uiManager = new UIManager(this.sheet);
-    this.classroomSheet = {};
+    this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
     this.versionDetails = this.fetchVersionDetails();
+
     this.versionNo = '0.4.0'; //Hard-coded value that needs to be updated with each release.
     this.assessmentRecordSheets = {};
     this.adminSheetsDetails = {};
@@ -269,6 +275,7 @@ class UpdateManager {
 
     // Update configuration values prior to cloning. These get serialised in the next step so that they can be copied from sheet to sheet.
     configurationManager.setUpdateStage(1); // Sets the update stage to 1 (Admin Sheet Updated).
+    configurationManager.setIsAdminSheet(true); // Sets the admin sheet flag to true. The update can't continue if it's set to false as certain classes won't instantiate if it's not an admin sheet.
 
     // Serialises existing config
     const propsCloner = new PropertiesCloner();
@@ -317,15 +324,17 @@ class UpdateManager {
    * @throws {Error} If assessment record template ID is not set or if any step in the process fails
    */
   updateAssessmentRecords (){
-    const progressTracker = new ProgressTracker ();
+    const progressTracker = new ProgressTracker();
     const uiManager = new UIManager();
+
+    uiManager.showProgressModal();
+
 
     let step = 0;
     progressTracker.startTracking('Updating all Assessment Records. This may take a while...')
     //Gets the assessment record template file Id - this should have been set when the admin sheet was updated.
     this.assessmentRecordTemplateId = configurationManager.getAssessmentRecordTemplateId()
 
-    uiManager.showProgressModal();
 
 
     progressTracker.updateProgress(++step, 'Fetching Assessment Record Details')
@@ -436,8 +445,6 @@ class UpdateManager {
 
 
   }
-
-// Code.gs
 
 // Code.gs
 

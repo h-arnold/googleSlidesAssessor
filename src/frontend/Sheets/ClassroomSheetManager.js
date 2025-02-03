@@ -12,6 +12,9 @@ class ClassroomSheetManager extends BaseSheetManager {
    * @param {string} spreadsheetId - The spreadsheet attached to the sheet to manage
    */
   constructor() {
+    // This class should only be run from an admin sheet. 
+    // As this sheet can be instantiated from the configuration manager, it's set to silently fail to instantiate rather than throw an error.
+    Utils.validateIsAdminSheet(false);
     super('Classrooms');
   }
 

@@ -529,6 +529,7 @@ class MainController {
       updateManager.versionNo = versionData.version;
       updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
       updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
+      console.log(JSON.stringify(versionData))
 
       adminSheetUrl = updateManager.updateAdminSheet();
     } catch (error) {
