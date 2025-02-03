@@ -13,7 +13,7 @@ class UpdateManager {
   constructor() {
     this.sheet = SpreadsheetApp.getActiveSpreadsheet();
     this.uiManager = new UIManager(this.sheet);
-    this.classroomSheet = new ClassroomSheetManager('Classrooms', this.sheet.getId());
+    this.classroomSheet = {};
     this.versionDetails = this.fetchVersionDetails();
     this.versionNo = '0.4.0'; //Hard-coded value that needs to be updated with each release.
     this.assessmentRecordSheets = {};

@@ -11,7 +11,8 @@ class ConfigurationManager {
       ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
       ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder',
       UPDATE_DETAILS_URL: 'updateDetailsUrl',
-      UPDATE_STAGE: 'updateStage'
+      UPDATE_STAGE: 'updateStage',
+      IS_ADMIN_SHEET: `isAdminSheet`
     };
   }
 
@@ -303,6 +304,10 @@ class ConfigurationManager {
     return destinationFolder;
   }
 
+  getIsAdminSheet() {
+    return this.getProperty(ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET) || false;
+  }
+
   /**
    * Setter Methods
    */
@@ -356,6 +361,15 @@ class ConfigurationManager {
   }
 }
 
+/**
+ * Sets the admin sheet status
+ * @param {boolean|any} isAdmin - Will be converted to boolean if non-boolean provided
+ * @returns {void}
+ */
+setIsAdminSheet(isAdmin) {
+    const boolValue = Boolean(isAdmin);
+    this.setProperty(ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET, boolValue);
+}
 // Ensure singleton instance
 const configurationManager = new ConfigurationManager();
 
