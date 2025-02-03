@@ -57,7 +57,7 @@ class SheetCloner {
         // If a sheet of the same name already exists, rename it and then rename the new copy to the correct name.
         if (e.message.indexOf(`already exists. Please enter another name.`) !== -1) {
           const targetSheet = target.getSheetByName(sheetName);
-          const date = new Date();
+          const date = Utils.getDate();
           targetSheet.setName(`${sheetName} ${date}`);
 
           newSheet.setName(sheetName)

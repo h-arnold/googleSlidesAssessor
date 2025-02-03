@@ -21,15 +21,15 @@ class UpdateManager {
     this.destinationFolderId = ""
 
     // These are the FileIds of the sheets that will be copied into the user's assessment record folder and populated with the values from the old versions.
-    this.assessmentRecordTemplateId = this.getAssessmentRecordTemplateId();
-    this.adminSheetTemplateId = this.getadminSheetTemplateId();
+    this.assessmentRecordTemplateId = configurationManager.getAssessmentRecordTemplateId();
+    this.adminSheetTemplateId = this.getLatestAdminSheetTemplateId;
   }
 
-  getAssessmentRecordTemplateId (versionNo = this.versionNo) {
+  getLatestAssessmentRecordTemplateId (versionNo = this.versionNo) {
     return this.versionDetails[versionNo].assessmentRecordTemplateFileId;
   }
 
-  getadminSheetTemplateId (versionNo = this.versionNo) {
+  getLatestAdminSheetTemplateId (versionNo = this.versionNo) {
     return this.versionDetails[versionNo].adminSheetFileId;
   }
 
@@ -295,8 +295,7 @@ class UpdateManager {
     //Gets the Url of the new sheet and opens it in a new window.
     const newSheetUrl = SpreadsheetApp.openById(newSheetId).getUrl();
 
-    this.uiManager.ui.
-    openUrlInNewWindow(newSheetUrl);
+    this.uiManager.ui.openUrlInNewWindow(newSheetUrl);
 
     // Returns the URL so that it can be fed to the GuiManager.ui.
 
@@ -318,11 +317,16 @@ class UpdateManager {
    * @throws {Error} If assessment record template ID is not set or if any step in the process fails
    */
   updateAssessmentRecords (){
-    const progressTracker = progressTracker.getInstance()
+    const progressTracker = new ProgressTracker ();
+    const uiManager = new UIManager();
+
     let step = 0;
     progressTracker.startTracking('Updating all Assessment Records. This may take a while...')
     //Gets the assessment record template file Id - this should have been set when the admin sheet was updated.
     this.assessmentRecordTemplateId = configurationManager.getAssessmentRecordTemplateId()
+
+    uiManager.showProgressModal();
+
 
     progressTracker.updateProgress(++step, 'Fetching Assessment Record Details')
     // Get the assessment record details
@@ -347,43 +351,69 @@ class UpdateManager {
     configurationManager.setUpdateStage(2); // Sets the update stage back to 2 (Up to date).
   }
 
+   /**
+   * Saves selected state properties to the Script Properties so that they can be restored
+   * on subsequent calls.
+   */
+  saveState() {
+    const state = {
+      versionNo: this.versionNo,
+      destinationFolderId: this.destinationFolderId,
+      assessmentRecordTemplateId: this.assessmentRecordTemplateId,
+      adminSheetTemplateId: this.adminSheetTemplateId
+    };
+    PropertiesService.getScriptProperties().setProperty('updateManagerState', JSON.stringify(state));
+    console.log("UpdateManager state saved: " + JSON.stringify(state));
+  }
+
   /**
-   * This method makes it easier for the user to update the assessment records by:
-   * 1. Giving them the scriptId of the current admin script (this one)
-   * 2. Telling them to update the library of the assessment record template.
-   * 3. Opening the Url of the assessment record template in a new window so that they can update the library.   * 
+   * Loads state properties from the Script Properties into the current instance.
+   */
+  loadState() {
+    const stateStr = PropertiesService.getScriptProperties().getProperty('updateManagerState');
+    if (stateStr) {
+      var state = JSON.parse(stateStr);
+      this.versionNo = state.versionNo;
+      this.destinationFolderId = state.destinationFolderId;
+      this.assessmentRecordTemplateId = state.assessmentRecordTemplateId;
+      this.adminSheetTemplateId = state.adminSheetTemplateId;
+      console.log("UpdateManager state loaded: " + JSON.stringify(state));
+    } else {
+      console.warn("No saved state found for UpdateManager.");
+    }
+  }
+
+  /**
+   * Modified runAssessmentRecordUpdateWizard method that launches the HTML-powered wizard.
+   * This method prepares the necessary parameters, saves state, and then displays the wizard.
    */
   runAssessmentRecordUpdateWizard() {
-    const ui = this.uiManager.ui
+    // Retrieve the destination folder ID from configuration.
     this.destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder();
 
-    //Make a 'local' copy of the Assessment Record Template so that you can upate the library file.
+    // Make a local copy of the Assessment Record Template.
     this.assessmentRecordTemplateId = this.copyAssessmentRecordTemplate();
 
-    const assessmentRecordTemplateUrl = this.getAssessmentRecordTemplateUrl(this.assessmentRecordTemplateId)
+    // Store the fileId of the 'local' copy of the assessment record in the config files. This bit is crucial to the next stage where the sheets are cloned into a copy of that template.
+    configurationManager.setAssessmentRecordTemplateId(this.assessmentRecordTemplateId)
+    const assessmentRecordTemplateUrl = this.getAssessmentRecordTemplateUrl(this.assessmentRecordTemplateId);
 
+    // Retrieve the Script ID.
     const sa = new ScriptAppManager();
     const adminScriptId = sa.getScriptId();
 
-    const message = `Next, you need to update the assessment record template with a link to this library code. Instructions coming next.`
+    // Save the current state so that it can be retrieved later in updateAssessmentRecords.
+    this.saveState();
 
-    ui.alert(`Let's finish the update`, message, ui.ButtonSet.OK);
+    // Create the HTML template for the wizard and pass in the template URL and script ID.
+    const template = HtmlService.createTemplateFromFile('UpdateManager/UpdateWizard');
+    template.assessmentRecordTemplateUrl = assessmentRecordTemplateUrl;
+    template.adminScriptId = adminScriptId;
 
-    const instructions = `To update the Assessment Records, please follow these steps:
-    1. Open the Assessment Record Template: ${assessmentRecordTemplateUrl}
-    2. Click on 'Extensions' > 'App Script'
-    3. Copy this Script ID: ${adminScriptId}
-    4. Click on the plus (➕) button next to 'Libraries' in the left hand panel.
-    5. Paste the Script ID and click 'Look up'.
-    6. Select the latest version and click 'Add'.
-    7. Click '💾' Save.`
-
-    ui.alert('Update Instructions', instructions, ui.ButtonSet.OK);
-
-    this.uiManager.openUrlInNewWindow(assessmentRecordTemplateUrl);
-
-    // Remaining steps
+    const htmlOutput = template.evaluate().setWidth(600).setHeight(400);
+    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Update Assessment Records Wizard');
   }
+
 
   /** Gets the URL of the assessment record template
    * @param {string} assessmentRecordTemplateId - The ID of the assessment record template.
@@ -394,14 +424,10 @@ class UpdateManager {
     return assessmentRecordTemplate.getUrl();
   }
 
-  /**
-   * Creates a copy of the assessment record template in the destination folder.
-   * @returns {string} The ID of the newly created assessment record template copy.
-   * @throws {Error} If copying the template fails.
-   */
   copyAssessmentRecordTemplate() {
+      //const assessmentRecordTemplateId = this.getAssessmentRecordTemplateId();
       const copiedAssessmentRecordTemplateId = DriveManager.copyTemplateSheet(
-      this.assessmentRecordTemplateId,
+      this.getLatestAssessmentRecordTemplateId(),
       this.destinationFolderId, 
       `Assessment Record Template v${this.versionNo}`
       )
@@ -410,3 +436,29 @@ class UpdateManager {
 
 
   }
+
+// Code.gs
+
+// Code.gs
+
+/**
+ * Global function to launch the Update Assessment Records Wizard.
+ * Google Apps Script cannot call class methods directly so this function creates an instance
+ * of UpdateManager and then calls the runAssessmentRecordUpdateWizard method.
+ */
+function showUpdateAssessmentRecordWizard() {
+  const updateManager = new UpdateManager();
+  updateManager.runAssessmentRecordUpdateWizard();
+}
+
+/**
+ * Global function called from the wizard when the user clicks "Finish".
+ * This creates a new UpdateManager instance, loads the saved state, and then calls its updateAssessmentRecords method.
+ */
+function updateAssessmentRecordsFromWizard() {
+  const updateManager = new UpdateManager();
+  updateManager.loadState();
+  updateManager.updateAssessmentRecords();
+}
+
+

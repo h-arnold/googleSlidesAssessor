@@ -27,10 +27,15 @@ class ConfigurationManager {
     // to the relevant store as the Properties Service is much quicker than reading from a Google sheet. The code below checks if they're empty and 
     // attempts to deserialise if so.
 
+    if (!this.scriptProperties && !this.documentProperties) 
+    {
+
     const propertiesCloner = new PropertiesCloner();
     propertiesCloner.deserialiseProperties();
-    console.log('Allegedly deserialising properties.')
+    console.log('Copying script and document properties from propertiesStore to the relevant properties store');
+    }
     this.configCache = null; // Initialize cache
+    
 
     ConfigurationManager.instance = this;
     return this;

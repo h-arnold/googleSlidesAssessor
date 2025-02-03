@@ -32,8 +32,8 @@ class ScriptAppManager {
      * Gets the authorization URL for the script
      * @returns {string} The authorization URL
      */
-    getAuthorizationUrl() {
-        return ScriptApp.getAuthorizationUrl();
+    getAuthorisationUrl() {
+        return ScriptApp.getAuthorisationUrl();
     }
 
     /**
@@ -45,7 +45,7 @@ class ScriptAppManager {
         if (authStatus === ScriptApp.AuthorizationStatus.REQUIRED) {
             return {
                 needsAuth: true,
-                authUrl: this.getAuthorizationUrl()
+                authUrl: this.getAuthorisationUrl()
             };
         }
         return {

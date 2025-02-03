@@ -585,5 +585,3 @@ class MainController {
 }
 
 
-// Instantiate the MainController as a singleton
-const mainController = new MainController();

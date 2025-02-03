@@ -3,4 +3,6 @@
 .publicTemplateFiles
 .VSCodeCounter
 .vscode
+*.clasprc.json
+*credentials.json
 
