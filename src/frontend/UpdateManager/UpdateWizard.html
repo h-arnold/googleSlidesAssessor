@@ -41,7 +41,7 @@
       </div>
       <!-- Step 4: Provide the Script ID with a copy-to-clipboard option -->
       <div id="step-4" class="wizard-step">
-        <p>Please copy the following Script ID. Then click on the plus (+) button in the Libraries section and select 'Add'.</p>
+        <p><ol><li>Then click on the plus (➕) button in the Libraries section.</li><li>Copy the Script ID below and paste it in the 'Script' ID box.</li></ol></p>
         <div class="input-field">
           <input type="text" id="script-id" readonly value="<?= adminScriptId ?>">
           <button class="btn copy-btn" id="copy-script-id">Copy Script ID</button>
@@ -53,7 +53,7 @@
       </div>
       <!-- Step 5: Instruct the user to click 'Look Up' -->
       <div id="step-5" class="wizard-step">
-        <p>Click 'Look Up' to find the library.</p>
+        <p>Click <strong>'Look Up'</strong> to find the library.</p>
         <div class="button-group">
           <button class="btn" id="next-5">Next</button>
           <button class="btn grey" id="back-5">Back</button>
@@ -61,7 +61,7 @@
       </div>
       <!-- Step 6: Instruct the user to select the version and identifier -->
       <div id="step-6" class="wizard-step">
-        <p>Select the version <strong>HEAD (Development Mode)</strong> and copy the following identifier:</p>
+        <p><ol><li>Select the version <strong>HEAD (Development Mode)</strong></li><li>Copy the identifier below and paste it into the <strong>identifier</strong> box.</li></ol>:</p>
         <div class="input-field">
           <input type="text" id="identifier" readonly value="AssessmentBot">
           <button class="btn copy-btn" id="copy-identifier">Copy Identifier</button>

@@ -12,6 +12,7 @@ class UIManager {
  */
   addCustomMenus(e) {
     const authMode = e.authMode
+    console.log(e.authMode);
     const updateStatus = configurationManager.getUpdateStage();
 
     // Check if the update needs to be completed. 

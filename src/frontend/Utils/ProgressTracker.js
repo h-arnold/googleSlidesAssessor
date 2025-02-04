@@ -85,9 +85,14 @@ class ProgressTracker {
     // This is important because there's no way of copying DocumentProperties between documents, 
     // which is crucial for the update process. Doing this ensures that the latest properties 
     // are saved and can be deserialised later.
-    const propertiesCloner = new PropertiesCloner();
-    propertiesCloner.serialiseProperties(true, false); //serialise document properties only because only the admin script uses ScriptProperties.
+    // Only serialise properties if this isn't the Admin Sheet. The admin sheet gets its properties serialised during the update process.
+
+    if (!configurationManager.getIsAdminSheet()) {
+      const propertiesCloner = new PropertiesCloner();
+      propertiesCloner.serialiseProperties(true, false); //serialise document properties only because only the admin script uses ScriptProperties.
+    }
   }
+
 
   /**
    * Logs an error encountered during the process.
