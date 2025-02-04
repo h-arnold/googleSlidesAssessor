@@ -145,35 +145,35 @@ class MainController {
     try {
       // Delegate configuration saving to ConfigurationManager
       if (config.batchSize !== undefined) {
-        this.configurationManager.setBatchSize(config.batchSize);
+        configurationManager.setBatchSize(config.batchSize);
       }
       if (config.langflowApiKey !== undefined) {
-        this.configurationManager.setLangflowApiKey(config.langflowApiKey);
+        configurationManager.setLangflowApiKey(config.langflowApiKey);
       }
       if (config.langflowUrl !== undefined) {
-        this.configurationManager.setLangflowUrl(config.langflowUrl);
+        configurationManager.setLangflowUrl(config.langflowUrl);
       }
       if (config.imageFlowUid !== undefined) {
-        this.configurationManager.setImageFlowUid(config.imageFlowUid);
+        configurationManager.setImageFlowUid(config.imageFlowUid);
       }
 
       // Handle Tweak IDs
       if (config.textAssessmentTweakId !== undefined) {
-        this.configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
+        configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
       }
       if (config.tableAssessmentTweakId !== undefined) {
-        this.configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
+        configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
       }
       if (config.imageAssessmentTweakId !== undefined) {
-        this.configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+        configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
       }
 
       // Handle Assessment Record values
       if (config.assessmentRecordTemplateId !== undefined) {
-        this.configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
+        configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
       }
       if (config.assessmentRecordDestinationFolder !== undefined) {
-        this.configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
+        configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
       }
 
       this.utils.toastMessage("Configuration saved successfully.", "Success", 5);
