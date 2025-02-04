@@ -47,8 +47,37 @@
           <button class="btn copy-btn" id="copy-script-id">Copy Script ID</button>
         </div>
         <div class="button-group">
-          <button class="btn" id="finish">Finish</button>
+          <button class="btn" id="next-4">Next</button>
           <button class="btn grey" id="back-4">Back</button>
+        </div>
+      </div>
+      <!-- Step 5: Instruct the user to click 'Look Up' -->
+      <div id="step-5" class="wizard-step">
+        <p>Click 'Look Up' to find the library.</p>
+        <div class="button-group">
+          <button class="btn" id="next-5">Next</button>
+          <button class="btn grey" id="back-5">Back</button>
+        </div>
+      </div>
+      <!-- Step 6: Instruct the user to select the version and identifier -->
+      <div id="step-6" class="wizard-step">
+        <p>Select the version <strong>HEAD (Development Mode)</strong> and copy the following identifier:</p>
+        <div class="input-field">
+          <input type="text" id="identifier" readonly value="AssessmentBot">
+          <button class="btn copy-btn" id="copy-identifier">Copy Identifier</button>
+        </div>
+        <p>Then click 'Add'.</p>
+        <div class="button-group">
+          <button class="btn" id="next-6">Next</button>
+          <button class="btn grey" id="back-6">Back</button>
+        </div>
+      </div>
+      <!-- Step 7: Instruct the user to save -->
+      <div id="step-7" class="wizard-step">
+        <p>Finally, click the save button <span role="img" aria-label="save">💾</span> to save your changes.</p>
+        <div class="button-group">
+          <button class="btn" id="finish">Finish</button>
+          <button class="btn grey" id="back-7">Back</button>
         </div>
       </div>
     </div>
@@ -94,6 +123,30 @@
           currentStep = 3;
           showStep(currentStep);
         });
+        document.getElementById('next-4').addEventListener('click', function() {
+          currentStep = 5;
+          showStep(currentStep);
+        });
+        document.getElementById('back-5').addEventListener('click', function() {
+          currentStep = 4;
+          showStep(currentStep);
+        });
+        document.getElementById('next-5').addEventListener('click', function() {
+          currentStep = 6;
+          showStep(currentStep);
+        });
+        document.getElementById('back-6').addEventListener('click', function() {
+          currentStep = 5;
+          showStep(currentStep);
+        });
+        document.getElementById('next-6').addEventListener('click', function() {
+          currentStep = 7;
+          showStep(currentStep);
+        });
+        document.getElementById('back-7').addEventListener('click', function() {
+          currentStep = 6;
+          showStep(currentStep);
+        });
 
         // Open the Assessment Record Template in a new window.
         document.getElementById('open-assessment').addEventListener('click', function() {
@@ -124,6 +177,20 @@
         });
         clipboard.on('error', function(e) {
           M.toast({html: 'Failed to copy Script ID.', classes: 'red'});
+        });
+
+        // Initialise Clipboard.js for the "Copy Identifier" button.
+        var clipboardIdentifier = new ClipboardJS('#copy-identifier', {
+          text: function() {
+            return document.getElementById('identifier').value;
+          }
+        });
+        clipboardIdentifier.on('success', function(e) {
+          M.toast({html: 'Identifier copied to clipboard!', classes: 'green'});
+          e.clearSelection();
+        });
+        clipboardIdentifier.on('error', function(e) {
+          M.toast({html: 'Failed to copy Identifier.', classes: 'red'});
         });
       });
     </script>

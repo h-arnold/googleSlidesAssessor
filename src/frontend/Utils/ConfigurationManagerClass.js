@@ -22,17 +22,22 @@ class ConfigurationManager {
     }
     this.scriptProperties = PropertiesService.getScriptProperties();
     this.documentProperties = PropertiesService.getDocumentProperties();
-
-    // The update process copies the values formatting etc. from the old sheet into a new one and serialises any Script or Document Properties.
-    // When the updated sheet is first opened, any configuration values will be stored in a sheet called propertiesStore and need to be returned
-    // to the relevant store as the Properties Service is much quicker than reading from a Google sheet. The code below checks if they're empty and 
-    // attempts to deserialise if so.
-
-    if (!this.scriptProperties && !this.documentProperties) {
-
-      const propertiesCloner = new PropertiesCloner();
-      propertiesCloner.deserialiseProperties();
-      console.log('Copying script and document properties from propertiesStore to the relevant properties store');
+    
+    const hasScriptProperties = this.scriptProperties.getKeys().length > 0;
+    const hasDocumentProperties = this.documentProperties.getKeys().length > 0;
+    
+    if (!hasScriptProperties && !hasDocumentProperties) {
+      try {
+        const propertiesCloner = new PropertiesCloner();
+        if (propertiesCloner.sheet) {
+          propertiesCloner.deserialiseProperties();
+          console.log('Successfully copied properties from propertiesStore');
+        } else {
+          console.log('No propertiesStore sheet found');
+        }
+      } catch (error) {
+        console.error('Error initializing properties:', error);
+      }
     }
     this.configCache = null; // Initialize cache
 

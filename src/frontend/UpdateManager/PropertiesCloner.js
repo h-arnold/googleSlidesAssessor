@@ -60,6 +60,7 @@ class PropertiesCloner extends BaseSheetManager {
     // Write data to sheet and then hide it
     this.setAllValues(data);
     this.sheet.hideSheet();
+
   }
 
   /**

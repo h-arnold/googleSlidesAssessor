@@ -31,11 +31,11 @@ class UpdateManager {
     this.adminSheetTemplateId = this.getLatestAdminSheetTemplateId;
   }
 
-  getLatestAssessmentRecordTemplateId (versionNo = this.versionNo) {
+  getLatestAssessmentRecordTemplateId(versionNo = this.versionNo) {
     return this.versionDetails[versionNo].assessmentRecordTemplateFileId;
   }
 
-  getLatestAdminSheetTemplateId (versionNo = this.versionNo) {
+  getLatestAdminSheetTemplateId(versionNo = this.versionNo) {
     return this.versionDetails[versionNo].adminSheetFileId;
   }
 
@@ -302,7 +302,7 @@ class UpdateManager {
     //Gets the Url of the new sheet and opens it in a new window.
     const newSheetUrl = SpreadsheetApp.openById(newSheetId).getUrl();
 
-    this.uiManager.ui.openUrlInNewWindow(newSheetUrl);
+    this.uiManager.openUrlInNewWindow(newSheetUrl);
 
     // Returns the URL so that it can be fed to the GuiManager.ui.
 
@@ -323,7 +323,7 @@ class UpdateManager {
    * 
    * @throws {Error} If assessment record template ID is not set or if any step in the process fails
    */
-  updateAssessmentRecords (){
+  updateAssessmentRecords() {
     const progressTracker = new ProgressTracker();
     const uiManager = new UIManager();
 
@@ -360,10 +360,10 @@ class UpdateManager {
     configurationManager.setUpdateStage(2); // Sets the update stage back to 2 (Up to date).
   }
 
-   /**
-   * Saves selected state properties to the Script Properties so that they can be restored
-   * on subsequent calls.
-   */
+  /**
+  * Saves selected state properties to the Script Properties so that they can be restored
+  * on subsequent calls.
+  */
   saveState() {
     const state = {
       versionNo: this.versionNo,
@@ -434,17 +434,17 @@ class UpdateManager {
   }
 
   copyAssessmentRecordTemplate() {
-      //const assessmentRecordTemplateId = this.getAssessmentRecordTemplateId();
-      const copiedAssessmentRecordTemplateId = DriveManager.copyTemplateSheet(
+    //const assessmentRecordTemplateId = this.getAssessmentRecordTemplateId();
+    const copiedAssessmentRecordTemplateId = DriveManager.copyTemplateSheet(
       this.getLatestAssessmentRecordTemplateId(),
-      this.destinationFolderId, 
+      this.destinationFolderId,
       `Assessment Record Template v${this.versionNo}`
-      )
-      return this.assessmentRecordTemplateId = copiedAssessmentRecordTemplateId.fileId;
+    )
+    return this.assessmentRecordTemplateId = copiedAssessmentRecordTemplateId.fileId;
   }
 
 
-  }
+}
 
 // Code.gs
 
@@ -467,5 +467,3 @@ function updateAssessmentRecordsFromWizard() {
   updateManager.loadState();
   updateManager.updateAssessmentRecords();
 }
-
-
