@@ -307,8 +307,10 @@ class UpdateManager {
 
     //Gets the Url of the new sheet and opens it in a new window.
     const newSheetUrl = SpreadsheetApp.openById(newSheetId).getUrl();
-
     this.uiManager.openUrlInNewWindow(newSheetUrl);
+
+    // Deletes the `propertiesStore` sheet to ensure that secrets aren't preserved in the edit history of the document
+    propsCloner.clearPropertiesAndSheet();
 
     // Returns the URL so that it can be fed to the GuiManager.ui.
 
@@ -451,6 +453,4 @@ class UpdateManager {
 
 
 }
-
-// Code.gs
 
