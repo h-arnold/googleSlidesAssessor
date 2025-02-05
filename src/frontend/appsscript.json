@@ -1,28 +1,23 @@
 {
   "timeZone": "Europe/London",
   "dependencies": {
-    "enabledAdvancedServices": [
-      {
-        "userSymbol": "Sheets",
-        "version": "v4",
-        "serviceId": "sheets"
-      },
-      {
-        "userSymbol": "Classroom",
-        "version": "v1",
-        "serviceId": "classroom"
-      },
-      {
-        "userSymbol": "Slides",
-        "version": "v1",
-        "serviceId": "slides"
-      },
-      {
-        "userSymbol": "Drive",
-        "version": "v3",
-        "serviceId": "drive"
-      }
-    ]
+    "enabledAdvancedServices": [{
+      "userSymbol": "Sheets",
+      "serviceId": "sheets",
+      "version": "v4"
+    }, {
+      "userSymbol": "Classroom",
+      "serviceId": "classroom",
+      "version": "v1"
+    }, {
+      "userSymbol": "Slides",
+      "serviceId": "slides",
+      "version": "v1"
+    }, {
+      "userSymbol": "Drive",
+      "serviceId": "drive",
+      "version": "v3"
+    }]
   },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"

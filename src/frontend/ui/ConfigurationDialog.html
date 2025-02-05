@@ -31,6 +31,8 @@
 <body>
     <div class="container">
         <form id="config-form">
+            <!-- Existing Configuration Fields -->
+
             <div class="row">
                 <div class="input-field col s12 m6">
                     <input id="batchSize" name="batchSize" type="number" min="1" required>
@@ -86,6 +88,16 @@
                 </div>
             </div>
 
+            <div class="divider"></div>
+            <h5 class="section">Update Details</h5>
+
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input id="updateDetailsUrl" name="updateDetailsUrl" type="url" required>
+                    <label for="updateDetailsUrl">Update Details URL</label>
+                </div>
+            </div>
+
             <div class="button-group">
                 <a href="#!" class="btn grey lighten-1" onclick="google.script.host.close()">Cancel</a>
                 <button class="btn blue waves-effect waves-light" type="submit">
@@ -112,6 +124,7 @@
             document.getElementById('imageAssessmentTweakId').value = data.imageAssessmentTweakId || '';
             document.getElementById('assessmentRecordTemplateId').value = data.assessmentRecordTemplateId || '';
             document.getElementById('assessmentRecordDestinationFolder').value = data.assessmentRecordDestinationFolder || '';
+            document.getElementById('updateDetailsUrl').value = data.updateDetailsUrl || '';
 
             // Re-initialize labels after setting values
             M.updateTextFields();
@@ -133,7 +146,8 @@
                 tableAssessmentTweakId: document.getElementById('tableAssessmentTweakId').value.trim(),
                 imageAssessmentTweakId: document.getElementById('imageAssessmentTweakId').value.trim(),
                 assessmentRecordTemplateId: document.getElementById('assessmentRecordTemplateId').value.trim(),
-                assessmentRecordDestinationFolder: document.getElementById('assessmentRecordDestinationFolder').value.trim()
+                assessmentRecordDestinationFolder: document.getElementById('assessmentRecordDestinationFolder').value.trim(),
+                updateDetailsUrl: document.getElementById('updateDetailsUrl').value.trim()
             };
 
             // Basic validation can be enhanced if needed
@@ -155,7 +169,10 @@
 
         // Initialize Materialize components and load existing configuration
         document.addEventListener('DOMContentLoaded', function () {
-              // Load existing configuration
+            // Initialize Materialize components
+            M.updateTextFields();
+
+            // Load existing configuration
             google.script.run
                 .withSuccessHandler(populateForm)
                 .withFailureHandler(error => {

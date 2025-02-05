@@ -1,6 +1,8 @@
 // z_main.js
 // Global functions that bind UI actions and triggers to MainController methods.
 
+const mainController = new MainController();
+
 /**
  * Initiates the processing of an assignment asynchronously by setting up a trigger
  * and opens the progress modal.
@@ -79,6 +81,15 @@ function showAssignmentDropdown() {
  */
 function showClassroomDropdown() {
   return mainController.showClassroomDropdown();
+}
+
+/**
+ * Displays the version selector interface by delegating to the main controller.
+ * @returns {void}
+ * @public
+ */
+function showVersionSelector() {
+  return mainController.showVersionSelector();
 }
 
 /**
@@ -195,8 +206,14 @@ function clearAllCacheKeys() {
 /**
  * Adds custom menus when the spreadsheet is opened.
  */
-function onOpen() {
-  mainController.onOpen();
+/**
+ * Trigger function that runs when the Google Sheets document is opened.
+ * Acts as an entry point wrapper for the main controller's onOpen functionality.
+ * Used for initialisation and setting up the custom menus.
+ * @param {Object} e - The event object passed by Google Apps Script runtime
+ */
+function onOpen(e) {
+  mainController.onOpen(e);
 }
 
 /**
@@ -208,8 +225,46 @@ function analyseCohorts() {
 }
 
 /**
+ * Global function to handle version updates.
+ * @param {Object} versionData Object containing version and file IDs
+ * @return {Object} Result of the update operation
+ */
+function handleVersionUpdate(versionData) {
+    return mainController.updateAdminSheet(versionData);
+}
+
+/**
  * Test workflow function for debugging purposes.
  */
 function testWorkflow() {
   mainController.testWorkflow();
+}
+
+function handleAuthorisation() {
+  mainController.handleAuthorisation();
+}
+
+function revokeAuthorisation() {
+  const sa = new ScriptAppManager()
+  sa.revokeAuthorisation();
+}
+
+/**
+ * Global function to launch the Update Assessment Records Wizard.
+ * Google Apps Script cannot call class methods directly so this function creates an instance
+ * of UpdateManager and then calls the runAssessmentRecordUpdateWizard method.
+ */
+function showUpdateAssessmentRecordWizard() {
+  const updateManager = new UpdateManager();
+  updateManager.runAssessmentRecordUpdateWizard();
+}
+
+/**
+ * Global function called from the wizard when the user clicks "Finish".
+ * This creates a new UpdateManager instance, loads the saved state, and then calls its updateAssessmentRecords method.
+ */
+function updateAssessmentRecordsFromWizard() {
+  const updateManager = new UpdateManager();
+  updateManager.loadState();
+  updateManager.updateAssessmentRecords();
 }

@@ -11,9 +11,11 @@ class ClassroomSheetManager extends BaseSheetManager {
    * @param {string} sheetName - The name of the sheet to manage.
    * @param {string} spreadsheetId - The spreadsheet attached to the sheet to manage
    */
-  constructor(sheetName, spreadsheetId) {
-    super();
-    this.createOrGetSheet(sheetName, spreadsheetId);
+  constructor() {
+    // This class should only be run from an admin sheet. 
+    // As this sheet can be instantiated from the configuration manager, it's set to silently fail to instantiate rather than throw an error.
+    Utils.validateIsAdminSheet(false);
+    super('Classrooms');
   }
 
   /**
@@ -22,6 +24,14 @@ class ClassroomSheetManager extends BaseSheetManager {
    */
   getData() {
     return this.sheet.getDataRange().getValues();
+  }
+
+  /** 
+   * Writes all data in an array back to a sheet
+   * @param {Array} - the array of values to write to the Classroom sheet.
+   */
+  setData(values){
+    return this.sheet.getDataRange().setValues(values);
   }
 
   /**

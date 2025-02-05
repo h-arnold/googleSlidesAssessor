@@ -1,39 +1,83 @@
 // UIManager.gs
 
 class UIManager {
-  constructor(sheet) {
+  constructor() {
     this.ui = SpreadsheetApp.getUi();
-    this.classroomManager = new GoogleClassroomManager(sheet);
+    this.classroomManager = new GoogleClassroomManager();
   }
 
   /**
-   * Adds custom menus to the Google Sheets UI when the spreadsheet is opened.
+ * Adds custom menus to the Google Sheets UI when the spreadsheet is opened.
+ * @param {Event} e - The event object that triggered the global onOpen function.
+ */
+  addCustomMenus(e) {
+    const authMode = e.authMode
+    console.log(e.authMode);
+    const updateStatus = configurationManager.getUpdateStage();
+
+    // Check if the update needs to be completed. 
+    // Ordinarily this option shouldn't be necessary unless the user closes the tab containing the spreadsheet before they've completed the auth flow.
+    if  (authMode === ScriptApp.AuthMode.FULL && updateStatus == 1) {
+      this.createFinishUpdateMenu()
+    } 
+    //If not, get authorisation and then continue to either complete update or create authorised menu.
+    else if (authMode === ScriptApp.AuthMode.LIMITED) 
+      {
+        this.createUnauthorisedMenu();
+      } 
+    else 
+    { // Script is authorised and up-to-date.
+        this.createAuthorisedMenu()
+    }
+
+  }
+
+  /**
+   * Creates a limited menu for unauthorized state
+   * @private
    */
-  addCustomMenus() {
+  createUnauthorisedMenu() {
+    const menu = this.ui.createMenu('Assessment Bot')
+      .addItem('Authorise App', 'handleAuthorisation');
+    menu.addToUi();
+  }
+
+    /**
+   * Creates a single menu option to complete update process.
+   * @private
+   */
+    createFinishUpdateMenu() {
+      const menu = this.ui.createMenu('Assessment Bot')
+        .addItem('Finish Update', 'handleAuthorisation');
+      menu.addToUi();
+    }
+
+
+  /**
+   * Creates the full menu for authorized state
+   * @private
+   */
+  createAuthorisedMenu() {
     const ui = this.ui;
 
     // Create the root menu
     const menu = ui.createMenu('Assessment Bot')
-    .addItem('Analyse Cohorts', 'analyseCohorts')
-
-
+      .addItem('Analyse Cohorts', 'analyseCohorts')
 
     // Add a sub-menu for Google Classrooms operations
     const classroomsSubMenu = ui.createMenu('Google Classrooms')
       .addItem('Fetch Classrooms', 'handleFetchGoogleClassrooms')
       .addItem('Create Classrooms', 'handleCreateGoogleClassrooms')
-      //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); // This didn't survive the refactor and will need to be re-implemented
+      //.addItem('Update Classrooms', 'handleUpdateGoogleClassrooms'); 
       .addItem('Create Assessment Records', 'createAssessmentRecords')
-    menu.addSubMenu(classroomsSubMenu);   
-
+    menu.addSubMenu(classroomsSubMenu);
 
     // Add a sub-menu for Settings
     const settingsSubMenu = ui.createMenu('Settings')
       .addItem('Backend Settings', 'showConfigurationDialog')
-      .addItem('Change Classroom', 'showClassroomDropdown');
+      .addItem('Change Classroom', 'showClassroomDropdown')
+      .addItem('Update Version', 'showVersionSelector');
     menu.addSubMenu(settingsSubMenu);
-
-
 
     // Add a sub-menu for Debug operations
     const debugSubMenu = ui.createMenu('Debug')
@@ -280,4 +324,107 @@ class UIManager {
     this.ui.showModalDialog(html, 'Edit Classrooms');
     console.log('Classroom editor modal displayed.');
   }
+
+  /**
+   * Displays a modal dialog for version selection.
+   * Creates and shows a UI dialog that allows users to select from available versions for update.
+   * Fetches version details through UpdateManager and displays them in a templated HTML modal.
+   * 
+   * @throws {Error} If version details cannot be fetched
+   * 
+   * @example
+   * const uiManager = new UIManager();
+   * uiManager.showVersionSelector();
+   */
+  showVersionSelector() {
+    try {
+      const updateManager = new UpdateManager();
+      const versions = updateManager.fetchVersionDetails();
+
+      if (!versions) {
+        throw new Error('Failed to fetch version details');
+      }
+
+      const template = HtmlService.createTemplateFromFile('ui/VersionSelectorModal');
+      template.versions = versions;
+
+      const htmlOutput = template.evaluate()
+        .setWidth(400)
+        .setHeight(250);
+
+      this.ui.showModalDialog(htmlOutput, 'Select Version to Update To');
+    } catch (error) {
+      console.error('Error showing version selector:', error);
+      Utils.toastMessage('Failed to load versions: ' + error.message, 'Error', 5);
+    }
+  }
+
+  /**
+   * Opens a specified URL in a new browser window using Google Apps Script's UI service.
+   * Creates a temporary HTML dialog that triggers the window opening and then closes itself.
+   * 
+   * @param {string} url - The URL to open in the new window
+   * @throws {Error} Throws an error if URL parameter is empty or undefined
+   * @return {void}
+   * 
+   * @example
+   * // Opens Google in a new window
+   * openUrlInNewWindow('https://www.google.com');
+   */
+  openUrlInNewWindow(url) {
+    try {
+      if (!url) {
+        throw new Error('URL is required');
+      }
+
+      const html = HtmlService.createHtmlOutput(
+        `<script>window.open('${url}', '_blank'); google.script.host.close();</script>`
+      )
+        .setWidth(1)
+        .setHeight(1);
+
+      this.ui.showModalDialog(html, 'Opening...');
+      console.log(`Opening URL in new window: ${url}`);
+    } catch (error) {
+      console.error(`Failed to open URL: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Shows a generic modal dialog with custom HTML content
+   * @param {string} htmlContent - The HTML content to display
+   * @param {string} title - The title of the modal
+   * @param {number} width - The width of the modal in pixels
+   * @param {number} height - The height of the modal in pixels
+   */
+  showGenericModal(htmlContent, title, width = 400, height = 300) {
+    const html = HtmlService.createHtmlOutput(htmlContent)
+      .setWidth(width)
+      .setHeight(height);
+    this.ui.showModalDialog(html, title);
+  }
+
+  /**
+   * Shows the authorization modal with the provided authorisation URL
+   * @param {string} authUrl - The authorization URL to display
+   */
+  showAuthorisationModal(authUrl) {
+    const htmlContent = `
+                <div style="text-align: center; padding: 20px;">
+                    <h2>Authorization Required</h2>
+                    <p>This application needs authorization to access your Google services.</p>
+                    <p>Click the button below to authorize:</p>
+                    <button onclick="window.open('${authUrl}', '_blank'); google.script.host.close();" 
+                            style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                        Authorize Access
+                    </button>
+                </div>`;
+
+    this.showGenericModal(htmlContent, 'Authorization Required', 450, 250);
+    console.log('Authorization modal displayed.');
+  }
+
 }
+
+

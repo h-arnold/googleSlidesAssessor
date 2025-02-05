@@ -2,6 +2,7 @@
 .clasp.json
 .publicTemplateFiles
 .VSCodeCounter
-.idx
 .vscode
+*.clasprc.json
+*credentials.json
 

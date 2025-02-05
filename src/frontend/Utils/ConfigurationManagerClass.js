@@ -9,7 +9,10 @@ class ConfigurationManager {
       IMAGE_ASSESSMENT_TWEAK_ID: 'imageAssessmentTweakId',
       IMAGE_FLOW_UID: 'imageFlowUid',
       ASSESSMENT_RECORD_TEMPLATE_ID: 'assessmentRecordTemplateId',
-      ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder'
+      ASSESSMENT_RECORD_DESTINATION_FOLDER: 'assessmentRecordDestinationFolder',
+      UPDATE_DETAILS_URL: 'updateDetailsUrl',
+      UPDATE_STAGE: 'updateStage',
+      IS_ADMIN_SHEET: `isAdminSheet`
     };
   }
 
@@ -17,13 +20,33 @@ class ConfigurationManager {
     if (ConfigurationManager.instance) {
       return ConfigurationManager.instance;
     }
-
     this.scriptProperties = PropertiesService.getScriptProperties();
+    this.documentProperties = PropertiesService.getDocumentProperties();
+    
+    const hasScriptProperties = this.scriptProperties.getKeys().length > 0;
+    const hasDocumentProperties = this.documentProperties.getKeys().length > 0;
+    
+    if (!hasScriptProperties && !hasDocumentProperties) {
+      try {
+        const propertiesCloner = new PropertiesCloner();
+        if (propertiesCloner.sheet) {
+          propertiesCloner.deserialiseProperties();
+          console.log('Successfully copied properties from propertiesStore');
+        } else {
+          console.log('No propertiesStore sheet found');
+        }
+      } catch (error) {
+        console.error('Error initializing properties:', error);
+      }
+    }
     this.configCache = null; // Initialize cache
+
 
     ConfigurationManager.instance = this;
     return this;
   }
+
+
 
   /**
    * Retrieves all configuration properties.
@@ -55,6 +78,9 @@ class ConfigurationManager {
     if (!this.configCache) {
       this.getAllConfigurations();
     }
+    if (key === ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET) {
+      return this.documentProperties.getProperty(key) || false;
+    }
     return this.configCache[key] || '';
   }
 
@@ -77,6 +103,7 @@ class ConfigurationManager {
         }
         break;
       case ConfigurationManager.CONFIG_KEYS.LANGFLOW_URL:
+      case ConfigurationManager.UPDATE_DETAILS_URL:
         if (typeof value !== 'string' || !Utils.isValidUrl(value)) {
           throw new Error(`${this.toReadableKey(key)} must be a valid URL string.`);
         }
@@ -105,6 +132,15 @@ class ConfigurationManager {
           throw new Error("Assessment Record Destination Folder must be a valid Google Drive Folder ID.");
         }
         break;
+      case ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE:
+        const stage = parseInt(value);
+        if (!Number.isInteger(stage) || stage < 0 || stage > 2) {
+          throw new Error("Update Stage must be 0, 1, or 2");
+        }
+        break;
+      case ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET:
+        this.documentProperties.setProperty(key, Boolean(value));
+        return;
       default:
         // No specific validation
         break;
@@ -218,6 +254,32 @@ class ConfigurationManager {
     return `${baseUrl}/api/v1/run/textAssessment?stream=false`;
   }
 
+  /** 
+   * Gets the URL of the json file which holds the file IDs of the different Assessment Bot versions
+   */
+  getUpdateDetailsUrl() {
+    const value = this.getProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL)
+    if (!value) {
+      return `https://raw.githubusercontent.com/h-arnold/googleSlidesAssessor/refs/heads/UpdateManager/src/frontend/UpdateManager/assessmentBotVersions.json`
+    } else {
+      return value;
+    }
+  }
+
+  /**
+ * Gets the current update stage (0=finished/not started, 1=admin sheet updated, 2=updating records)
+ * @return {number} - The current update stage
+ */
+  getUpdateStage() {
+    const value = parseInt(this.getProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE), 10);
+    // If value isn't set, return the default of 0 - finished/not started.
+    if (isNaN(value)) {
+      return 0;
+    } else {
+      return value;
+    }
+  }
+
   /**
    * Dynamically constructs the Table Assessment URL based on the base Langflow URL.
    * @return {string} - The constructed Table Assessment URL.
@@ -240,7 +302,23 @@ class ConfigurationManager {
   }
 
   getAssessmentRecordDestinationFolder() {
-    return this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
+    // Getting the assessment record desintation folder is unnessecary for the assessment record sheets and slows down initilisation so it will not run if the sheet is an assessment record.
+    if (Utils.validateIsAdminSheet(false)) {
+      let destinationFolder = this.getProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER);
+      // If no destination folder is specified, a folder called 'Assessment Records' will be created in the parent folder of the current spreadsheet.
+      if (!destinationFolder) {
+        const spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+        const parentFolderId = DriveManager.getParentFolderId(spreadsheetId);
+        const newFolder = DriveManager.createFolder(parentFolderId, 'Assessment Records')
+        destinationFolder = newFolder.newFolderId;
+      }
+
+      return destinationFolder;
+    }
+  }
+
+  getIsAdminSheet() {
+    return this.getProperty(ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET) || false;
   }
 
   /**
@@ -281,8 +359,32 @@ class ConfigurationManager {
   setAssessmentRecordDestinationFolder(folderId) {
     this.setProperty(ConfigurationManager.CONFIG_KEYS.ASSESSMENT_RECORD_DESTINATION_FOLDER, folderId);
   }
-}
 
+  setUpdateDetailsUrl(url) {
+    this.setProperpty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL, url);
+  }
+
+  // Add setter method
+  /**
+   * Sets the current update stage
+   * @param {number} stage - The update stage (0=finished/not started, 1=admin sheet updated, 2=updating records)
+   */
+  setUpdateStage(stage) {
+    this.setProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_STAGE, stage);
+  }
+
+
+  /**
+   * Sets the admin sheet status
+   * @param {boolean|any} isAdmin - Will be converted to boolean if non-boolean provided
+   * @returns {void}
+   */
+  setIsAdminSheet(isAdmin) {
+    const boolValue = Boolean(isAdmin);
+    this.setProperty(ConfigurationManager.CONFIG_KEYS.IS_ADMIN_SHEET, boolValue);
+  }
+
+}
 // Ensure singleton instance
 const configurationManager = new ConfigurationManager();
 
@@ -293,3 +395,7 @@ const configurationManager = new ConfigurationManager();
 function getConfiguration() {
   return configurationManager.getAllConfigurations();
 }
+
+function setIsAdmin() {
+  configurationManager.setIsAdminSheet(true);
+  }

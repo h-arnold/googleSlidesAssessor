@@ -78,7 +78,21 @@ class ProgressTracker {
     };
     this.properties.setProperty(this.propertyKey, JSON.stringify(updatedData));
     console.log('Progress tracking completed successfully.');
+
+    // As ProgressTracker.complete() is only called at the end of a significant task, 
+    // it is likely that the document properties have been updated.
+    // Therefore, we serialise the properties here to ensure the latest data is saved. 
+    // This is important because there's no way of copying DocumentProperties between documents, 
+    // which is crucial for the update process. Doing this ensures that the latest properties 
+    // are saved and can be deserialised later.
+    // Only serialise properties if this isn't the Admin Sheet. The admin sheet gets its properties serialised during the update process.
+
+    if (!configurationManager.getIsAdminSheet()) {
+      const propertiesCloner = new PropertiesCloner();
+      propertiesCloner.serialiseProperties(true, false); //serialise document properties only because only the admin script uses ScriptProperties.
+    }
   }
+
 
   /**
    * Logs an error encountered during the process.

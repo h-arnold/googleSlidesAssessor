@@ -2,13 +2,12 @@
 Manages Google Classroom operations and associated tasks.
 */
 class GoogleClassroomManager {
-  constructor(sheet) {
+  constructor() {
     this.configManager = configurationManager;
-    this.sheet = sheet;
-    this.csm = new ClassroomSheetManager(sheet.getName()); // Instantiate ClassroomSheetManager
+    this.csm = new ClassroomSheetManager(); // Instantiate ClassroomSheetManager
     this.classrooms = [];
-    this.templateSheetId = this.configManager.getAssessmentRecordTemplateId();
-    this.destinationFolderId = this.configManager.getAssessmentRecordDestinationFolder();
+    this.templateSheetId = ""
+    this.destinationFolderId = "" 
     this.progressTracker = ProgressTracker.getInstance();
   }
 
@@ -128,6 +127,8 @@ class GoogleClassroomManager {
    * Finally, shares the destination folder with all teacher emails found in the sheet.
    */
   createAssessmentRecords() {
+    this.templateSheetIds = configurationManager.getAssessmentRecordTemplateId();
+    this.destinationFolderId = configurationManager.getAssessmentRecordDestinationFolder();
 
     // 0) Initialise progress tracker
     let step = 0 //initialise step variable for the Progress Tracker
@@ -234,6 +235,7 @@ class GoogleClassroomManager {
           const errMsg = `Failed to copy template for row ${i + 1}: ${error.message}`;
           this.progressTracker.logError(errMsg);
           console.error(errMsg);
+          throw new error(errMsg);
         }
       }
     }

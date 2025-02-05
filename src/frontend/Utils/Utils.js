@@ -153,9 +153,38 @@ class Utils {
     return result; //True or False
   }
 
+    /**
+   * Gets the date in DD/MM/YYYY format for appending to various file names
+   */
+  static getDate() {
+    const dateObj = new Date();
+    const timeZone = Session.getScriptTimeZone();
+
+    // "dd/MM/yyyy" produces strings like "29/01/2025"
+    return Utilities.formatDate(dateObj, timeZone, 'dd/MM/yyyy');
+  }
+
+  /**
+ * Validates if current sheet is admin sheet
+ * @param {boolean} throwError - Whether to throw error or just log warning
+ * @returns {boolean} True if admin sheet
+ */
+  static validateIsAdminSheet(throwError = true) {
+    const isAdmin = configurationManager.getIsAdminSheet();
+    if (!isAdmin) {
+      const message = 'This operation can only be performed from the admin sheet.';
+      if (throwError) {
+        throw new Error(message);
+      } else {
+        console.warn(message);
+      }
+    }
+    return isAdmin;
+  }
+
+  
 
 }
-
 // Ensure singleton instance (if needed)
 const utils = new Utils();
 Object.freeze(utils);

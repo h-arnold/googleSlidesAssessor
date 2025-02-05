@@ -19,39 +19,33 @@ class MainController {
     // Instantiate other components
     this.llmRequestManager = new LLMRequestManager();
 
-    // Retrieve the 'ClassInfo' sheet
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = spreadsheet.getSheetByName("Classrooms");
-
-    // Create the sheet if it doesn't exist.
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet("Classrooms");
-      console.log("Classrooms sheet created.");
-    }
-
     // Instantiate GoogleClassroomManager with necessary parameters
-    this.classroomManager = new GoogleClassroomManager(sheet);
+    this.classroomManager = new GoogleClassroomManager();
 
     // Attempt to instantiate UIManager only in user context to avoid issues with triggers
     try {
-      this.uiManager = new UIManager(sheet);
+      this.uiManager = new UIManager();
       console.log("UIManager instantiated successfully.");
     } catch (error) {
       console.error("UIManager cannot be instantiated: " + error);
       this.uiManager = null; // UIManager is not available in this context
     }
 
-    // Instantiate ConfigurationManager if needed
-    this.configurationManager = new ConfigurationManager();
   }
 
   /** 
    * === UI Wrapper Methods ===
    */
 
-  onOpen() {
+  /**
+   * Handles the open event of the Google Sheets document.
+   * Adds custom menus to the UI when the document is opened.
+   * @param {GoogleAppsScript.Events.Sheets.OnOpen} e - The event object passed when the document is opened
+   * @throws {Error} Logs error if UIManager is not initialized
+   */
+  onOpen(e) {
     if (this.uiManager) {
-      this.uiManager.addCustomMenus();
+      this.uiManager.addCustomMenus(e);
     } else {
       console.error("UIManager is not available to add custom menus.");
     }
@@ -140,6 +134,10 @@ class MainController {
     this.uiManager.showClassroomEditorModal();
   }
 
+  showVersionSelector() {
+    this.uiManager.showVersionSelector();
+  }
+
   /**
    * === Configuration Management ===
    */
@@ -147,35 +145,35 @@ class MainController {
     try {
       // Delegate configuration saving to ConfigurationManager
       if (config.batchSize !== undefined) {
-        this.configurationManager.setBatchSize(config.batchSize);
+        configurationManager.setBatchSize(config.batchSize);
       }
       if (config.langflowApiKey !== undefined) {
-        this.configurationManager.setLangflowApiKey(config.langflowApiKey);
+        configurationManager.setLangflowApiKey(config.langflowApiKey);
       }
       if (config.langflowUrl !== undefined) {
-        this.configurationManager.setLangflowUrl(config.langflowUrl);
+        configurationManager.setLangflowUrl(config.langflowUrl);
       }
       if (config.imageFlowUid !== undefined) {
-        this.configurationManager.setImageFlowUid(config.imageFlowUid);
+        configurationManager.setImageFlowUid(config.imageFlowUid);
       }
 
       // Handle Tweak IDs
       if (config.textAssessmentTweakId !== undefined) {
-        this.configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
+        configurationManager.setTextAssessmentTweakId(config.textAssessmentTweakId);
       }
       if (config.tableAssessmentTweakId !== undefined) {
-        this.configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
+        configurationManager.setTableAssessmentTweakId(config.tableAssessmentTweakId);
       }
       if (config.imageAssessmentTweakId !== undefined) {
-        this.configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
+        configurationManager.setImageAssessmentTweakId(config.imageAssessmentTweakId);
       }
 
       // Handle Assessment Record values
       if (config.assessmentRecordTemplateId !== undefined) {
-        this.configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
+        configurationManager.setAssessmentRecordTemplateId(config.assessmentRecordTemplateId);
       }
       if (config.assessmentRecordDestinationFolder !== undefined) {
-        this.configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
+        configurationManager.setAssessmentRecordDestinationFolder(config.assessmentRecordDestinationFolder);
       }
 
       this.utils.toastMessage("Configuration saved successfully.", "Success", 5);
@@ -518,8 +516,73 @@ class MainController {
       throw error;
     }
   }
+  /**
+* Handles the version update request from the UI
+* @param {Object} versionData - Contains version number and file IDs
+*/
+  updateAdminSheet(versionData) {
+    let adminSheetUrl;
+    console.log(JSON.stringify(versionData));
+    
+    try {
+      const updateManager = new UpdateManager();
+      updateManager.versionNo = versionData.version;
+      updateManager.assessmentRecordTemplateId = versionData.assessmentRecordTemplateFileId;
+      updateManager.adminSheetTemplateId = versionData.adminSheetFileId;
+      console.log(JSON.stringify(versionData))
+
+      adminSheetUrl = updateManager.updateAdminSheet();
+    } catch (error) {
+      console.error('Error in handleVersionUpdate:', error);
+      throw new Error(`Update failed: ${error.message}`);
+    }
+    const ui = this.uiManager.ui
+    ui.alert(`Update Successful`, `Your new Admin Sheet has opened and you can access it at: ${adminSheetUrl}. Please close this window.`, ui.ButtonSet.OK)
+  }
+
+   /**
+   * Handles the authorisation flow when user clicks authorise. This method ensures that the authorised menu appears after the auth process has taken place.
+   */
+  handleAuthorisation() { 
+    const scriptAppManager = new ScriptAppManager();
+    const authResult = scriptAppManager.handleAuthFlow();
+    const updateStage = configurationManager.getUpdateStage();
+
+    // Checks if the update needs finishing.
+    if (updateStage == 1) 
+      {
+
+      if (authResult.needsAuth) 
+      {
+      //Get the script authorised.
+      this.uiManager.showAuthorisationModal(authResult.authUrl);
+      }
+
+      // Finish the update
+      this.finishUpdate();
+
+      //Create the regular authorised menu.
+      this.uiManager.createAuthorisedMenu();
+
+    } 
+    else if (authResult.needsAuth) 
+    {
+      this.uiManager.showAuthorisationModal();
+
+      //Update the menu after authorisation so that it give the user access to all functions without having to refresh the page.
+      this.uiManager.createAuthorisedMenu();
+    
+    } 
+    else 
+    {
+      this.uiManager.createAuthorisedMenu()
+    }
+  }
+
+  finishUpdate() {
+    const updateManager = new UpdateManager();
+    updateManager.runAssessmentRecordUpdateWizard();
+  }
 }
 
 
-// Instantiate the MainController as a singleton
-const mainController = new MainController();
