@@ -1,5 +1,3 @@
-// PropertiesCloner.js
-
 /**************************************************
  * PropertiesCloner Class
  * Gets all script and document properties, serialises them
@@ -13,43 +11,39 @@ class PropertiesCloner extends BaseSheetManager {
    */
   constructor(sheet = 'propertiesStore', spreadSheetId = null) {
     super(sheet, spreadSheetId); // calls BaseSheetManager constructor
+    
+    // Retrieve references to Document and Script properties upfront
+    this.docProperties = PropertiesService.getDocumentProperties();
+    this.scriptProperties = PropertiesService.getScriptProperties();
   }
 
-
-
-  /**
-   * Serialises all Document and Script properties to the 'propertiesStore' sheet.
-   */
   /**
    * Serialises document and/or script properties to a hidden spreadsheet.
    * Creates a table with columns: Type, Key, Value.
    * Each property is stored as a row with its type (DOCUMENT/SCRIPT), key and value.
-   * 
+   *
    * @param {boolean} [serialiseDocProps=true] - Whether to serialise document properties
    * @param {boolean} [serialiseScriptProps=true] - Whether to serialise script properties
    * @returns {void} - Returns nothing if both parameters are false
    */
   serialiseProperties(serialiseDocProps = true, serialiseScriptProps = true) {
-    const docProperties = PropertiesService.getDocumentProperties();
-    const scriptProperties = PropertiesService.getScriptProperties();
-
     // Prepare data array with a header row: [Type, Key, Value]
     const data = [['Type', 'Key', 'Value']];
 
     // Document Properties
     if (serialiseDocProps) {
-      const docKeys = docProperties.getKeys();
+      const docKeys = this.docProperties.getKeys();
       docKeys.forEach(key => {
-        data.push(['DOCUMENT', key, docProperties.getProperty(key)]);
+        data.push(['DOCUMENT', key, this.docProperties.getProperty(key)]);
       });
     }
 
     // Script Properties
     if (serialiseScriptProps) {
-    const scriptKeys = scriptProperties.getKeys();
-    scriptKeys.forEach(key => {
-      data.push(['SCRIPT', key, scriptProperties.getProperty(key)]);
-    });
+      const scriptKeys = this.scriptProperties.getKeys();
+      scriptKeys.forEach(key => {
+        data.push(['SCRIPT', key, this.scriptProperties.getProperty(key)]);
+      });
     }
 
     if (!serialiseDocProps && !serialiseScriptProps) {
@@ -60,7 +54,6 @@ class PropertiesCloner extends BaseSheetManager {
     // Write data to sheet and then hide it
     this.setAllValues(data);
     this.sheet.hideSheet();
-
   }
 
   /**
@@ -68,9 +61,6 @@ class PropertiesCloner extends BaseSheetManager {
    * @param {boolean} [deleteSheetAfter=false] - Whether to delete the sheet after deserialising.
    */
   deserialiseProperties(deleteSheetAfter = false) {
-    const docProperties = PropertiesService.getDocumentProperties();
-    const scriptProperties = PropertiesService.getScriptProperties();
-
     // Get all values from the sheet, excluding the header row
     const allValues = this.getAllValues();
     // Remove the header row
@@ -78,11 +68,10 @@ class PropertiesCloner extends BaseSheetManager {
 
     rows.forEach(row => {
       const [type, key, value] = row;
-
       if (type === 'DOCUMENT') {
-        docProperties.setProperty(key, value);
+        this.docProperties.setProperty(key, value);
       } else if (type === 'SCRIPT') {
-        scriptProperties.setProperty(key, value);
+        this.scriptProperties.setProperty(key, value);
       }
     });
 
@@ -90,5 +79,18 @@ class PropertiesCloner extends BaseSheetManager {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       ss.deleteSheet(this.sheet);
     }
+  }
+
+  /**
+   * Clears all script and document properties, then deletes the 'propertiesStore' sheet.
+   */
+  clearPropertiesAndSheet() {
+    // Delete all document and script properties
+    this.docProperties.deleteAllProperties();
+    this.scriptProperties.deleteAllProperties();
+
+    // Delete the sheet from the active spreadsheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    ss.deleteSheet(this.sheet);
   }
 }
