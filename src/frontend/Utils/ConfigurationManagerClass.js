@@ -260,7 +260,7 @@ class ConfigurationManager {
   getUpdateDetailsUrl() {
     const value = this.getProperty(ConfigurationManager.CONFIG_KEYS.UPDATE_DETAILS_URL)
     if (!value) {
-      return `https://raw.githubusercontent.com/h-arnold/googleSlidesAssessor/refs/heads/UpdateManager/src/frontend/UpdateManager/assessmentBotVersions.json`
+      return `https://raw.githubusercontent.com/h-arnold/googleSlidesAssessor/refs/heads/main/src/frontend/UpdateManager/assessmentBotVersions.json`
     } else {
       return value;
     }
@@ -395,7 +395,3 @@ const configurationManager = new ConfigurationManager();
 function getConfiguration() {
   return configurationManager.getAllConfigurations();
 }
-
-function setIsAdmin() {
-  configurationManager.setIsAdminSheet(true);
-  }
